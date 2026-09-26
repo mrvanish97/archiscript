@@ -105,13 +105,22 @@ def registerDeclaration : Operation.Declaration where
   operation := register
   BranchName := BranchName
   branchNameDecidableEq := inferInstance
+  branchNames := [.invalid, .newUser, .existingUser]
+  branchNames_complete := by intro name; cases name <;> simp
+  branchNames_nodup := by decide
   branch
     | .invalid => ⟨.invalid, .rejected, rfl⟩
     | .newUser => ⟨.validNew, .created, rfl⟩
     | .existingUser => ⟨.validExisting, .selected, rfl⟩
-  owners := ["registration"]
-  branchOwners
+  responsibilityOwners := ["registration"]
+  branchResponsibilityOwners
     | .newUser => some ["user-storage"]
+    | _ => none
+  implementation := some (.planned {
+    primary := { repository := "registration-service", path := "src/registration.ts", symbol := some "register" }
+  })
+  branchImplementation
+    | .invalid => some (.unimplemented "illustrative model; production handler not yet supplied")
     | _ => none
 
 def registrationIdentityDeclaration : Operation.Declaration where
@@ -120,6 +129,9 @@ def registrationIdentityDeclaration : Operation.Declaration where
   operation := Operation.id registrationPartition
   BranchName := BranchName
   branchNameDecidableEq := inferInstance
+  branchNames := [.invalid, .newUser, .existingUser]
+  branchNames_complete := by intro name; cases name <;> simp
+  branchNames_nodup := by decide
   branch
     | .invalid => ⟨.rejected, .rejected, rfl⟩
     | .newUser => ⟨.created, .created, rfl⟩
@@ -131,6 +143,9 @@ def returnToUserDeclaration : Operation.Declaration where
   operation := returnToUser
   BranchName := BranchName
   branchNameDecidableEq := inferInstance
+  branchNames := [.invalid, .newUser, .existingUser]
+  branchNames_complete := by intro name; cases name <;> simp
+  branchNames_nodup := by decide
   branch
     | .invalid => ⟨.rejected, .invalid, rfl⟩
     | .newUser => ⟨.created, .validNew, rfl⟩
@@ -139,6 +154,9 @@ def returnToUserDeclaration : Operation.Declaration where
 def operationRegistry : Operation.Registry where
   OperationName := OperationName
   operationNameDecidableEq := inferInstance
+  operationNames := [.register, .registrationIdentity, .returnToUser]
+  operationNames_complete := by intro name; cases name <;> simp
+  operationNames_nodup := by decide
   resolve
     | .register => registerDeclaration
     | .registrationIdentity => registrationIdentityDeclaration

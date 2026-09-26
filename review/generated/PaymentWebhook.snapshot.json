@@ -1,0 +1,555 @@
+{
+  "modelRevision": "09c2b1ec5505",
+  "projection": {
+    "checkedClaims": [
+      {
+        "claim": "inputPartition realizes inputRegions",
+        "proof": "PaymentWebhook.inputPartition_realizes_regions"
+      },
+      {
+        "claim": "requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment",
+        "proof": "PaymentWebhook.first_success_requests_fulfillment"
+      },
+      {
+        "claim": "requestLedgerCommand.comp decide maps duplicateSuccess to none",
+        "proof": "PaymentWebhook.duplicate_requests_no_ledger_command"
+      }
+    ],
+    "decideBranches": [
+      {
+        "id": "PaymentWebhook.decide.malformed",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "all declared input members map to their checked decisions"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "decide"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ],
+        "source": "malformed",
+        "target": "reject"
+      },
+      {
+        "id": "PaymentWebhook.decide.unsupported",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "all declared input members map to their checked decisions"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "decide"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ],
+        "source": "unsupported",
+        "target": "ignore"
+      },
+      {
+        "id": "PaymentWebhook.decide.failed",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "all declared input members map to their checked decisions"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "decide"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ],
+        "source": "failed",
+        "target": "recordFailure"
+      },
+      {
+        "id": "PaymentWebhook.decide.firstSuccess",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "first success records payment and enqueues fulfillment"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "decide"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ],
+        "source": "firstSuccess",
+        "target": "fulfill"
+      },
+      {
+        "id": "PaymentWebhook.decide.duplicateSuccess",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "duplicate success acknowledges without ledger or queue effects"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "decide"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ],
+        "source": "duplicateSuccess",
+        "target": "acknowledgeDuplicate"
+      }
+    ],
+    "decisionMembers": [
+      "reject",
+      "ignore",
+      "recordFailure",
+      "fulfill",
+      "acknowledgeDuplicate"
+    ],
+    "inputMembers": [
+      "malformed",
+      "unsupported",
+      "failed",
+      "firstSuccess",
+      "duplicateSuccess"
+    ],
+    "inputRegions": [
+      {
+        "description": "eventId is empty, regardless of status or ledger observation",
+        "id": "PaymentWebhook.inputPartition.malformed",
+        "name": "malformed"
+      },
+      {
+        "description": "eventId is present; status is neither success nor failed",
+        "id": "PaymentWebhook.inputPartition.unsupported",
+        "name": "unsupported"
+      },
+      {
+        "description": "eventId is present; status is failed",
+        "id": "PaymentWebhook.inputPartition.failed",
+        "name": "failed"
+      },
+      {
+        "description": "eventId is present; status is success; ledger observation is false",
+        "id": "PaymentWebhook.inputPartition.firstSuccess",
+        "name": "firstSuccess"
+      },
+      {
+        "description": "eventId is present; status is success; ledger observation is true",
+        "id": "PaymentWebhook.inputPartition.duplicateSuccess",
+        "name": "duplicateSuccess"
+      }
+    ],
+    "ledgerBranches": [
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.recordFailure",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "first success records payment and enqueues fulfillment"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "requestLedgerCommand"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-ledger"
+        ],
+        "source": "recordFailure",
+        "target": "recordFailure"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.fulfill",
+        "implementation": {
+          "binding": {
+            "evidence": [
+              {
+                "kind": "test",
+                "reference": "first success records payment and enqueues fulfillment"
+              }
+            ],
+            "primary": {
+              "endLine": null,
+              "path": "examples/payment-webhook.mjs",
+              "repository": "archiscript",
+              "revision": null,
+              "startLine": null,
+              "symbol": "requestLedgerCommand"
+            },
+            "supporting": [
+              {
+                "endLine": null,
+                "path": "examples/payment-webhook.mjs",
+                "repository": "archiscript",
+                "revision": null,
+                "startLine": null,
+                "symbol": "handleWebhook"
+              }
+            ]
+          },
+          "status": "resolved"
+        },
+        "responsibility": [
+          "payments-ledger"
+        ],
+        "source": "fulfill",
+        "target": "recordAndQueueFulfillment"
+      }
+    ],
+    "ledgerMappings": [
+      {
+        "source": "reject",
+        "target": "none"
+      },
+      {
+        "source": "ignore",
+        "target": "none"
+      },
+      {
+        "source": "recordFailure",
+        "target": "recordFailure"
+      },
+      {
+        "source": "fulfill",
+        "target": "recordAndQueueFulfillment"
+      },
+      {
+        "source": "acknowledgeDuplicate",
+        "target": "none"
+      }
+    ],
+    "ledgerMembers": [
+      "recordFailure",
+      "recordAndQueueFulfillment"
+    ],
+    "model": "PaymentWebhook",
+    "objects": [
+      {
+        "id": "PaymentWebhook.Input",
+        "kind": "carrier"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition",
+        "kind": "partition"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition",
+        "kind": "partition"
+      },
+      {
+        "id": "PaymentWebhook.ledgerCommandPartition",
+        "kind": "partition"
+      },
+      {
+        "id": "PaymentWebhook.decide",
+        "kind": "operation"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand",
+        "kind": "operation"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition.malformed",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition.unsupported",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition.failed",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition.firstSuccess",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.inputPartition.duplicateSuccess",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition.reject",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition.ignore",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition.recordFailure",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition.fulfill",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition.acknowledgeDuplicate",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.ledgerCommandPartition.recordFailure",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.ledgerCommandPartition.recordAndQueueFulfillment",
+        "kind": "member"
+      },
+      {
+        "id": "PaymentWebhook.decide.malformed",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.decide.malformed.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.decide.unsupported",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.decide.unsupported.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.decide.failed",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.decide.failed.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.decide.firstSuccess",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.decide.firstSuccess.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.decide.duplicateSuccess",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.decide.duplicateSuccess.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.recordFailure",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.recordFailure.implementation",
+        "kind": "implementationBinding"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.fulfill",
+        "kind": "branch"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand.fulfill.implementation",
+        "kind": "implementationBinding"
+      }
+    ],
+    "topology": [
+      {
+        "id": "PaymentWebhook.decide",
+        "operation": "decide",
+        "partial": false,
+        "source": "inputPartition",
+        "target": "decisionPartition"
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand",
+        "operation": "requestLedgerCommand",
+        "partial": true,
+        "source": "decisionPartition",
+        "target": "ledgerCommandPartition"
+      }
+    ]
+  },
+  "review": {
+    "model": "PaymentWebhook",
+    "state": "draft",
+    "approval": null,
+    "scope": "Webhook input classification, decision mapping, and ledger-command mapping in the companion example.",
+    "boundary": {
+      "subject": "PaymentWebhook.Input",
+      "description": "Input combines eventId, status, and an alreadyRecorded Boolean supplied by a ledger observation.",
+      "challenge": "Is the observation from a stable transaction or snapshot? Can concurrent deliveries change it before effects occur?"
+    },
+    "assumptions": [
+      {
+        "subject": "PaymentWebhook.Input",
+        "statement": "The model receives alreadyRecorded as a Boolean; its acquisition and consistency are not modeled."
+      }
+    ],
+    "effectNotes": [
+      {
+        "subject": "PaymentWebhook.requestLedgerCommand",
+        "statement": "A mapping to none means no ledger-command member is requested. It does not prove the handler has no other runtime effects."
+      },
+      {
+        "subject": "PaymentWebhook.decide.firstSuccess",
+        "statement": "The companion handler records payment and then enqueues fulfillment; atomicity across those effects is not established. This example has no typed effect contract for that production sequence."
+      }
+    ],
+    "questions": [
+      {
+        "subject": "PaymentWebhook.Input",
+        "question": "What guarantees that alreadyRecorded remains valid until the handler finishes?"
+      },
+      {
+        "subject": "PaymentWebhook.decide.duplicateSuccess",
+        "question": "Are duplicate acknowledgments required to be idempotent under concurrent delivery?"
+      },
+      {
+        "subject": "PaymentWebhook.decide.firstSuccess",
+        "question": "What recovery behavior is required if recording succeeds and queue publication fails?"
+      }
+    ],
+    "findings": [
+      {
+        "id": "RV-1",
+        "subject": "PaymentWebhook.Input",
+        "reviewer": "architecture agent",
+        "concern": "The alreadyRecorded Boolean is modeled without a snapshot or transaction boundary.",
+        "requestedChange": "An engineer should confirm the consistency guarantee or request an explicit concurrency assumption or revised carrier.",
+        "disposition": "open"
+      },
+      {
+        "id": "RV-2",
+        "subject": "PaymentWebhook.decide.firstSuccess",
+        "reviewer": "architecture agent",
+        "concern": "The model names a record-and-queue command but does not specify recovery after a successful record and failed queue publication.",
+        "requestedChange": "An engineer should confirm the delivery guarantee and request an effect contract or compensating behavior if required.",
+        "disposition": "open"
+      }
+    ]
+  }
+}

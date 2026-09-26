@@ -1,0 +1,59 @@
+{
+  "model": "PaymentWebhook",
+  "state": "draft",
+  "approval": null,
+  "scope": "Webhook input classification, decision mapping, and ledger-command mapping in the companion example.",
+  "boundary": {
+    "subject": "PaymentWebhook.Input",
+    "description": "Input combines eventId, status, and an alreadyRecorded Boolean supplied by a ledger observation.",
+    "challenge": "Is the observation from a stable transaction or snapshot? Can concurrent deliveries change it before effects occur?"
+  },
+  "assumptions": [
+    {
+      "subject": "PaymentWebhook.Input",
+      "statement": "The model receives alreadyRecorded as a Boolean; its acquisition and consistency are not modeled."
+    }
+  ],
+  "effectNotes": [
+    {
+      "subject": "PaymentWebhook.requestLedgerCommand",
+      "statement": "A mapping to none means no ledger-command member is requested. It does not prove the handler has no other runtime effects."
+    },
+    {
+      "subject": "PaymentWebhook.decide.firstSuccess",
+      "statement": "The companion handler records payment and then enqueues fulfillment; atomicity across those effects is not established. This example has no typed effect contract for that production sequence."
+    }
+  ],
+  "questions": [
+    {
+      "subject": "PaymentWebhook.Input",
+      "question": "What guarantees that alreadyRecorded remains valid until the handler finishes?"
+    },
+    {
+      "subject": "PaymentWebhook.decide.duplicateSuccess",
+      "question": "Are duplicate acknowledgments required to be idempotent under concurrent delivery?"
+    },
+    {
+      "subject": "PaymentWebhook.decide.firstSuccess",
+      "question": "What recovery behavior is required if recording succeeds and queue publication fails?"
+    }
+  ],
+  "findings": [
+    {
+      "id": "RV-1",
+      "subject": "PaymentWebhook.Input",
+      "reviewer": "architecture agent",
+      "concern": "The alreadyRecorded Boolean is modeled without a snapshot or transaction boundary.",
+      "requestedChange": "An engineer should confirm the consistency guarantee or request an explicit concurrency assumption or revised carrier.",
+      "disposition": "open"
+    },
+    {
+      "id": "RV-2",
+      "subject": "PaymentWebhook.decide.firstSuccess",
+      "reviewer": "architecture agent",
+      "concern": "The model names a record-and-queue command but does not specify recovery after a successful record and failed queue publication.",
+      "requestedChange": "An engineer should confirm the delivery guarantee and request an effect contract or compensating behavior if required.",
+      "disposition": "open"
+    }
+  ]
+}

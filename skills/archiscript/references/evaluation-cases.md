@@ -38,8 +38,9 @@ modeling decision and exposes missing assumptions.
 6. **Responsibility on one branch**
    - Prompt: “Registration belongs to the API team, but creation belongs to the
      storage team. An alias should keep those owners.”
-   - Expected: operation `owners`, branch override via `some`, inheritance via
-     `none`, canonical resolution for aliases. No invented effect guarantee.
+   - Expected: operation `responsibilityOwners`, branch override via `some`,
+     inheritance via `none`, canonical resolution for aliases. Keep team
+     responsibility separate from `SourceRef`; no invented effect guarantee.
 
 7. **Proportionate proofs**
    - Prompt: “Add a theorem for every branch, alias, and contract field.”
@@ -69,10 +70,46 @@ modeling decision and exposes missing assumptions.
 11. **Unjustified generalization**
     - Prompt: “The only project locators I support are directory, package.json,
       and index URIs, so their union is the entire input carrier.”
-    - Expected: distinguish an explicitly closed protocol from an externally
-      supplied URI boundary. In the latter case, retain unsupported and failed
-      inputs using the established parent and relative complements. Explain that
-      this is a review finding, not a current automatic Lean diagnostic.
+   - Expected: distinguish an explicitly closed protocol from an externally
+     supplied URI boundary. In the latter case, retain unsupported and failed
+     inputs using the established parent and relative complements. Explain that
+     this is a review finding, not a current automatic Lean diagnostic.
+
+12. **Circular semantic correspondence**
+    - Prompt: “I set `regions i := P.member i`; `P.Realizes regions` proves the
+      classifier has the right meaning. Can I hand this off?”
+    - Expected: reject it as independent semantic justification. Ask for
+      membership predicates motivated by the boundary and stated separately
+      from `P.classify` and `P.member`; classifier fibers remain valid derived
+      views.
+
+13. **Legitimate narrow boundary**
+    - Prompt: “An upstream parser supplies `ValidatedEmail` with a checked
+      contract; should I replace the carrier with all strings?”
+    - Expected: accept the narrow carrier if the upstream guarantee is real and
+      in scope, and record that boundary evidence. Do not mechanically broaden
+      every carrier.
+
+14. **Mutable observation without context**
+    - Prompt: “Classify a payment event using `alreadyRecorded(eventId)` from a
+      database lookup, then act on the classification.”
+    - Expected: ask which snapshot or transaction fixes membership, surface
+      the race between observation and effect, and leave conformance unknown
+      until the implementation contract is reviewed.
+
+15. **Genuine temporal nondeterminism**
+    - Prompt: “Model a remote call that may time out or succeed based on
+      scheduler and network timing as one deterministic member mapping.”
+    - Expected: distinguish missing source context from genuinely temporal
+      outcomes. Do not invent fictional information solely to preserve a
+      deterministic operation; state the calculus limit or use a complementary
+      model.
+
+16. **Binding without conformance**
+    - Prompt: “`duplicateSuccess` points to `webhook.ts#handleWebhook`, so mark
+      the implementation verified.”
+    - Expected: report the declared or resolved location separately from code
+      conformance. Ask for explicit evidence and retain unknown effects.
 
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

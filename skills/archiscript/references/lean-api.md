@@ -113,14 +113,22 @@ def acceptDeclaration : Operation.Declaration where
   operation := accept
   BranchName := BranchName
   branchNameDecidableEq := inferInstance
+  branchNames := [.positive]
+  branchNames_complete := by intro name; cases name; simp
+  branchNames_nodup := by decide
   branch
     | .positive => ⟨.positive, .positive, rfl⟩
-  owners := ["request-api"]
-  branchOwners := fun _ => some ["request-processing"]
+  responsibilityOwners := ["request-api"]
+  branchResponsibilityOwners := fun _ => some ["request-processing"]
+  implementation := some (.planned { primary := {
+    repository := "request-service", path := "src/requests.ts", symbol := some "accept" } })
 
 def registry : Operation.Registry where
   OperationName := OperationName
   operationNameDecidableEq := inferInstance
+  operationNames := [.accept]
+  operationNames_complete := by intro name; cases name; simp
+  operationNames_nodup := by decide
   resolve
     | .accept => acceptDeclaration
 
@@ -129,7 +137,8 @@ def acceptedBranch : Operation.BranchAddress registry :=
 
 def acceptedBranchWitness := registry.resolveBranch acceptedBranch
 
-#guard registry.resolveBranchOwners acceptedBranch == ["request-processing"]
+#guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
+#guard registry.branchesWithoutImplementation.length == 0
 ```
 
 One registry value is the uniqueness scope. Another registry is another model
@@ -137,13 +146,32 @@ scope. An alias is a definition equal to the same `OperationName` or
 `BranchAddress`; a new name is a new declaration identity even if the map is
 extensionally equal.
 
-`owners` defaults to `[]`, and `branchOwners` defaults to `fun _ => none`.
-`none` inherits the operation tags; `some tags` replaces them, and `some []`
-explicitly marks a branch unassigned. Use `declaration.effectiveOwners name`
-or `registry.resolveBranchOwners address` for effective ownership. Tags are
-free-form responsibility labels, with no inferred permission or effect semantics.
+`responsibilityOwners` defaults to `[]`, and `branchResponsibilityOwners`
+defaults to `fun _ => none`. `none` inherits the operation tags; `some tags`
+replaces them, and `some []` explicitly marks a branch unassigned. Use
+`declaration.effectiveResponsibility name` or
+`registry.resolveBranchResponsibility address` for effective responsibility.
+Tags are free-form labels, with no inferred permission or effect semantics.
 There is no automatic owner propagation through `Operation.comp`: register and
 annotate a composite declaration when it needs its own responsibility contract.
+
+`SourceRef` identifies a production site by repository, path, and optional
+symbol. Line range and revision are navigation metadata. A disposition is
+`planned`, `resolved`, `external`, `intentionallyAbstract`, or `unimplemented`.
+`ImplementationBinding` carries one primary location, optional supporting
+locations, and optional `EvidenceRef`s. `implementation` supplies an operation
+default; `branchImplementation` can override it. Use
+`registry.resolveBranchImplementation address` for the effective result.
+`none` means no disposition was declared and is reported by
+`branchesWithoutImplementation`; it does not mean `unimplemented`.
+
+Declarations and registries enumerate their names with completeness and
+no-duplicate proofs. `branchAddresses` traverses that scope;
+`branchesWithoutResponsibility` and `branchesWithoutImplementation` identify
+missing metadata. `branchesAt sourceRef` returns addresses bound to a matching
+primary or supporting source identity, ignoring line/revision drift. These
+functions inspect declarations; they do not scan repositories, validate paths
+or symbols, or prove that tests and production code conform.
 
 The repository example demonstrates an effect theorem tied to a canonical
 branch:
@@ -166,6 +194,22 @@ The new-user contract's `absent_before` and `present_after` fields can be used
 directly; do not add a theorem merely to conjoin them. Likewise, branch aliases
 need no named equality theorem. Tests can check the API without turning those
 checks into model guarantees.
+
+## Review record and approval gate
+
+`ArchiScript.Review` defines `ReviewSubjectKind`, `ReviewSubject`,
+`ReviewFinding`, `ReviewDecision`, and `ReviewRecord`. Findings carry canonical
+model IDs rather than PDF page numbers. `ReviewRecord.implementationAllowed`
+is true only for an `approved reviewer revision` decision matching the record's
+model revision with no open findings. It is a workflow predicate, not identity
+authentication. A Lean build does not set review state or approve architecture.
+
+The repository's PaymentWebhook prototype exports typed model facts from Lean,
+joins them with structured review metadata, and generates Markdown and PDF
+snapshots. The generator validates that every review subject names an exported
+model object. Its revision hash changes when the relevant model sources change.
+General model export and automated source-location freshness checks are future
+work.
 
 ## Routed parameterization
 

@@ -1,112 +1,101 @@
-# ArchiScript: checked design before AI writes code
+# ArchiScript
 
-ArchiScript is a design layer between requirements written in natural language
-and code produced by AI coding agents. Its current Lean library checks a model
-of the input boundary, the semantic distinctions within it, and the operations
-between those distinctions. That model gives agents and reviewers a shared
-contract before implementation begins.
+**Machine-checked software design for human review before AI writes code.**
 
-Coding agents can turn examples or happy paths into a convenient closed model,
-silently excluding missing or malformed inputs, unsupported cases, or context
-needed to distinguish outcomes.
-The [authoring skill](skills/archiscript) guides the agent to state and justify
-the carrier first. Lean then checks claims over that declared carrier. Neither
-can prove that the chosen carrier includes every case the real system may
-receive; that remains an explicit review obligation.
+**AI proposes. Lean checks. Engineers review. AI implements.** ArchiScript sits
+between a requirement and the code an AI agent writes. It makes the assumed
+input boundary, semantic cases, branch decisions, responsibilities, and intended
+code locations explicit. Lean checks claims over that declared model. Engineers
+review the decisions Lean cannot make, then implementation agents work from
+approved canonical branches.
 
-## A modeling error the checks expose
+![Conceptual illustration of a reviewer examining a model between requirements and code](assets/readme/architecture-review.png)
 
-Imagine a form with an email field and a name field. An agent proposes two
-states: `complete` (both filled) and `empty` (both blank). That sounds plausible
-until someone submits only an email. That input has no stated meaning.
-
-The [runnable FormInput model](ArchiScript/Examples/FormInput.lean) starts with
-`String × String`, so all four presence combinations are in scope:
-
-| Email | Name | Meaning |
-| --- | --- | --- |
-| blank | blank | both missing |
-| filled | blank | name missing |
-| blank | filled | email missing |
-| filled | filled | complete |
-
-It defines predicates for the meaningful regions and a partition that
-classifies each input. The central check is `Partition.Realizes`: for **every**
-input, does the classifier's answer agree with the independently stated meaning
-of that member?
-
-```lean
-import ArchiScript.Examples.FormInput
-open ArchiScript ArchiScript.Examples.FormInput
-
--- The four field-specific regions match the classifier.
-example : fieldPartition.Realizes fieldRegions :=
-  fieldPartition_realizes_regions
+```text
+requirement → AI architecture agent → ArchiScript model → Lean checks
+            → human review pack → approval or requested changes
+            → implementation agents → code and evidence
 ```
 
-The [incomplete variant](Test/Negative/IncompleteMembers.lean) calls the second
-member “both missing” while leaving the one-field-filled inputs out of its
-stated regions. It cannot satisfy `Realizes`: `("a@example.test", "")` is
-neither complete nor both missing. The [overlapping variant](Test/Negative/OverlappingMembers.lean)
-also fails: “email provided” and “name provided” overlap when both are filled.
-Run `bash scripts/check-negative.sh` to see Lean reject both obligations.
+An agent can write consistent code for an incomplete understanding of a problem.
+For “handle successful payment webhooks idempotently,” a plausible model is
+`success → fulfill`. It misses that a first delivery and a retry carry the same
+event status but need different decisions. The input boundary needs an event
+**and** a ledger observation. Whether that observation stays valid during
+concurrent deliveries then becomes a question for an engineer, rather than a
+hidden coding assumption.
 
-The model can then intentionally group all three incomplete cases into one
-member for a consumer that only needs `complete` versus `incomplete`. Its
-`forgetFieldFailures` operation maps the four detailed members to those two
-members, and a theorem checks that this agrees with classifying the same raw
-input at the coarser resolution:
+## Three modeling rules
 
-| `fieldPartition` member | `forgetFieldFailures` → `formPartition` member |
+1. **A carrier is not justified by the cases you want to handle.** Coverage
+   applies to the carrier the author declared. The author must also explain why
+   that carrier represents the real boundary. A union of successful cases can
+   exclude malformed or unsupported input before checking begins.
+2. **A semantic name is not a semantic definition.** Names help people read a
+   model; predicates establish membership. Define each meaningful region from
+   a justified base, including any containment, relative complement, or fixed
+   environmental context it depends on.
+3. **A classifier is not evidence for its own meaning.** The predicates used to
+   justify a partition must be stated independently of its classifier or
+   `Partition.member` fibers. Proving agreement with regions defined as those
+   same fibers adds no independent semantic evidence.
+
+These rules guide the [AI skill](skills/archiscript/SKILL.md). Lean can check a
+precise claim even when the claim omits a real-world case.
+
+## Worked example: payment webhook retries
+
+![Conceptual illustration of first and repeat payment events using ledger context](assets/readme/webhook-retries.png)
+
+The illustration introduces the review question; the predicates and operation
+table below are the model-derived architectural claims.
+
+The [PaymentWebhook model](ArchiScript/Examples/PaymentWebhook.lean) declares an
+input with `eventId : String`, `status : String`, and
+`alreadyRecorded : Bool`. The Boolean represents a ledger observation supplied
+to the model. The model does not establish how that observation is obtained or
+kept stable. Its carrier is the whole `Input` type: empty IDs, unsupported
+statuses, and both ledger outcomes remain possible.
+
+The input partition selects five members. Their predicates are stated
+separately from the classifier:
+
+| Canonical member | Semantic membership condition |
 | --- | --- |
-| both missing | incomplete |
-| name missing | incomplete |
-| email missing | incomplete |
-| complete | complete |
+| `malformed` | `eventId = ""` |
+| `unsupported` | `eventId ≠ "" ∧ status ≠ "success" ∧ status ≠ "failed"` |
+| `failed` | `eventId ≠ "" ∧ status = "failed"` |
+| `firstSuccess` | `eventId ≠ "" ∧ status = "success" ∧ alreadyRecorded = false` |
+| `duplicateSuccess` | `eventId ≠ "" ∧ status = "success" ∧ alreadyRecorded = true` |
 
-This operation maps **members**, not the input strings. It deliberately forgets
-which field was missing.
+These definitions let an engineer challenge whether an empty ID is the right
+malformed criterion, whether other statuses need separate handling, or whether
+a Boolean ledger observation is sound under concurrency. The predicates are
+precise; the boundary justification remains an engineering judgment.
 
-For a single two-field form, ordinary code and tests may be enough. The example
-shows ArchiScript's contract shape: named semantic regions, a partition, and a
-member map between two resolutions. ArchiScript supplies this common vocabulary;
-Lean checks the stated claims. The value grows when several agents or components
-must agree on the same distinctions and routes before implementation.
-
-## Where the member maps pay off: payment webhook retries
-
-Suppose a payment provider sends a `success` webhook twice. The event payload
-is identical, but the first delivery should queue fulfillment and the retry
-should not. The decision therefore needs both the event and a ledger snapshot
-answering whether its ID is already recorded. In the
-[PaymentWebhook model](ArchiScript/Examples/PaymentWebhook.lean), the input
-carrier contains the raw event ID, raw status, and that ledger observation.
-The `inputPartition` selects five semantic members from this carrier.
+The checked architecture connects three value-domain partitions (VDPs):
 
 ```mermaid
 flowchart LR
-    A["Webhook input VDP<br/>event × ledger observation"] -->|decide| B["Decision VDP"]
-    B -->|requestLedgerCommand| C["Ledger command VDP"]
+    Input["inputPartition<br/>event + ledger observation"] -->|decide| Decision["decisionPartition"]
+    Decision -->|requestLedgerCommand · partial| Ledger["ledgerCommandPartition"]
 ```
 
-The arrows are ArchiScript operations: partial maps between **VDP members**.
-They are architectural contracts, not calls that read or write the ledger.
-Here are all their member mappings:
+These arrows map **semantic members**, not runtime calls. The two operations
+yield this path table:
 
-| `inputPartition` member | `decide` → decision member | `requestLedgerCommand` → ledger command member |
+| Input member | `decide` target | `requestLedgerCommand` target |
 | --- | --- | --- |
-| malformed ID | reject | `none` |
-| unsupported status | ignore | `none` |
-| failed payment | record failure | record failure |
-| first successful delivery | fulfill | record payment and queue fulfillment |
-| duplicate successful delivery | acknowledge duplicate | `none` |
+| `malformed` | `reject` | `none` |
+| `unsupported` | `ignore` | `none` |
+| `failed` | `recordFailure` | `recordFailure` |
+| `firstSuccess` | `fulfill` | `recordAndQueueFulfillment` |
+| `duplicateSuccess` | `acknowledgeDuplicate` | `none` |
 
-This is the useful check across components. The input regions are stated
-separately from the classifier, so `inputPartition.Realizes inputRegions` must
-hold for every combination of event and ledger observation. In particular,
-`("p1", "success", false)` and `("p1", "success", true)` have the same event but
-belong to different members. An event-only classifier cannot satisfy those
-regions. Then operation composition checks the downstream contract:
+`Partition.Realizes` checks that every carrier value is classified into the
+member whose independently stated predicate it satisfies. Composition proofs
+check the first-success and duplicate-success paths. A change that maps
+`duplicateSuccess` to `fulfill` breaks the duplicate path theorem.
 
 ```lean
 import ArchiScript.Examples.PaymentWebhook
@@ -115,111 +104,189 @@ open ArchiScript.Examples.PaymentWebhook
 example : inputPartition.Realizes inputRegions :=
   inputPartition_realizes_regions
 
-example : (requestLedgerCommand.comp decide) .firstSuccess =
-    some .recordAndQueueFulfillment := first_success_requests_fulfillment
-
 example : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
   duplicate_requests_no_ledger_command
 ```
 
-If a later edit maps duplicate delivery to `fulfill`, the second theorem fails.
-If an operation is connected to a partition with the wrong source or target,
-its composition does not type check. That is what ArchiScript adds here: one
-explicit set of distinctions and member maps that several implementation
-steps can be checked against. The author still has to justify the carrier:
-Lean cannot discover a real-world input omitted from it. `none` means no
-*modeled ledger command*; it does not prove the handler has no side effects.
-Actually recording an ID and queueing fulfillment atomically requires a
-separate effect contract and implementation.
+Here `none` says only that **this ledger-command operation is undefined** for
+`acknowledgeDuplicate`. It says nothing about logging, metrics, another store,
+or a queue call in production code. If absence of runtime effects matters,
+state an effect contract and inspect its implementation.
 
-## Mathematical foundation in brief
+### From branch to code
 
-- **Subdomain $S \subseteq B$:** a semantic region of any value domain
-  $B \subseteq \mathcal V$, where $\mathcal V$ is the ambient universe of values.
-  $B$ need not be a VDP carrier. The foundation permits a defining formula or
-  an opaque subdomain; the current Lean API uses a `Domain α` predicate.
-  Supporting subdomains can overlap and need not cover their base. For
-  $S \subseteq U$, the relative complement $U \setminus S$ names what remains
-  inside $U$.
-- **Carrier $C$:** the nonempty value domain selected for one VDP
-  (`Partition.Carrier` in Lean). It may be infinite. The author must justify
-  that it includes the real inputs that matter.
-- **Value-domain partition (VDP):** a finite family $\mathcal M$ of nonempty,
-  disjoint subdomains whose union is $C$. Equivalently, it classifies every
-  $x \in C$ into exactly one member. Lean's `Partition` represents members by
-  finite indices and defines each member as a classifier fiber.
-  `Partition.Realizes` checks that those fibers match separately stated semantic
-  regions. Supporting subdomains can be grouped into a member; they do not
-  have to form a tree.
-- **Operation $f : \mathcal M_X \rightharpoonup \mathcal M_Y$:** a partial map
-  from members of one VDP to members of another (`Operation X Y` in Lean).
-  `none` means undefined; `some failureMember` is a defined mapping to a
-  modeled failure. An operation maps members, not carrier values or runtime
-  effects.
+Each defined branch has a canonical `(OperationName, BranchName)` address.
+Responsibility and implementation location are separate facts:
 
-Compatible operations compose: `g.comp f` follows $X \to Y \to Z$ and is
-undefined if either mapping is undefined. The webhook example above uses this
-to check the result of two member maps together.
+| Fact | `PaymentWebhook.decide.duplicateSuccess` |
+| --- | --- |
+| Semantic mapping | `duplicateSuccess → acknowledgeDuplicate` |
+| Responsibility | `payments-webhooks` |
+| Primary implementation | [examples/payment-webhook.mjs](examples/payment-webhook.mjs), symbol `decide` |
+| Supporting implementation | same file, symbol `handleWebhook` |
+| Binding state | resolved in the companion example |
+| Evidence reference | [Node tests](examples/payment-webhook.test.mjs) for duplicate acknowledgment without ledger or queue effects |
+| Remaining question | ledger observation and effects under concurrent delivery |
 
-This approach follows the sibling design's
-[purpose](../archiscript-docs/chapter-1/init-ai-proposal.md),
-[mathematical foundation](../archiscript-docs/chapter-1/stage-1/foundation.tex),
-and [boundary design](../archiscript-docs/chapter-1/stage-2/scope.md).
-Its TypeScript syntax and proposed product capabilities are not the Lean API.
+A `SourceRef` identifies a repository, path, and optional symbol. Line ranges
+and revision are navigation metadata. A resolved binding declares an
+implementation site; it is **not** a proof of code conformance. The companion
+tests exercise selected behavior, but do not prove transactional atomicity or
+that every production environment follows the model.
 
-## Lean core
+## Engineering review is a gate
 
-This repository contains a deliberately small Lean 4 frontend/proof library.
-The public entry point is `ArchiScript.lean`:
+Lean can establish consistency of the declared model. It cannot decide whether
+the boundary matches the real system, whether a distinction is useful, whether
+responsibility is sensible, or whether the observation and effects are safe.
+Engineers review a human-readable projection before architecture-driven
+implementation. They can request changes against canonical IDs such as
+`PaymentWebhook.inputPartition` or
+`PaymentWebhook.decide.duplicateSuccess`.
 
-- `ArchiScript.Partition`: value-domain predicates, relative complements, finite
-  partitions (VDPs), and correspondence with selected semantic regions;
-- `ArchiScript.Operation`: partial member functions, composition laws, and typed
-  branch witnesses;
-- `ArchiScript.ParameterizedPartition`: finite member-indexed specialization
-  and routing data (PVDPs);
-- `ArchiScript.Examples.FormInput`: overlapping subdomains and four-to-two-member
-  coarsening on the same raw input carrier;
-- `ArchiScript.Examples.PaymentWebhook`: event-plus-ledger classification and
-  composed member maps for first and duplicate deliveries;
-- `ArchiScript.Examples.UserRegistration`: a compact model with named new-user
-  and existing-user branches.
+The generated [PDF review pack](review/generated/PaymentWebhook.pdf) is a bounded
+reading snapshot. Its [Markdown version](review/generated/PaymentWebhook.md)
+includes focused Mermaid diagrams. A fast pass shows scope, boundary, topology,
+major assumptions, and open questions. A deep pass shows semantic descriptions,
+branch mappings, undefined outcomes, bindings, proof references, effects, and
+findings. [Structured review metadata](review/payment-webhook.review.json)
+holds object-addressed findings and review state; the PDF is not the review
+database. The generator can compare a new snapshot with an earlier one and
+report semantic changes.
 
-Build and check the examples with:
+The prototype recognizes `draft`, `ready-for-review`, `changes-requested`,
+`approved`, and `superseded`. Approval is tied to a named reviewer and model
+revision with no open findings. The PaymentWebhook pack is currently **draft**;
+its implementation gate is **closed**. Two open findings ask for the ledger
+observation boundary and record/queue recovery behavior. The companion code is
+an experiment, not evidence of engineering approval for this architecture.
+
+Review diagrams have focused levels: system context, operation topology,
+one-operation branch map, semantic partition, and implementation/evidence path.
+One view should answer one review question. Tables often explain branch mappings
+better than graphs. The [diagram guide](skills/archiscript/references/review-diagrams.md)
+and [review-pack guide](skills/archiscript/references/review-packs.md) specify
+these projections. A reviewer unfamiliar with Lean should be able to dispute a
+boundary, predicate, branch, owner, code site, effect assumption, or unsupported
+claim without opening a `.lean` file.
+
+## Keep claims at their actual evidence level
+
+| Layer | What this example establishes |
+| --- | --- |
+| Architecture | **PROVED:** the input classifier realizes its declared regions; the two named composition paths have the stated results. |
+| Carrier adequacy | **REVIEW FINDING:** ledger-observation consistency and scope need engineering judgment. |
+| Implementation binding | **RESOLVED:** defined branches point to symbols in the companion code. |
+| Code conformance | **PARTIAL EVIDENCE:** named tests cover selected behavior; no general conformance proof. |
+| Runtime effects | **UNKNOWN:** atomic record/queue behavior and concurrent retries. |
+
+A theorem about a branch may be **CONDITIONAL** on an explicit effect premise.
+That premise must not be reported as proved about production code. The project
+keeps `PROVED`, `CONDITIONAL`, review findings, and `UNKNOWN` distinct in agent
+reports and review artifacts.
+
+## How the model works
+
+The authoring path is: justify the boundary, declare its carrier, define
+semantic subdomains, select a VDP resolution, classify carrier values, and prove
+correspondence. Only then should agents add operations, canonical branches,
+responsibility, implementation disposition, and effect or value obligations.
+
+A **subdomain** is a predicate over a meaningful base domain. Supporting
+subdomains may overlap and need not exhaust that base. A **VDP** selects a finite
+set of nonempty, disjoint members that exhausts its carrier. Several VDPs can
+expose different resolutions of the same carrier; coarsening deliberately
+forgets distinctions. The smaller [FormInput example](ArchiScript/Examples/FormInput.lean)
+shows four field-presence cases grouped into `complete` and `incomplete`.
+The [negative examples](Test/Negative) show failed correspondence for missing
+and overlapping selected regions.
+
+Lean's `Partition` represents a VDP with finite member indices and a
+classifier. `Partition.Realizes` checks its classifier fibers against separately
+defined semantic predicates. This correspondence is part of the normal
+authoring and review path, although the current API stores it as a theorem
+rather than inside a `CheckedPartition` structure. A `Domain α` is a predicate;
+`Domain.relativeComplement` defines a remainder within an explicit parent.
+
+An `Operation X Y` is a partial function between the **member sets** of VDPs
+`X` and `Y`. A `some failureMember` mapping is defined; `none` is undefined.
+Compatible operations compose, and undefinedness propagates. These are
+architectural maps, not value-level handlers or execution schedules. The
+[mathematical foundation](../archiscript-docs/chapter-1/stage-1/foundation.tex)
+and [Stage 2 design](../archiscript-docs/chapter-1/stage-2/scope.md) explain
+the underlying subdomains, partitions, observation, and operation discipline.
+The older design uses TypeScript notation; the Lean source defines this
+repository's current API.
+
+## What is available in this unreleased version
+
+| Available now | Scope |
+| --- | --- |
+| Lean model checks | Partitions, supplied semantic correspondence, member maps, typed composition, branches, and finite routing. |
+| Canonical registry | Enumerable declared operations and branches, effective responsibility and implementation disposition, missing-metadata queries, and reverse navigation from a declared source identity. |
+| Review protocol | Object-addressed findings, revision-specific approval state, diagram guidance, and a generated PaymentWebhook PDF/Markdown review pack with semantic snapshot diff. |
+| Implementation experiment | A companion PaymentWebhook handler and selected Node tests with evidence references. |
+
+The review exporter and PDF generator are currently **PaymentWebhook-specific**;
+there is no general Review IR renderer yet. The registry does not inspect source
+files for stale symbols or prove conformance. The Lean core does not infer
+carrier adequacy, emit `unjustified-generalization` diagnostics automatically,
+model temporal concurrency, or prove code effects. There is no parser, runtime,
+or review UI. `ParameterizedPartition` supports finite member-indexed
+specialization and routing, rather than the general recursive language of the
+original design.
+
+The pack currently displays human descriptions stored beside the Lean input
+predicates. Lean checks the predicates against the classifier; it does not
+verify that the English descriptions faithfully translate those predicates.
+
+The [AI skill](skills/archiscript/SKILL.md) is part of this workflow. In
+authoring mode it requires boundary justification, independent semantic
+definitions, correspondence, explicit assumptions, and a human review pack.
+In implementation mode it resolves approved canonical branches to code,
+preserves the reviewed contract, records evidence, and reports remaining
+unknowns. The skill carries reasoning discipline that Lean cannot currently
+enforce automatically.
+
+## Why these pieces are separate
+
+- **A flowchart** can show a route; ArchiScript operations state typed partial
+  mappings between semantic member sets. A semantic arrow is not a runtime call.
+- **Tests** exercise selected implementations; they do not justify an input
+  boundary or independently define every architectural case.
+- **Types** constrain values; they need not state a chosen semantic resolution,
+  branch identity, composition obligation, responsibility, or code binding.
+- **Broader formal tools** can analyze behaviors beyond this calculus.
+  ArchiScript's hypothesis is narrower: a reviewable design contract connected
+  directly to AI implementation work. Predicates, partitions, and partial
+  functions themselves are established mathematics.
+
+## The experiment
+
+Does requiring a checked, human-reviewed design before AI implementation reduce
+omitted cases, hidden assumptions, inconsistent branches, wrong code locations,
+model/code drift, and rework without making review too costly? The comparison
+is `requirement → AI → code` against `requirement → AI → ArchiScript → Lean →
+engineer review → AI implementation → evidence`. The PaymentWebhook companion
+model is a first test case, not proof that this workflow succeeds in general.
+
+## Build and use
 
 ```sh
 lake build
 bash scripts/check-negative.sh
 lake env lean skills/archiscript/examples/CurrentApi.lean
+node --test examples/payment-webhook.test.mjs
+uv run --no-project python scripts/build-review-pack.py
 ```
 
-For registry identity, branch ownership, routed parameterization, and effect
-contracts, see the [Lean API guide](skills/archiscript/references/lean-api.md).
-The `UserRegistration` example illustrates these APIs; its no-creation theorem
-depends on an explicit store-preservation premise.
+The public Lean entry point is [ArchiScript.lean](ArchiScript.lean). The
+[Lean API guide](skills/archiscript/references/lean-api.md) covers registry
+identity, bindings, routing, and effect contracts. To compare review revisions,
+run the pack builder with `--previous path/to/PaymentWebhook.snapshot.json`.
 
-## Current scope
-
-Lean checks declared partitions, supplied region correspondence, member maps,
-and typed paths. Carrier adequacy and implementation effects still require
-authoring and review. The design's `unjustified-generalization` diagnostic is
-review guidance here; this library does not emit it automatically. See the
-[diagnostic guidance](skills/archiscript/references/lean-api.md#diagnostics).
-
-The repository does not yet include a parser, runtime, UI, semantic linter,
-observation knowledge model, or carrier-level executable operations.
-Parameterized partitions support finite two-level specialization, not the
-general recursive language of the original design.
-
-## AI authoring skill
-
-The self-contained [`skills/archiscript`](skills/archiscript) directory teaches
-AI coding agents how to author and review ArchiScript models using the current
-Lean API. It includes the [API guide](skills/archiscript/references/lean-api.md)
-and [evaluation cases](skills/archiscript/references/evaluation-cases.md).
-
-Install it locally by copying the complete directory into a supported skills
-directory. This command refuses to overwrite an existing installation:
+Install the complete skill directory into a supported skills location. This
+command refuses to overwrite an existing installation:
 
 ```sh
 skill_target="${CODEX_HOME:-$HOME/.codex}/skills/archiscript"
@@ -231,15 +298,12 @@ mkdir -p "$(dirname "$skill_target")"
 cp -R skills/archiscript "$skill_target"
 ```
 
-Restart or reload the agent host if it only discovers skills at startup, then
-request ArchiScript model authoring/review normally or invoke `$archiscript`
-explicitly where supported. The installed skill has no runtime dependency on
-this repository's sibling documentation or on tmux. Do not copy only
-`SKILL.md`; its relative API and evaluation links expect the whole directory.
+Restart or reload the agent host if it discovers skills only at startup, then
+request ArchiScript work normally or invoke `$archiscript` explicitly where
+supported.
 
 ## License
 
-This repository is licensed under the [Apache License 2.0](LICENSE).
-For material owned by the project author, this grant also covers earlier
-revisions of this repository, including commits created before `LICENSE` was
-added.
+This repository is licensed under the [Apache License 2.0](LICENSE). For
+material owned by the project author, this grant also covers earlier revisions
+of this repository, including commits created before `LICENSE` was added.

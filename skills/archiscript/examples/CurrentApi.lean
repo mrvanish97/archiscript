@@ -47,14 +47,21 @@ def acceptDeclaration : Operation.Declaration where
   operation := accept
   BranchName := BranchName
   branchNameDecidableEq := inferInstance
+  branchNames := [.positive]
+  branchNames_complete := by intro name; cases name; simp
+  branchNames_nodup := by decide
   branch
     | .positive => ⟨.positive, .positive, rfl⟩
-  owners := ["request-api"]
-  branchOwners := fun _ => some ["request-processing"]
+  responsibilityOwners := ["request-api"]
+  branchResponsibilityOwners := fun _ => some ["request-processing"]
+  implementation := some (.planned { primary := { repository := "request-service", path := "src/requests.ts", symbol := some "accept" } })
 
 def registry : Operation.Registry where
   OperationName := OperationName
   operationNameDecidableEq := inferInstance
+  operationNames := [.accept]
+  operationNames_complete := by intro name; cases name; simp
+  operationNames_nodup := by decide
   resolve
     | .accept => acceptDeclaration
 
@@ -63,7 +70,8 @@ def acceptedBranch : Operation.BranchAddress registry :=
 
 def acceptedBranchWitness := registry.resolveBranch acceptedBranch
 
-#guard registry.resolveBranchOwners acceptedBranch == ["request-processing"]
+#guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
+#guard registry.branchesWithoutImplementation.length == 0
 
 end SkillSmoke
 

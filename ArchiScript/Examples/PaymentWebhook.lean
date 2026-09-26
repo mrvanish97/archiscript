@@ -34,13 +34,24 @@ def inputPartition : Partition where
     | .firstSuccess => ⟨⟨"p1", "success", false⟩, rfl⟩
     | .duplicateSuccess => ⟨⟨"p1", "success", true⟩, rfl⟩
 
+/-- Human descriptions live beside their predicates; the descriptions are review text. -/
+structure InputRegion where
+  predicate : Domain Input
+  description : String
+
 /-- These meanings are stated separately from the classifier above. -/
-def inputRegions : InputMember → Domain Input
-  | .malformed => fun x => x.eventId = ""
-  | .unsupported => fun x => x.eventId ≠ "" ∧ x.status ≠ "success" ∧ x.status ≠ "failed"
-  | .failed => fun x => x.eventId ≠ "" ∧ x.status = "failed"
-  | .firstSuccess => fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = false
-  | .duplicateSuccess => fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = true
+def inputRegion : InputMember → InputRegion
+  | .malformed => ⟨fun x => x.eventId = "", "eventId is empty, regardless of status or ledger observation"⟩
+  | .unsupported => ⟨fun x => x.eventId ≠ "" ∧ x.status ≠ "success" ∧ x.status ≠ "failed",
+      "eventId is present; status is neither success nor failed"⟩
+  | .failed => ⟨fun x => x.eventId ≠ "" ∧ x.status = "failed",
+      "eventId is present; status is failed"⟩
+  | .firstSuccess => ⟨fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = false,
+      "eventId is present; status is success; ledger observation is false"⟩
+  | .duplicateSuccess => ⟨fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = true,
+      "eventId is present; status is success; ledger observation is true"⟩
+
+def inputRegions (member : InputMember) : Domain Input := (inputRegion member).predicate
 
 theorem inputPartition_realizes_regions : inputPartition.Realizes inputRegions := by
   intro i x
@@ -50,7 +61,8 @@ theorem inputPartition_realizes_regions : inputPartition.Realizes inputRegions :
     by_cases hSuccess : status = "success" <;>
     by_cases hFailed : status = "failed" <;>
     cases alreadyRecorded <;>
-    simp [Partition.member, inputPartition, inputRegions, hId, hSuccess, hFailed] at *
+    simp [Partition.member, inputPartition, inputRegions, inputRegion,
+      hId, hSuccess, hFailed] at *
 
 inductive Decision where
   | reject | ignore | recordFailure | fulfill | acknowledgeDuplicate
@@ -95,6 +107,87 @@ def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition wh
     | .recordFailure => some .recordFailure
     | .fulfill => some .recordAndQueueFulfillment
     | .reject | .ignore | .acknowledgeDuplicate => none
+
+inductive OperationName where
+  | decide | requestLedgerCommand
+  deriving DecidableEq, Repr
+
+inductive DecideBranch where
+  | malformed | unsupported | failed | firstSuccess | duplicateSuccess
+  deriving DecidableEq, Repr
+
+inductive LedgerBranch where
+  | recordFailure | fulfill
+  deriving DecidableEq, Repr
+
+private def code (symbol : String) : Operation.SourceRef :=
+  { repository := "archiscript", path := "examples/payment-webhook.mjs", symbol := some symbol }
+
+def decideDeclaration : Operation.Declaration where
+  source := inputPartition
+  target := decisionPartition
+  operation := decide
+  BranchName := DecideBranch
+  branchNameDecidableEq := inferInstance
+  branchNames := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
+  branchNames_complete := by intro name; cases name <;> simp
+  branchNames_nodup := by decide
+  branch
+    | .malformed => ⟨.malformed, .reject, rfl⟩
+    | .unsupported => ⟨.unsupported, .ignore, rfl⟩
+    | .failed => ⟨.failed, .recordFailure, rfl⟩
+    | .firstSuccess => ⟨.firstSuccess, .fulfill, rfl⟩
+    | .duplicateSuccess => ⟨.duplicateSuccess, .acknowledgeDuplicate, rfl⟩
+  responsibilityOwners := ["payments-webhooks"]
+  implementation := some (.resolved {
+    primary := code "decide"
+    supporting := [code "handleWebhook"]
+    evidence := [{ kind := .test, reference := "all declared input members map to their checked decisions" }]
+  })
+  branchImplementation
+    | .firstSuccess => some (.resolved {
+        primary := code "decide"
+        supporting := [code "handleWebhook"]
+        evidence := [{ kind := .test, reference := "first success records payment and enqueues fulfillment" }]
+      })
+    | .duplicateSuccess => some (.resolved {
+        primary := code "decide"
+        supporting := [code "handleWebhook"]
+        evidence := [{ kind := .test, reference := "duplicate success acknowledges without ledger or queue effects" }]
+      })
+    | _ => none
+
+def ledgerDeclaration : Operation.Declaration where
+  source := decisionPartition
+  target := ledgerCommandPartition
+  operation := requestLedgerCommand
+  BranchName := LedgerBranch
+  branchNameDecidableEq := inferInstance
+  branchNames := [.recordFailure, .fulfill]
+  branchNames_complete := by intro name; cases name <;> simp
+  branchNames_nodup := by decide
+  branch
+    | .recordFailure => ⟨.recordFailure, .recordFailure, rfl⟩
+    | .fulfill => ⟨.fulfill, .recordAndQueueFulfillment, rfl⟩
+  responsibilityOwners := ["payments-ledger"]
+  implementation := some (.resolved {
+    primary := code "requestLedgerCommand"
+    supporting := [code "handleWebhook"]
+    evidence := [{ kind := .test, reference := "first success records payment and enqueues fulfillment" }]
+  })
+
+def operationRegistry : Operation.Registry where
+  OperationName := OperationName
+  operationNameDecidableEq := inferInstance
+  operationNames := [.decide, .requestLedgerCommand]
+  operationNames_complete := by intro name; cases name <;> simp
+  operationNames_nodup := by decide
+  resolve
+    | .decide => decideDeclaration
+    | .requestLedgerCommand => ledgerDeclaration
+
+def duplicateSuccessBranch : Operation.BranchAddress operationRegistry :=
+  ⟨.decide, .duplicateSuccess⟩
 
 theorem first_success_requests_fulfillment :
     (requestLedgerCommand.comp decide) .firstSuccess =
