@@ -9,7 +9,10 @@ code locations explicit. Lean checks claims over that declared model. Engineers
 review the decisions Lean cannot make, then implementation agents work from
 approved canonical branches.
 
-![Conceptual illustration of a reviewer examining a model between requirements and code](assets/readme/architecture-review.png)
+**Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
+· [generated Mermaid views](review/generated/PaymentWebhook.md)
+· [Lean model](ArchiScript/Examples/PaymentWebhook.lean)
+· [bound implementation](examples/payment-webhook.mjs)
 
 ```text
 requirement → AI architecture agent → ArchiScript model → Lean checks
@@ -45,11 +48,6 @@ precise claim even when the claim omits a real-world case.
 
 ## Worked example: payment webhook retries
 
-![Conceptual illustration of first and repeat payment events using ledger context](assets/readme/webhook-retries.png)
-
-The illustration introduces the review question; the predicates and operation
-table below are the model-derived architectural claims.
-
 The [PaymentWebhook model](ArchiScript/Examples/PaymentWebhook.lean) declares an
 input with `eventId : String`, `status : String`, and
 `alreadyRecorded : Bool`. The Boolean represents a ledger observation supplied
@@ -77,9 +75,13 @@ The checked architecture connects three value-domain partitions (VDPs):
 
 ```mermaid
 flowchart LR
-    Input["inputPartition<br/>event + ledger observation"] -->|decide| Decision["decisionPartition"]
-    Decision -->|requestLedgerCommand · partial| Ledger["ledgerCommandPartition"]
+  P0["inputPartition"] -->|"decide"| P1["decisionPartition"]
+  P1["decisionPartition"] -->|"requestLedgerCommand · partial"| P2["ledgerCommandPartition"]
 ```
+
+**Level 1 · Operation topology.** This is an excerpt from the
+[generated Markdown review pack](review/generated/PaymentWebhook.md), which
+projects the Lean operation registry. It hides members, effects, and proofs.
 
 These arrows map **semantic members**, not runtime calls. The two operations
 yield this path table:
@@ -91,6 +93,19 @@ yield this path table:
 | `failed` | `recordFailure` | `recordFailure` |
 | `firstSuccess` | `fulfill` | `recordAndQueueFulfillment` |
 | `duplicateSuccess` | `acknowledgeDuplicate` | `none` |
+
+```mermaid
+flowchart LR
+  S0(["malformed"]) -->|"decide"| T0(["reject"])
+  S1(["unsupported"]) -->|"decide"| T1(["ignore"])
+  S2(["failed"]) -->|"decide"| T2(["recordFailure"])
+  S3(["firstSuccess"]) -->|"decide"| T3(["fulfill"])
+  S4(["duplicateSuccess"]) -->|"decide"| T4(["acknowledgeDuplicate"])
+```
+
+**Level 2 · `decide` branch map.** The review builder derives every arrow from
+the canonical branch registry. The table above adds the partial downstream
+ledger mapping; `none` means that operation is undefined for the member.
 
 `Partition.Realizes` checks that every carrier value is classified into the
 member whose independently stated predicate it satisfies. Composition proofs
@@ -146,13 +161,18 @@ implementation. They can request changes against canonical IDs such as
 
 The generated [PDF review pack](review/generated/PaymentWebhook.pdf) is a bounded
 reading snapshot. Its [Markdown version](review/generated/PaymentWebhook.md)
-includes focused Mermaid diagrams. A fast pass shows scope, boundary, topology,
+includes the Mermaid diagrams shown above. A fast pass shows scope, boundary, topology,
 major assumptions, and open questions. A deep pass shows semantic descriptions,
 branch mappings, undefined outcomes, bindings, proof references, effects, and
 findings. [Structured review metadata](review/payment-webhook.review.json)
 holds object-addressed findings and review state; the PDF is not the review
 database. The generator can compare a new snapshot with an earlier one and
 report semantic changes.
+
+[![First-page preview of the generated PaymentWebhook engineering review pack, showing the draft gate, boundary question, and operation topology](review/generated/PaymentWebhook-preview.png)](review/generated/PaymentWebhook.pdf)
+
+*The first page of the generated PDF for model revision `09c2b1ec5505`,
+rasterized for this README. Select it to open the full review pack.*
 
 The prototype recognizes `draft`, `ready-for-review`, `changes-requested`,
 `approved`, and `superseded`. Approval is tied to a named reviewer and model
