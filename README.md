@@ -15,28 +15,30 @@ its ID is already in the payment ledger. Starting with `Success | Failure` as
 the entire input silently loses that fact. Start instead with the input to the
 decision: the event *and* the relevant ledger snapshot.
 
-```text
-Carrier: Event × LedgerSnapshot
-│
-├─ malformed event ID                         → reject
-└─ well-formed event ID
-   ├─ payment failed                          → record failure
-   └─ payment succeeded
-      ├─ ID absent from ledger                 → first delivery
-      └─ ID present in ledger                  → duplicate delivery
+```mermaid
+flowchart TD
+    A["Carrier: Event × LedgerSnapshot"]
+    A -->|malformed ID| B["VDP: malformed event"]
+    A -->|well-formed ID| C["Subdomain: well-formed event ID"]
+    C -->|unsupported status| D["VDP: unsupported event"]
+    C -->|payment failed| E["VDP: failed payment"]
+    C -->|payment succeeded| F["Subdomain: succeeded payment"]
+    F -->|ID absent from ledger| G["VDP: first delivery"]
+    F -->|ID present in ledger| H["VDP: duplicate delivery"]
 ```
 
-The indented lines are supporting subdomains, derived by predicates and
-relative complements from their parents. The four leaves can be selected as
-VDP members, or some can be grouped if a consumer needs fewer distinctions.
-Suppose an agent declares only `failed`, `firstDelivery`, and `duplicate` as
-members. A malformed event is in the carrier but in none of those *declared
-regions*. A proof that the classifier realizes those regions fails. Likewise,
-classifying from the event payload alone cannot realize both delivery regions:
-the same payload with two different ledger snapshots needs two different
-members. Lean exposes the missing distinction once the carrier and region
-meanings are stated. Recording the ledger ID and capturing money atomically
-still needs an explicit effect contract.
+The arrows in this diagram are **domain refinements**, not operations or a
+runtime sequence. The intermediate nodes are supporting subdomains derived by
+predicates and relative complements from their parents. The five leaves can
+be selected as VDP members, or some can be grouped if a consumer needs fewer
+distinctions. Suppose an agent declares only `failed`, `firstDelivery`, and
+`duplicate` as members. Malformed and unsupported events are in the carrier
+but in none of those *declared regions*. A proof that the classifier realizes
+those regions fails. Likewise, classifying from the event payload alone cannot realize both
+delivery regions: the same payload with two different ledger snapshots needs
+two different members. Lean exposes the missing distinction once the carrier
+and region meanings are stated. Recording the ledger ID and capturing money
+atomically still needs an explicit effect contract.
 
 **Tenant export during a region migration.** An export request contains a
 tenant ID and perhaps a cached region hint. The authoritative tenant registry
@@ -44,24 +46,25 @@ may say EU, US, migrating, or unknown. Routing from the hint alone looks
 reasonable until a tenant moves; two requests with the same hint can require
 different outcomes.
 
-```text
-Carrier: ExportRequest × TenantRegistrySnapshot
-│
-├─ tenant absent from registry                 → reject unknown tenant
-└─ tenant present
-   ├─ migration in progress                    → defer export
-   └─ stable assignment
-      ├─ assigned EU                            → EU export route
-      └─ assigned US                            → US export route
+```mermaid
+flowchart TD
+    A["Carrier: ExportRequest × TenantRegistrySnapshot"]
+    A -->|tenant absent| B["VDP: unknown tenant"]
+    A -->|tenant present| C["Subdomain: known tenant"]
+    C -->|migration in progress| D["VDP: migrating tenant"]
+    C -->|stable assignment| E["Subdomain: stable tenant"]
+    E -->|assigned EU| F["VDP: EU assignment"]
+    E -->|assigned US| G["VDP: US assignment"]
 ```
 
-Here the VDP members are the four leaves. `assigned EU` means the registry
-assigns EU, not merely that the request says EU. If an agent lists only EU and
-US members, the unknown and migrating inputs refute coverage of the declared
-regions. If it classifies by the request hint, a request whose hint says EU but
-whose registry assignment says US refutes `Partition.Realizes`. Once the
-members are correct, a route declared with the US partition as its source
-cannot be attached to the EU specialization; Lean checks that source match.
+Here the arrows again refine domains, and the VDP members are the four leaves.
+`assigned EU` means the registry assigns EU, not merely that the request says
+EU. If an agent lists only EU and US members, the unknown and migrating inputs
+refute coverage of the declared regions. If it classifies by the request hint,
+a request whose hint says EU but whose registry assignment says US refutes
+`Partition.Realizes`. Once the members are correct, a route declared with the
+US partition as its source cannot be attached to the EU specialization; Lean
+checks that source match.
 
 The key Lean obligation is correspondence between a classifier and *separately
 stated* semantic regions:
