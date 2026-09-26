@@ -46,29 +46,85 @@ The model can then intentionally group all three incomplete cases into one
 member for a consumer that only needs `complete` versus `incomplete`. Its
 `forgetFieldFailures` operation maps the four detailed members to those two
 members, and a theorem checks that this agrees with classifying the same raw
-input at the coarser resolution. The input strings themselves are unchanged.
+input at the coarser resolution:
+
+| `fieldPartition` member | `forgetFieldFailures` → `formPartition` member |
+| --- | --- |
+| both missing | incomplete |
+| name missing | incomplete |
+| email missing | incomplete |
+| complete | complete |
+
+This operation maps **members**, not the input strings. It deliberately forgets
+which field was missing.
 
 **Why use ArchiScript here?** It supplies a common shape for this contract:
 an explicit carrier, named semantic regions, finite nonempty partition members,
 and typed operations between partitions. Lean checks the coverage and mapping
 claims that the author states; ArchiScript adds the modeling vocabulary, not a
 new proof engine. For a single two-field form, ordinary code and tests may be
-enough. The value grows when several agents or components must
-agree on the same distinctions and routes before implementation. This repository
-is a modeling prototype, not a form validator or a runtime.
+enough. The value grows when several agents or components must agree on the
+same distinctions and routes before implementation. This repository is a
+modeling prototype, not a form validator or a runtime.
 
-The harder motivating case is a payment webhook retry: a successful event is
-a first delivery or a duplicate depending on whether its ID is already in the
-ledger. A model whose input is only `Success | Failure` has already erased the
-fact needed for that decision. An adequate carrier would include the event and
-the relevant ledger snapshot; its semantic regions would include malformed,
-unsupported, failed, first-delivery, and duplicate cases. A classifier based
-only on event payload could not realize both delivery regions for the same
-event under two ledger snapshots. **This payment case is a design illustration,
-not an implemented Lean model in this repository.** Lean cannot discover a
-real-world case that the author omitted from the carrier; reviewers must check
-that boundary. Persistence and atomic capture would need separate effect
-contracts.
+## Where the member maps pay off: payment webhook retries
+
+Suppose a payment provider sends a `success` webhook twice. The event payload
+is identical, but the first delivery should queue fulfillment and the retry
+should not. The decision therefore needs both the event and a ledger snapshot
+answering whether its ID is already recorded. In the
+[PaymentWebhook model](ArchiScript/Examples/PaymentWebhook.lean), the input
+carrier contains the raw event ID, raw status, and that ledger observation.
+The `inputPartition` selects five semantic members from this carrier.
+
+```mermaid
+flowchart LR
+    A["Webhook input VDP<br/>event × ledger observation"] -->|decide| B["Decision VDP"]
+    B -->|requestLedgerCommand| C["Ledger command VDP"]
+```
+
+The arrows are ArchiScript operations: partial maps between **VDP members**.
+They are architectural contracts, not calls that read or write the ledger.
+Here are all their member mappings:
+
+| `inputPartition` member | `decide` → decision member | `requestLedgerCommand` → ledger command member |
+| --- | --- | --- |
+| malformed ID | reject | `none` |
+| unsupported status | ignore | `none` |
+| failed payment | record failure | record failure |
+| first successful delivery | fulfill | record payment and queue fulfillment |
+| duplicate successful delivery | acknowledge duplicate | `none` |
+
+This is the useful check across components. The input regions are stated
+separately from the classifier, so `inputPartition.Realizes inputRegions` must
+hold for every combination of event and ledger observation. In particular,
+`("p1", "success", false)` and `("p1", "success", true)` have the same event but
+belong to different members. An event-only classifier cannot satisfy those
+regions. Then operation composition checks the downstream contract:
+
+```lean
+import ArchiScript.Examples.PaymentWebhook
+open ArchiScript.Examples.PaymentWebhook
+
+example : inputPartition.Realizes inputRegions :=
+  inputPartition_realizes_regions
+
+example : (requestLedgerCommand.comp decide) .firstSuccess =
+    some .recordAndQueueFulfillment := first_success_requests_fulfillment
+
+example : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
+  duplicate_requests_no_ledger_command
+```
+
+If a later edit maps duplicate delivery to `fulfill`, the second theorem fails.
+If an operation is connected to a partition with the wrong source or target,
+its composition does not type check. That is what ArchiScript adds here: one
+explicit set of distinctions and member maps that several implementation
+steps can be checked against. The author still has to justify the carrier:
+Lean cannot discover a real-world input omitted from it. `none` means no
+*modeled ledger command*; it does not prove the handler has no side effects.
+Actually recording an ID and queueing fulfillment atomically requires a
+separate effect contract and implementation.
 
 ## The model: objects and arrows
 
@@ -129,6 +185,8 @@ The public entry point is `ArchiScript.lean`:
   and routing data (PVDPs);
 - `ArchiScript.Examples.FormInput`: overlapping subdomains and four-to-two-member
   coarsening on the same raw input carrier;
+- `ArchiScript.Examples.PaymentWebhook`: event-plus-ledger classification and
+  composed member maps for first and duplicate deliveries;
 - `ArchiScript.Examples.UserRegistration`: a compact model with named new-user
   and existing-user branches.
 
