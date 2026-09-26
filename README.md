@@ -128,13 +128,16 @@ separate effect contract and implementation.
 
 ## Mathematical foundation in brief
 
-- **Carrier $C$:** the values the model admits at a boundary. A VDP's carrier
-  is nonempty but may be infinite (`Partition.Carrier` in Lean). The author
-  must justify that it includes the real inputs that matter.
-- **Subdomain $S \subseteq C$:** values satisfying a stated predicate (`Domain C`
-  in Lean). Supporting subdomains can overlap and need not cover $C$. For
-  $S \subseteq U$, a relative complement $U \setminus S$ names what remains
+- **Subdomain $S \subseteq B$:** a semantic region of any value domain
+  $B \subseteq \mathcal V$, where $\mathcal V$ is the ambient universe of values.
+  $B$ need not be a VDP carrier. The foundation permits a defining formula or
+  an opaque subdomain; the current Lean API uses a `Domain α` predicate.
+  Supporting subdomains can overlap and need not cover their base. For
+  $S \subseteq U$, the relative complement $U \setminus S$ names what remains
   inside $U$.
+- **Carrier $C$:** the nonempty value domain selected for one VDP
+  (`Partition.Carrier` in Lean). It may be infinite. The author must justify
+  that it includes the real inputs that matter.
 - **Value-domain partition (VDP):** a finite family $\mathcal M$ of nonempty,
   disjoint subdomains whose union is $C$. Equivalently, it classifies every
   $x \in C$ into exactly one member. Lean's `Partition` represents members by
@@ -242,12 +245,12 @@ routing-relevant.
 
 ## Subdomains, resolution, and checks
 
-A subdomain describes one region of a carrier. In Lean, use a named `Domain`
-predicate; express containment by implication, intersection by conjunction, and
-union by disjunction. `Domain.relativeComplement parent excluded contained`
-requires containment evidence and keeps the remainder inside its stated parent.
-Subdomain ancestry can involve several
-parents, so a tree is only one possible explanatory view.
+In a particular Lean model, a subdomain is a `Domain` predicate over its chosen
+base type, often a VDP carrier. Express containment by implication,
+intersection by conjunction, and union by disjunction.
+`Domain.relativeComplement parent excluded contained` requires containment
+evidence and keeps the remainder inside its stated parent. Subdomain ancestry
+can involve several parents, so a tree is only one possible explanatory view.
 
 A VDP selects a finite set of nonempty, exhaustive, disjoint regions at the
 resolution needed by its operations. Flat member declarations are legitimate.
