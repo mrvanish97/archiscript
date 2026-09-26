@@ -126,45 +126,31 @@ Lean cannot discover a real-world input omitted from it. `none` means no
 Actually recording an ID and queueing fulfillment atomically requires a
 separate effect contract and implementation.
 
-## The model: objects and arrows
+## Mathematical foundation in brief
 
-Start with what values can exist at the system boundary and what distinctions
-matter to its behavior. A value-domain partition (VDP) is an **object**: it
-classifies every value in an independently specified carrier into exactly one
-nonempty semantic member. The carrier may be infinite; its member set is finite.
-Members are predicates/subdomains, not sample values or constructor names.
+- **Carrier $C$:** the values the model admits at a boundary. A VDP's carrier
+  is nonempty but may be infinite (`Partition.Carrier` in Lean). The author
+  must justify that it includes the real inputs that matter.
+- **Subdomain $S \subseteq C$:** values satisfying a stated predicate (`Domain C`
+  in Lean). Supporting subdomains can overlap and need not cover $C$. For
+  $S \subseteq U$, a relative complement $U \setminus S$ names what remains
+  inside $U$.
+- **Value-domain partition (VDP):** a finite family $\mathcal M$ of nonempty,
+  disjoint subdomains whose union is $C$. Equivalently, it classifies every
+  $x \in C$ into exactly one member. Lean's `Partition` represents members by
+  finite indices and defines each member as a classifier fiber.
+  `Partition.Realizes` checks that those fibers match separately stated semantic
+  regions. Supporting subdomains can be grouped into a member; they do not
+  have to form a tree.
+- **Operation $f : \mathcal M_X \rightharpoonup \mathcal M_Y$:** a partial map
+  from members of one VDP to members of another (`Operation X Y` in Lean).
+  `none` means undefined; `some failureMember` is a defined mapping to a
+  modeled failure. An operation maps members, not carrier values or runtime
+  effects.
 
-An operation is an **arrow** between objects: a partial function on their member
-sets. For each source member it selects at most one target member. `none` means
-the operation is undefined there; an explicitly modeled failure outcome is
-instead `some failureMember`. If one source member needs several outcomes,
-revisit its distinctions or expose the missing context. Naming an arrow
-`validate` or `save` does not establish validation or persistence effects.
-
-Composition asks whether contracts fit. For $f : X \rightharpoonup Y$ and
-$g : Y \rightharpoonup Z$, `g.comp f` follows the path through the same middle
-partition; it is undefined wherever either step is undefined. Identity preserves
-each member, and associativity lets a path be regrouped without changing its
-member mapping. This is the partial-function calculus of `Par(FinSet)`, applied
-to VDP member sets. The core
-proves these laws once; authors use them to check meaningful paths and compare
-alternative routes when the requirements say those routes should agree.
-
-Work from the outside in: identify supplied values and assumptions, define
-subdomains through predicates, containment, intersections, and relative
-complements, then choose the distinctions each VDP exposes and connect the
-objects with arrows. Subdomains may overlap and need not exhaust their parent;
-exhaustiveness and disjointness apply to the selected members of a VDP. Several
-elementary regions can form one member at a coarser architectural resolution.
-The subdomain relationships and operation graph describe semantics, not a call
-schedule. A consumer's lack of knowledge about a value is not another semantic
-member. Environmental observations need explicit context and contracts.
-
-For example, a project locator starts from the supplied string/URI boundary.
-Refine URI syntax, scheme, file/directory form, and required sibling files,
-retaining failures at each split. Starting with only the three accepted locator
-forms makes omitted failures invisible to Lean. A complete classifier proves
-coverage of the declared carrier, not adequacy of that carrier for the real task.
+Compatible operations compose: `g.comp f` follows $X \to Y \to Z$ and is
+undefined if either mapping is undefined. The webhook example above uses this
+to check the result of two member maps together.
 
 This approach follows the sibling design's
 [purpose](../archiscript-docs/chapter-1/init-ai-proposal.md),
