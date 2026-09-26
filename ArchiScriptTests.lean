@@ -1,4 +1,7 @@
 import ArchiScript
+import ArchiScript.Examples.UserRegistration
+import ArchiScript.Examples.PaymentWebhook
+import ArchiScript.Examples.PaymentWebhookNetwork
 import ArchiScriptTests.Domains
 
 namespace ArchiScriptTests
@@ -71,6 +74,12 @@ private def webhookRegistry := ArchiScript.Examples.PaymentWebhook.operationRegi
 #guard (webhookRegistry.branchesAt {
   repository := "archiscript", path := "examples/payment-webhook.mjs",
   symbol := some "handleWebhook" }).length == 7
+
+private def networkRegistry := ArchiScript.Examples.PaymentWebhookNetwork.operationRegistry
+#guard networkRegistry.operationNames.length == 6
+#guard networkRegistry.branchAddresses.length == 20
+#guard networkRegistry.branchesWithoutResponsibility.length == 0
+#guard networkRegistry.branchesWithoutImplementation.length == 0
 
 private def concurrencyFinding : ReviewFinding := {
   id := "RV-1"

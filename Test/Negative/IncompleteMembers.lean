@@ -1,4 +1,5 @@
 import ArchiScript
+import ArchiScript.Examples.FormInput
 
 open ArchiScript ArchiScript.Examples.FormInput
 

@@ -1,0 +1,283 @@
+{
+  "modelRevision": "f0c0290e6912",
+  "projection": {
+    "bindingRows": [
+      {
+        "id": "PaymentWebhookNetwork.decide.duplicateSuccess",
+        "implementation": {
+          "path": "examples/payment-webhook.mjs",
+          "repository": "archiscript",
+          "status": "resolved",
+          "symbol": "decide"
+        },
+        "responsibility": [
+          "payments-webhooks"
+        ]
+      },
+      {
+        "id": "PaymentWebhookNetwork.planResponse.acknowledgeDuplicate",
+        "implementation": {
+          "path": "examples/payment-webhook-network.mjs",
+          "repository": "archiscript",
+          "status": "planned",
+          "symbol": "planResponse"
+        },
+        "responsibility": [
+          "payments-api"
+        ]
+      },
+      {
+        "id": "PaymentWebhookNetwork.planAudit.acknowledgeDuplicate",
+        "implementation": {
+          "path": "examples/payment-webhook-network.mjs",
+          "repository": "archiscript",
+          "status": "planned",
+          "symbol": "planAudit"
+        },
+        "responsibility": [
+          "payments-audit"
+        ]
+      },
+      {
+        "id": "PaymentWebhookNetwork.planFulfillment.recordAndQueueFulfillment",
+        "implementation": {
+          "path": "examples/payment-webhook-network.mjs",
+          "repository": "archiscript",
+          "status": "planned",
+          "symbol": "planFulfillment"
+        },
+        "responsibility": [
+          "fulfillment"
+        ]
+      }
+    ],
+    "checkedClaims": [
+      {
+        "claim": "inputPartition realizes independently stated inputRegions",
+        "proof": "PaymentWebhook.inputPartition_realizes_regions"
+      },
+      {
+        "claim": "duplicateSuccess has an acknowledge response plan",
+        "proof": "PaymentWebhookNetwork.duplicate_acknowledged"
+      },
+      {
+        "claim": "duplicateSuccess has no notification mapping",
+        "proof": "PaymentWebhookNetwork.duplicate_has_no_notification_intent"
+      },
+      {
+        "claim": "duplicateSuccess has no fulfillment-request mapping",
+        "proof": "PaymentWebhookNetwork.duplicate_requests_no_fulfillment"
+      },
+      {
+        "claim": "firstSuccess maps to an enqueue request",
+        "proof": "PaymentWebhookNetwork.first_success_requests_fulfillment"
+      }
+    ],
+    "duplicatePath": {
+      "decision": "acknowledgeDuplicate",
+      "ledger": "none",
+      "response": "acknowledge",
+      "source": "duplicateSuccess"
+    },
+    "inputRegions": [
+      {
+        "description": "eventId is empty, regardless of status or ledger observation",
+        "id": "PaymentWebhookNetwork.inputPartition.malformed",
+        "name": "malformed"
+      },
+      {
+        "description": "eventId is present; status is neither success nor failed",
+        "id": "PaymentWebhookNetwork.inputPartition.unsupported",
+        "name": "unsupported"
+      },
+      {
+        "description": "eventId is present; status is failed",
+        "id": "PaymentWebhookNetwork.inputPartition.failed",
+        "name": "failed"
+      },
+      {
+        "description": "eventId is present; status is success; ledger observation is false",
+        "id": "PaymentWebhookNetwork.inputPartition.firstSuccess",
+        "name": "firstSuccess"
+      },
+      {
+        "description": "eventId is present; status is success; ledger observation is true",
+        "id": "PaymentWebhookNetwork.inputPartition.duplicateSuccess",
+        "name": "duplicateSuccess"
+      }
+    ],
+    "missingImplementation": 0,
+    "missingResponsibility": 0,
+    "model": "PaymentWebhookNetwork",
+    "notificationMappings": [
+      {
+        "source": "reject",
+        "target": "none"
+      },
+      {
+        "source": "ignore",
+        "target": "none"
+      },
+      {
+        "source": "recordFailure",
+        "target": "paymentFailure"
+      },
+      {
+        "source": "fulfill",
+        "target": "successReceipt"
+      },
+      {
+        "source": "acknowledgeDuplicate",
+        "target": "none"
+      }
+    ],
+    "partitions": [
+      {
+        "id": "PaymentWebhookNetwork.inputPartition",
+        "members": [
+          "malformed",
+          "unsupported",
+          "failed",
+          "firstSuccess",
+          "duplicateSuccess"
+        ],
+        "name": "inputPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.decisionPartition",
+        "members": [
+          "reject",
+          "ignore",
+          "recordFailure",
+          "fulfill",
+          "acknowledgeDuplicate"
+        ],
+        "name": "decisionPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.ledgerCommandPartition",
+        "members": [
+          "recordFailure",
+          "recordAndQueueFulfillment"
+        ],
+        "name": "ledgerCommandPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.responsePartition",
+        "members": [
+          "rejectRequest",
+          "acknowledge"
+        ],
+        "name": "responsePartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.auditPartition",
+        "members": [
+          "invalidDelivery",
+          "unsupportedDelivery",
+          "paymentFailed",
+          "firstSuccess",
+          "duplicateSuccess"
+        ],
+        "name": "auditPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.notificationPartition",
+        "members": [
+          "paymentFailure",
+          "successReceipt"
+        ],
+        "name": "notificationPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.fulfillmentPartition",
+        "members": [
+          "enqueue"
+        ],
+        "name": "fulfillmentPartition"
+      }
+    ],
+    "topology": [
+      {
+        "id": "PaymentWebhookNetwork.decide",
+        "operation": "decide",
+        "partial": false,
+        "source": "inputPartition",
+        "target": "decisionPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.requestLedgerCommand",
+        "operation": "requestLedgerCommand",
+        "partial": true,
+        "source": "decisionPartition",
+        "target": "ledgerCommandPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.planResponse",
+        "operation": "planResponse",
+        "partial": false,
+        "source": "decisionPartition",
+        "target": "responsePartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.planAudit",
+        "operation": "planAudit",
+        "partial": false,
+        "source": "decisionPartition",
+        "target": "auditPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.planNotification",
+        "operation": "planNotification",
+        "partial": true,
+        "source": "decisionPartition",
+        "target": "notificationPartition"
+      },
+      {
+        "id": "PaymentWebhookNetwork.planFulfillment",
+        "operation": "planFulfillment",
+        "partial": true,
+        "source": "ledgerCommandPartition",
+        "target": "fulfillmentPartition"
+      }
+    ]
+  },
+  "review": {
+    "model": "PaymentWebhookNetwork",
+    "state": "draft",
+    "scope": "A connected webhook decision architecture with provider response, audit, notification, ledger-command, and fulfillment-request plans.",
+    "focus": "How can a reviewer move from the seven-VDP topology to the duplicate-delivery path and its implementation bindings?",
+    "questions": [
+      {
+        "subject": "PaymentWebhookNetwork.inputPartition",
+        "question": "Which transaction or snapshot fixes alreadyRecorded while concurrent deliveries are processed?"
+      },
+      {
+        "subject": "PaymentWebhookNetwork.planNotification",
+        "question": "Should a first successful delivery request a receipt before fulfillment is durably queued?"
+      },
+      {
+        "subject": "PaymentWebhookNetwork.planResponse",
+        "question": "Does provider acknowledgment depend on a successful ledger transaction, making Decision alone an insufficient source?"
+      },
+      {
+        "subject": "PaymentWebhookNetwork.planFulfillment",
+        "question": "What recovery rule applies if payment recording succeeds but fulfillment enqueue fails?"
+      }
+    ],
+    "findings": [
+      {
+        "id": "NW-1",
+        "subject": "PaymentWebhookNetwork.inputPartition",
+        "concern": "The Boolean ledger observation has no stated concurrency guarantee.",
+        "disposition": "open"
+      },
+      {
+        "id": "NW-2",
+        "subject": "PaymentWebhookNetwork.planFulfillment",
+        "concern": "A fulfillment request is modeled, but queue publication and recovery are not specified or proved.",
+        "disposition": "open"
+      }
+    ]
+  }
+}

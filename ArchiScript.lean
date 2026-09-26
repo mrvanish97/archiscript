@@ -2,6 +2,3 @@ import ArchiScript.Partition
 import ArchiScript.Operation
 import ArchiScript.Review
 import ArchiScript.ParameterizedPartition
-import ArchiScript.Examples.UserRegistration
-import ArchiScript.Examples.FormInput
-import ArchiScript.Examples.PaymentWebhook

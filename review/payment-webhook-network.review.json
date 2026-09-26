@@ -1,0 +1,38 @@
+{
+  "model": "PaymentWebhookNetwork",
+  "state": "draft",
+  "scope": "A connected webhook decision architecture with provider response, audit, notification, ledger-command, and fulfillment-request plans.",
+  "focus": "How can a reviewer move from the seven-VDP topology to the duplicate-delivery path and its implementation bindings?",
+  "questions": [
+    {
+      "subject": "PaymentWebhookNetwork.inputPartition",
+      "question": "Which transaction or snapshot fixes alreadyRecorded while concurrent deliveries are processed?"
+    },
+    {
+      "subject": "PaymentWebhookNetwork.planNotification",
+      "question": "Should a first successful delivery request a receipt before fulfillment is durably queued?"
+    },
+    {
+      "subject": "PaymentWebhookNetwork.planResponse",
+      "question": "Does provider acknowledgment depend on a successful ledger transaction, making Decision alone an insufficient source?"
+    },
+    {
+      "subject": "PaymentWebhookNetwork.planFulfillment",
+      "question": "What recovery rule applies if payment recording succeeds but fulfillment enqueue fails?"
+    }
+  ],
+  "findings": [
+    {
+      "id": "NW-1",
+      "subject": "PaymentWebhookNetwork.inputPartition",
+      "concern": "The Boolean ledger observation has no stated concurrency guarantee.",
+      "disposition": "open"
+    },
+    {
+      "id": "NW-2",
+      "subject": "PaymentWebhookNetwork.planFulfillment",
+      "concern": "A fulfillment request is modeled, but queue publication and recovery are not specified or proved.",
+      "disposition": "open"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import ArchiScript
+import ArchiScript.Examples.FormInput
 
 namespace ArchiScriptTests.Domains
 open ArchiScript ArchiScript.Examples.FormInput

@@ -11,6 +11,7 @@ approved canonical branches.
 
 **Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
 · [generated Mermaid views](review/generated/PaymentWebhook.md)
+· [seven-VDP showcase](review/generated/PaymentWebhookNetwork.md)
 · [Lean model](ArchiScript/Examples/PaymentWebhook.lean)
 · [bound implementation](examples/payment-webhook.mjs)
 
@@ -149,6 +150,57 @@ implementation site; it is **not** a proof of code conformance. The companion
 tests exercise selected behavior, but do not prove transactional atomicity or
 that every production environment follows the model.
 
+## A connected seven-VDP review
+
+The [PaymentWebhookNetwork model](ArchiScript/Examples/PaymentWebhookNetwork.lean)
+extends the checked webhook decision with provider-response, audit,
+notification, and fulfillment-request plans. Each plan is a separate
+architectural obligation. An arrow still means a member mapping, never a
+runtime call or proof that an effect occurred.
+
+The [generated multi-view showcase](review/generated/PaymentWebhookNetwork.md)
+starts with this Level 1 topology, exported from six canonical Lean operations:
+
+```mermaid
+flowchart LR
+  P0["inputPartition"]
+  P1["decisionPartition"]
+  P2["ledgerCommandPartition"]
+  P3["responsePartition"]
+  P4["auditPartition"]
+  P5["notificationPartition"]
+  P6["fulfillmentPartition"]
+  P0 -->|"decide"| P1
+  P1 -->|"requestLedgerCommand · partial"| P2
+  P1 -->|"planResponse"| P3
+  P1 -->|"planAudit"| P4
+  P1 -->|"planNotification · partial"| P5
+  P2 -->|"planFulfillment · partial"| P6
+```
+
+The same generated artifact lets a reviewer narrow the question to one path:
+
+```mermaid
+flowchart LR
+  A(["duplicateSuccess"]) -->|"decide"| B(["acknowledgeDuplicate"])
+  B -->|"requestLedgerCommand"| C(["∅"])
+  B -->|"planResponse"| D(["acknowledge"])
+```
+
+Here the duplicate has a provider-response plan and no ledger-command mapping.
+The [full showcase](review/generated/PaymentWebhookNetwork.md) also shows the
+`decisionPartition` neighborhood, every `planNotification` branch including
+undefined cases, input-region descriptions, branch-to-code bindings, proofs,
+and open findings. The new code locations are **planned**; this expanded model
+is **draft** and has no engineering approval. Its diagrams do not claim
+production effects or conformance.
+
+This compact Lean example keeps several VDPs in one file. The original
+[Stage 2 source design](../archiscript-docs/chapter-1/stage-2/scope.md#one-architectural-pvdp-per-source-file)
+requires one root (P)VDP per `.archi.ts` file and places each ordinary operation
+with its codomain. The current Lean prototype has no declaration-file linker;
+the showcase demonstrates review projections, not a replacement source layout.
+
 ## Engineering review is a gate
 
 Lean can establish consistency of the declared model. It cannot decide whether
@@ -245,6 +297,7 @@ repository's current API.
 | Lean model checks | Partitions, supplied semantic correspondence, member maps, typed composition, branches, and finite routing. |
 | Canonical registry | Enumerable declared operations and branches, effective responsibility and implementation disposition, missing-metadata queries, and reverse navigation from a declared source identity. |
 | Review protocol | Object-addressed findings, revision-specific approval state, diagram guidance, and a generated PaymentWebhook PDF/Markdown review pack with semantic snapshot diff. |
+| Multi-VDP showcase | A second checked webhook model with seven VDPs, six operations, and generated topology, neighborhood, path, branch, semantic, and binding views. |
 | Implementation experiment | A companion PaymentWebhook handler and selected Node tests with evidence references. |
 
 The review exporter and PDF generator are currently **PaymentWebhook-specific**;
@@ -298,6 +351,7 @@ bash scripts/check-negative.sh
 lake env lean skills/archiscript/examples/CurrentApi.lean
 node --test examples/payment-webhook.test.mjs
 uv run --no-project python scripts/build-review-pack.py
+uv run --no-project python scripts/build-webhook-network-showcase.py
 ```
 
 The public Lean entry point is [ArchiScript.lean](ArchiScript.lean). The
