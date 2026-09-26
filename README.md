@@ -179,18 +179,6 @@ The public entry point is `ArchiScript.lean`:
 - `ArchiScript.Examples.UserRegistration`: a compact model with named new-user
   and existing-user branches.
 
-`existingUserBranch_creates_no_user` is the main branch theorem. It requires a
-branch-indexed `ExistingSelection` premise. Its no-creation conclusion follows
-specifically from the explicit `store_preserved : after = before` assumption;
-the member map alone makes no database claim. The branch-indexed
-`NewUserCreation` contract instead supplies explicit absence-before and
-presence-after assumptions. Consumers can use those fields directly.
-
-`ArchiScript.Examples.UserRegistration` is an API/effect illustration using a
-preclassified inductive carrier. It does not independently establish that the
-carrier is adequate for raw user input; authoring decisions about that external
-boundary must be justified separately.
-
 Build and check the examples with:
 
 ```sh
@@ -199,93 +187,30 @@ bash scripts/check-negative.sh
 lake env lean skills/archiscript/examples/CurrentApi.lean
 ```
 
-The partition carrier may be infinite; only `MemberIndex` is finitely
-enumerated. `Partition.member` is the actual semantic subdomain. Enumeration
-entries are indices, not semantic members. `Partition.Relabeling` fixes the
-carrier and its values while translating indices; `Partition.PartitionIso` may
-also bijectively transport carrier values and therefore does not assert
-partition equality.
+For registry identity, branch ownership, routed parameterization, and effect
+contracts, see the [Lean API guide](skills/archiscript/references/lean-api.md).
+The `UserRegistration` example illustrates these APIs; its no-creation theorem
+depends on an explicit store-preservation premise.
 
-`Operation.Registry` is the model scope for declaration identity. Each
-`OperationName` resolves once to a typed source, target, partial map, and a
-branch-name resolver. Raw partial maps can be extensionally equal without
-having the same declaration identity. An alias is an ordinary definition that
-reuses the same registry and `OperationName`; a new registry name is a new
-declaration, even if its map happens to be equal.
+## Current scope
 
-Branch identity is exactly `(OperationName, BranchName)` within a registry.
-The owning declaration resolves every branch name through one total function,
-so a canonical identity cannot acquire conflicting endpoints or membership
-proofs. Identically spelled branch names under distinct operation names remain
-distinct.
+Lean checks declared partitions, supplied region correspondence, member maps,
+and typed paths. Carrier adequacy and implementation effects still require
+authoring and review. The design's `unjustified-generalization` diagnostic is
+review guidance here; this library does not emit it automatically. See the
+[diagnostic guidance](skills/archiscript/references/lean-api.md#diagnostics).
 
-Operation declarations accept responsibility tags via `owners : List String`.
-`branchOwners name = none` inherits those tags; `some tags` replaces them for
-that branch, including `some []` for explicitly unassigned responsibility.
-`Registry.resolveBranchOwners` resolves the effective tags through the canonical
-branch address, so aliases share ownership. These tags describe responsibility;
-they do not assert effects, permissions, deployment, or state ownership.
-They are separate from the docs' codomain-based source-file organization.
-
-Write proofs that constrain the design: an invariant preserved across a path,
-a routing distinction, or a contract consequence a consumer needs. Supply Lean's
-required structure fields, but reuse the core's coverage, disjointness, and
-composition laws. Do not add a named theorem for every definition, branch
-mapping, or conjunction of premises. Short proofs are useful when they protect
-a real requirement; proof length alone is not the criterion.
-
-`ParameterizedPartition.Routed` maps each finite route alias directly to a
-canonical registry `OperationName`; its typed outbound operation is derived
-from that registry resolution and a source-coherence proof. `RoutingRelevant`
-holds when some canonical operation is available in one specialization and not
-another. Duplicate or renamed route aliases to the same operation do not
-manufacture relevance. This avoids both arbitrary route keys and extensional
-program equality. A constant specialization family alone is not
-routing-relevant.
-
-## Subdomains, resolution, and checks
-
-In a particular Lean model, a subdomain is a `Domain` predicate over its chosen
-base type, often a VDP carrier. Express containment by implication,
-intersection by conjunction, and union by disjunction.
-`Domain.relativeComplement parent excluded contained` requires containment
-evidence and keeps the remainder inside its stated parent. Subdomain ancestry
-can involve several parents, so a tree is only one possible explanatory view.
-
-A VDP selects a finite set of nonempty, exhaustive, disjoint regions at the
-resolution needed by its operations. Flat member declarations are legitimate.
-`Partition.Realizes regions` checks that separately declared semantic regions
-agree with the classifier fibers. Overlapping or incomplete regions cannot
-satisfy that correspondence. This evidence stays outside the partition's data
-and does not affect endpoint identity.
-
-The `FormInput` example begins with two arbitrary strings, including empty
-ones. The subdomains “email text provided” and “name text provided” overlap.
-One VDP distinguishes all four presence combinations; another groups the three
-incomplete combinations into one member. The example checks both sets of
-semantic regions and the member map that forgets field-specific failure detail.
-It models presence only, not email syntax or personal-name validity.
-
-The original docs target `unjustified-generalization`: treating convenient
-leaves as an exhaustive universe without a general law or explicit constructor
-closure. Closed inductive domains remain legitimate. This is an authoring/review
-check here, not an implemented automatic diagnostic. There is no missing-tree
-warning. Lean still checks partition fields, region correspondence when supplied,
-branch witnesses, and route sources; carrier adequacy remains a review obligation.
-See the skill's [diagnostic guidance](skills/archiscript/references/lean-api.md#diagnostics).
-
-Deliberate limitations: no parser, runtime, UI, reflective semantic linter,
-observation knowledge model, carrier-level executable operation, or general recursive PVDP
-language is included. Nested specialization is a finite two-level structure.
+The repository does not yet include a parser, runtime, UI, semantic linter,
+observation knowledge model, or carrier-level executable operations.
+Parameterized partitions support finite two-level specialization, not the
+general recursive language of the original design.
 
 ## AI authoring skill
 
 The self-contained [`skills/archiscript`](skills/archiscript) directory teaches
 AI coding agents how to author and review ArchiScript models using the current
-Lean API. It introduces the purpose and categorical modeling approach,
-carrier-first modeling and unjustified generalization, canonical branch
-identity, ownership tags, routing criteria, proportionate proof obligations, a
-current-API example, and a small manual evaluation set.
+Lean API. It includes the [API guide](skills/archiscript/references/lean-api.md)
+and [evaluation cases](skills/archiscript/references/evaluation-cases.md).
 
 Install it locally by copying the complete directory into a supported skills
 directory. This command refuses to overwrite an existing installation:
