@@ -1,0 +1,10 @@
+name = "archiscript"
+version = "0.2.0"
+defaultTargets = ["ArchiScript", "ArchiScriptTests"]
+
+[[lean_lib]]
+name = "ArchiScript"
+
+[[lean_lib]]
+name = "ArchiScriptTests"
+roots = ["ArchiScriptTests"]
