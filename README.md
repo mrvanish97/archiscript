@@ -1,11 +1,20 @@
-# ArchiScript: check architectural decisions before coding them
+# ArchiScript: checked design before AI writes code
 
-ArchiScript is a small Lean library for stating which inputs a design covers,
-how it classifies them, and which operations may connect the resulting classes.
-It is useful when several implementation decisions depend on the same boundary:
-the model gives reviewers and AI coding agents a shared, checkable contract.
+ArchiScript is a design layer between requirements written in natural language
+and code produced by AI coding agents. Its current Lean library checks a model
+of the input boundary, the semantic distinctions within it, and the operations
+between those distinctions. That model gives agents and reviewers a shared
+contract before implementation begins.
 
-## A case the model catches
+Coding agents can turn examples or happy paths into a convenient closed model,
+silently excluding missing or malformed inputs, unsupported cases, or context
+needed to distinguish outcomes.
+The [authoring skill](skills/archiscript) guides the agent to state and justify
+the carrier first. Lean then checks claims over that declared carrier. Neither
+can prove that the chosen carrier includes every case the real system may
+receive; that remains an explicit review obligation.
+
+## A modeling error the checks expose
 
 Imagine a form with an email field and a name field. An agent proposes two
 states: `complete` (both filled) and `empty` (both blank). That sounds plausible
@@ -58,14 +67,11 @@ input at the coarser resolution:
 This operation maps **members**, not the input strings. It deliberately forgets
 which field was missing.
 
-**Why use ArchiScript here?** It supplies a common shape for this contract:
-an explicit carrier, named semantic regions, finite nonempty partition members,
-and typed operations between partitions. Lean checks the coverage and mapping
-claims that the author states; ArchiScript adds the modeling vocabulary, not a
-new proof engine. For a single two-field form, ordinary code and tests may be
-enough. The value grows when several agents or components must agree on the
-same distinctions and routes before implementation. This repository is a
-modeling prototype, not a form validator or a runtime.
+For a single two-field form, ordinary code and tests may be enough. The example
+shows ArchiScript's contract shape: named semantic regions, a partition, and a
+member map between two resolutions. ArchiScript supplies this common vocabulary;
+Lean checks the stated claims. The value grows when several agents or components
+must agree on the same distinctions and routes before implementation.
 
 ## Where the member maps pay off: payment webhook retries
 
