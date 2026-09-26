@@ -1,114 +1,74 @@
-# ArchiScript: checked design for AI coding agents
+# ArchiScript: check architectural decisions before coding them
 
-ArchiScript is a formally checked design layer between requirements and
-implementation. It helps AI coding agents expose the full input boundary,
-derive the distinctions that matter, and check the resulting architectural
-contracts before those choices become code. Lean checks the declared model;
-choosing a carrier that truly represents the real boundary remains an authoring
-and review obligation.
+ArchiScript is a small Lean library for stating which inputs a design covers,
+how it classifies them, and which operations may connect the resulting classes.
+It is useful when several implementation decisions depend on the same boundary:
+the model gives reviewers and AI coding agents a shared, checkable contract.
 
-## Where the deduction finds a missing case
+## A case the model catches
 
-**Payment webhook retries.** A successful webhook can be a first delivery or
-a retry. Both have the same event payload; the distinction depends on whether
-its ID is already in the payment ledger. Starting with `Success | Failure` as
-the entire input silently loses that fact. Start instead with the input to the
-decision: the event *and* the relevant ledger snapshot.
+Imagine a form with an email field and a name field. An agent proposes two
+states: `complete` (both filled) and `empty` (both blank). That sounds plausible
+until someone submits only an email. That input has no stated meaning.
 
-```mermaid
-flowchart TD
-    A["Carrier: Event × LedgerSnapshot"]
-    A -->|malformed ID| B["VDP: malformed event"]
-    A -->|well-formed ID| C["Subdomain: well-formed event ID"]
-    C -->|unsupported status| D["VDP: unsupported event"]
-    C -->|payment failed| E["VDP: failed payment"]
-    C -->|payment succeeded| F["Subdomain: succeeded payment"]
-    F -->|ID absent from ledger| G["VDP: first delivery"]
-    F -->|ID present in ledger| H["VDP: duplicate delivery"]
-```
+The [runnable FormInput model](ArchiScript/Examples/FormInput.lean) starts with
+`String × String`, so all four presence combinations are in scope:
 
-The arrows in this diagram are **domain refinements**, not operations or a
-runtime sequence. The intermediate nodes are supporting subdomains derived by
-predicates and relative complements from their parents. The five leaves can
-be selected as VDP members, or some can be grouped if a consumer needs fewer
-distinctions. Suppose an agent declares only `failed`, `firstDelivery`, and
-`duplicate` as members. Malformed and unsupported events are in the carrier
-but in none of those *declared regions*. A proof that the classifier realizes
-those regions fails. Likewise, classifying from the event payload alone cannot realize both
-delivery regions: the same payload with two different ledger snapshots needs
-two different members. Lean exposes the missing distinction once the carrier
-and region meanings are stated. Recording the ledger ID and capturing money
-atomically still needs an explicit effect contract.
+| Email | Name | Meaning |
+| --- | --- | --- |
+| blank | blank | both missing |
+| filled | blank | name missing |
+| blank | filled | email missing |
+| filled | filled | complete |
 
-**Tenant export during a region migration.** An export request contains a
-tenant ID and perhaps a cached region hint. The authoritative tenant registry
-may say EU, US, migrating, or unknown. Routing from the hint alone looks
-reasonable until a tenant moves; two requests with the same hint can require
-different outcomes.
-
-```mermaid
-flowchart TD
-    A["Carrier: ExportRequest × TenantRegistrySnapshot"]
-    A -->|tenant absent| B["VDP: unknown tenant"]
-    A -->|tenant present| C["Subdomain: known tenant"]
-    C -->|migration in progress| D["VDP: migrating tenant"]
-    C -->|stable assignment| E["Subdomain: stable tenant"]
-    E -->|assigned EU| F["VDP: EU assignment"]
-    E -->|assigned US| G["VDP: US assignment"]
-```
-
-Here the arrows again refine domains, and the VDP members are the four leaves.
-`assigned EU` means the registry assigns EU, not merely that the request says
-EU. If an agent lists only EU and US members, the unknown and migrating inputs
-refute coverage of the declared regions. If it classifies by the request hint,
-a request whose hint says EU but whose registry assignment says US refutes
-`Partition.Realizes`. Once the members are correct, a route declared with the
-US partition as its source cannot be attached to the EU specialization; Lean
-checks that source match.
-
-The key Lean obligation is correspondence between a classifier and *separately
-stated* semantic regions:
+It defines predicates for the meaningful regions and a partition that
+classifies each input. The central check is `Partition.Realizes`: for **every**
+input, does the classifier's answer agree with the independently stated meaning
+of that member?
 
 ```lean
 import ArchiScript.Examples.FormInput
 open ArchiScript ArchiScript.Examples.FormInput
 
--- The carrier includes empty and partly filled forms.
-example : fieldPartition.Carrier = (String × String) := rfl
-
--- Derive "email present, name missing" inside the email-present parent.
-def missingName : Domain Input :=
-  Domain.relativeComplement emailProvided completeForm (fun _ h => h.1)
-
--- The selected semantic regions agree with all classifier fibers.
+-- The four field-specific regions match the classifier.
 example : fieldPartition.Realizes fieldRegions :=
   fieldPartition_realizes_regions
 ```
 
-By contrast, this proposed two-member VDP leaves out forms with exactly one
-field filled. Its `Realizes` obligation is deliberately unprovable:
+The [incomplete variant](Test/Negative/IncompleteMembers.lean) calls the second
+member “both missing” while leaving the one-field-filled inputs out of its
+stated regions. It cannot satisfy `Realizes`: `("a@example.test", "")` is
+neither complete nor both missing. The [overlapping variant](Test/Negative/OverlappingMembers.lean)
+also fails: “email provided” and “name provided” overlap when both are filled.
+Run `bash scripts/check-negative.sh` to see Lean reject both obligations.
 
-```lean
-def incompleteRegions : formPartition.MemberIndex → Domain Input
-  | true  => completeForm
-  | false => fun x => ¬ emailProvided x ∧ ¬ nameProvided x
+The model can then intentionally group all three incomplete cases into one
+member for a consumer that only needs `complete` versus `incomplete`. Its
+`forgetFieldFailures` operation maps the four detailed members to those two
+members, and a theorem checks that this agrees with classifying the same raw
+input at the coarser resolution. The input strings themselves are unchanged.
 
--- No proof of `formPartition.Realizes incompleteRegions` exists:
--- ("a@example.test", "") belongs to neither declared region.
-```
+**Why use ArchiScript here?** It supplies a common shape for this contract:
+an explicit carrier, named semantic regions, finite nonempty partition members,
+and typed operations between partitions. Lean checks the coverage and mapping
+claims that the author states; ArchiScript adds the modeling vocabulary, not a
+new proof engine. For a single two-field form, ordinary code and tests may be
+enough. The value grows when several agents or components must
+agree on the same distinctions and routes before implementation. This repository
+is a modeling prototype, not a form validator or a runtime.
 
-The executable [FormInput model](ArchiScript/Examples/FormInput.lean) contains
-that full proof. Its [incomplete](Test/Negative/IncompleteMembers.lean) and
-[overlapping](Test/Negative/OverlappingMembers.lean) variants fail the same
-obligation. The payment and export trees above illustrate how to apply it to
-harder boundaries; they are not yet Lean models in this repository.
-
-This is the deductive direction: justify a broad carrier, derive narrower
-subdomains from predicates and complements, then select exhaustive, disjoint,
-nonempty VDP members. Closed inductive types are valid when their constructors
-really exhaust the boundary. Lean proves properties of the *declared* carrier;
-it cannot discover that the author chose a carrier that already omitted a
-real-world case. That choice is an explicit review obligation.
+The harder motivating case is a payment webhook retry: a successful event is
+a first delivery or a duplicate depending on whether its ID is already in the
+ledger. A model whose input is only `Success | Failure` has already erased the
+fact needed for that decision. An adequate carrier would include the event and
+the relevant ledger snapshot; its semantic regions would include malformed,
+unsupported, failed, first-delivery, and duplicate cases. A classifier based
+only on event payload could not realize both delivery regions for the same
+event under two ledger snapshots. **This payment case is a design illustration,
+not an implemented Lean model in this repository.** Lean cannot discover a
+real-world case that the author omitted from the carrier; reviewers must check
+that boundary. Persistence and atomic capture would need separate effect
+contracts.
 
 ## The model: objects and arrows
 
