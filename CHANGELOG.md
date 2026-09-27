@@ -11,15 +11,14 @@
   Supporting subdomains may overlap; selected VDP members remain nonempty,
   exhaustive, and disjoint. The FormInput example checks a four-member view
   and its two-member coarsening without requiring a taxonomy tree.
-- Added explicit carrier origins: identified external roots or narrowing
-  guarantees, internal outputs tied to typed model operations and recursive
-  source origins, and derived value contracts.
+- Added explicit carrier origins: identified external roots, trusted narrowing
+  guarantees, and architecture-defined semantic domains. Carrier origin is
+  separate from operations and never models value-producing dataflow; operations
+  map VDP members only.
   External narrowing also retains its upstream origin; a post-validator carrier
   cannot be presented as a root without an explicit trusted claim.
   Finite constructor coverage is a separate `CarrierClosure` and never supplies
   boundary origin by itself.
-  Derived contracts prove that emitted values come from a named upstream member,
-  cover the downstream carrier, and retain the upstream carrier's provenance.
   External claims remain trusted premises; the model does not prove that
   production code or external validators enforce them.
 - Replaced prose `.formula` labels with typed `DomainDerivation` values indexed

@@ -36,8 +36,9 @@ At Level 3, show supporting subdomains beside the VDP, with their base,
 containment relationship, and defining formula when available. Label an opaque
 subdomain `OPAQUE` and give its reason. Supporting subdomains may overlap and
 need not exhaust the carrier; do not draw them as selected member boxes unless
-the VDP actually selects them. Show whether carrier provenance is a checked
-closed or derived claim or a trusted external premise. Neither a formula label
+the VDP actually selects them. Show whether carrier provenance is an
+architecture-defined domain or a trusted external premise. Constructor closure
+is separate evidence inside a carrier. Neither a formula label
 nor a diagram proves that an external predicate is enforced at runtime.
 
 At Level 1, a VDP-to-VDP arrow summarizes one canonical operation on member

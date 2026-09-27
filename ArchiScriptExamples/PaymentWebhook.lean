@@ -163,8 +163,7 @@ def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition wh
 
 def decisionArchitecture : ArchitecturalPartition where
   partition := decisionPartition
-  carrierOrigin := .internalOutput "PaymentWebhook.decide" inputPartition decisionPartition
-    decide inputArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhook.decide" (by decide)
   carrierClosure := some decisionCarrierClosure
   selectedMembers := fun i => {
     meaning := fun x => x = i
@@ -174,9 +173,7 @@ def decisionArchitecture : ArchitecturalPartition where
 
 def ledgerCommandArchitecture : ArchitecturalPartition where
   partition := ledgerCommandPartition
-  carrierOrigin := .internalOutput "PaymentWebhook.requestLedgerCommand"
-    decisionPartition ledgerCommandPartition requestLedgerCommand
-    decisionArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhook.requestLedgerCommand" (by decide)
   carrierClosure := some ledgerCommandCarrierClosure
   selectedMembers := fun i => {
     meaning := fun x => x = i

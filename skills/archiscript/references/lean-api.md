@@ -87,11 +87,11 @@ def requestArchitecture : ArchitecturalPartition where
 The external root is a trusted claim, not a decoder proof. If raw input may be
 negative or fractional, model that broader boundary first or use
 `externalNarrowing` with its upstream origin and a scoped trusted guarantee.
-`.derived` provenance contains an upstream
-`SemanticPartition`, source member, modeled emitter, a proof that every emitted
-value comes from that member, and a proof that every downstream carrier value
-is in its image. It also carries the upstream carrier's own origin.
-`Operation` member mappings alone do not prove value-level narrowing.
+Carrier provenance does not contain a modeled emitter. `Operation` is a partial
+member mapping, not a carrier-value transformation, and cannot establish the
+origin of its target carrier. Preserve the wider carrier and refine it with
+typed `DomainDerivation` predicates when possible. Use `architecturalDomain`
+for an internally defined semantic universe.
 `carrierClosure` proves constructor exhaustiveness inside a chosen carrier,
 not that an external boundary emits only that carrier. Use
 `.opaque "reason" (by decide) predicate` for a selected member whose extension has no

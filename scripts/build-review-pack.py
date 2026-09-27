@@ -65,18 +65,9 @@ def validate_carrier_origin(origin, partition_id):
             if "upstreamOrigin" not in origin:
                 raise ValueError(f"external narrowing has no upstream origin: {partition_id}")
             validate_carrier_origin(origin["upstreamOrigin"], partition_id)
-    elif status == "derived-contract":
-        if not origin.get("upstream") or not origin.get("sourceMember"):
-            raise ValueError(f"incomplete derived carrier contract: {partition_id}")
-        if "upstreamProvenance" not in origin:
-            raise ValueError(f"derived carrier has no upstream provenance: {partition_id}")
-        validate_carrier_origin(origin["upstreamProvenance"], origin["upstream"])
-    elif status == "declared-internal-output":
-        if not origin.get("producer"):
-            raise ValueError(f"internal output has no producer: {partition_id}")
-        if "sourceOrigin" not in origin:
-            raise ValueError(f"internal output has no source origin: {partition_id}")
-        validate_carrier_origin(origin["sourceOrigin"], origin["producer"])
+    elif status == "architecture-defined-domain":
+        if not origin.get("identity"):
+            raise ValueError(f"architecture-defined carrier has no identity: {partition_id}")
     else:
         raise ValueError(f"unrecognized carrier provenance: {partition_id}")
 
@@ -194,8 +185,8 @@ def architecture_summary(projection):
         detail = ", ".join(f"{key}={origin[key]}" for key in
                            ("source", "scope", "claim", "revision", "upstream", "sourceMember")
                            if key in origin)
-        if "producer" in origin:
-            detail = f"producer={origin['producer']} (declared model output)"
+        if "identity" in origin:
+            detail = f"identity={origin['identity']} (architecture-defined carrier)"
         if item.get("carrierClosure"):
             detail += "; constructors exhaust this carrier"
         rows.append((item["id"], origin["status"], detail))
@@ -387,7 +378,7 @@ def markdown_pack(projection, review, revision, changes, allowed):
         "| Partition | Origin | Declared basis |", "| --- | --- | --- |",
         *[f"| `{name}` | `{status}` | {detail} |"
           for name, status, detail in architecture_summary(projection)], "",
-        "External roots and guarantees are trusted premises; a checked derived contract does not prove production code conforms.", "",
+        "External roots and guarantees are trusted premises; architecture-defined carriers do not model value production. Operations map VDP members only.", "",
         "**Opaque subdomains:** " + ("; ".join(f"`{name}` — {reason}"
             for name, reason in opaque_member_warnings(projection)) or "none") + ".", "",
         "An opaque subdomain has a declared extension but no formula available for deduction. Review its meaning and consider specifying a formula.", "",

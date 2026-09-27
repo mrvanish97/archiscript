@@ -56,18 +56,23 @@ theorem decodeNatural_covers_carrier (n : Nat) :
   refine ⟨Int.ofNat n, ?_⟩
   simp [decodeNatural]
 
-def naturalCarrierOrigin : CarrierOrigin Nat :=
-  .derived "Asphalt.countPartition" "Asphalt.countPartition.nonnegative"
-    countSemanticPartition
-    (.externalRoot {
+def countCarrierOrigin : CarrierOrigin Int :=
+  .externalRoot {
       source := "Asphalt signed-count fixture"
       scope := "all signed request counts before decoding"
       claim := "The fixture supplies Int counts, including negative values"
       revision := "benchmark-slice-1"
       identified := by decide
-    })
-    .nonnegative decodeNatural
-    decodeNatural_only_nonnegative decodeNatural_covers_carrier
+    }
+
+def naturalCarrierOrigin : CarrierOrigin Nat :=
+  .externalNarrowing countCarrierOrigin {
+    source := "Asphalt signed-count decoder contract"
+    scope := "natural-count boundary"
+    claim := "Only nonnegative signed counts are admitted as Nat values"
+    revision := "benchmark-slice-1"
+    identified := by decide
+  }
 
 /-- A decoder that maps negative values to naturals cannot claim this source
 member. The counterexample is the missing boundary case. -/

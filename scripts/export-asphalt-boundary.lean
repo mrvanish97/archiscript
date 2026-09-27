@@ -13,29 +13,18 @@ private def projection : Json := Id.run do
   let status := match admissionArchitecture.carrierOrigin with
     | .externalRoot _ => "trusted-external-root"
     | .externalNarrowing .. => "trusted-external-narrowing"
-    | .internalOutput .. => "declared-internal-output"
-    | .derived .. => "derived-contract"
+    | .architecturalDomain .. => "architecture-defined-domain"
   let naturalStatus := match naturalCarrierOrigin with
     | .externalRoot _ => "trusted-external-root"
     | .externalNarrowing .. => "trusted-external-narrowing"
-    | .internalOutput .. => "declared-internal-output"
-    | .derived .. => "derived-contract"
-  let naturalUpstreamStatus := match naturalCarrierOrigin with
-    | .derived _ _ _ upstream _ _ _ _ =>
-      match upstream with
-      | .externalRoot _ => "trusted-external-root"
-      | .externalNarrowing .. => "trusted-external-narrowing"
-      | .internalOutput .. => "declared-internal-output"
-      | .derived .. => "derived-contract"
-    | _ => "none"
+    | .architecturalDomain .. => "architecture-defined-domain"
   return Json.mkObj [
     ("model", toJson "Asphalt admission slice"),
     ("admissionCarrierOrigin", toJson status),
     ("opaqueSupportingSubdomains",
       toJson admissionArchitecture.opaqueSupportingSubdomains),
     ("naturalCountCarrierOrigin", toJson naturalStatus),
-    ("naturalCountUpstreamOrigin", toJson naturalUpstreamStatus),
-    ("naturalCountSource", toJson "Asphalt.countPartition.nonnegative")
+    ("naturalCountSource", toJson "external decoder contract; no carrier-valued operation is modeled")
   ]
 
 def main : IO Unit := IO.println projection.compress

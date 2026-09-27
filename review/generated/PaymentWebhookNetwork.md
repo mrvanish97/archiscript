@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `ce8320345cfa`
+Model revision: `504b8df56f0b`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
@@ -137,12 +137,12 @@ Every selected VDP carries semantic member evidence:
 | Partition | Origin | Declared source |
 | --- | --- | --- |
 | `PaymentWebhookNetwork.inputPartition` | `trusted-external-root` | PaymentWebhook preclassified fixture; closure=False |
-| `PaymentWebhookNetwork.decisionPartition` | `declared-internal-output` | PaymentWebhook.decide; closure=True |
-| `PaymentWebhookNetwork.ledgerCommandPartition` | `declared-internal-output` | PaymentWebhook.requestLedgerCommand; closure=True |
-| `PaymentWebhookNetwork.responsePartition` | `declared-internal-output` | PaymentWebhookNetwork.planResponse; closure=True |
-| `PaymentWebhookNetwork.auditPartition` | `declared-internal-output` | PaymentWebhookNetwork.planAudit; closure=True |
-| `PaymentWebhookNetwork.notificationPartition` | `declared-internal-output` | PaymentWebhookNetwork.planNotification; closure=True |
-| `PaymentWebhookNetwork.fulfillmentPartition` | `declared-internal-output` | PaymentWebhookNetwork.planFulfillment; closure=True |
+| `PaymentWebhookNetwork.decisionPartition` | `architecture-defined-domain` | PaymentWebhook.decide; closure=True |
+| `PaymentWebhookNetwork.ledgerCommandPartition` | `architecture-defined-domain` | PaymentWebhook.requestLedgerCommand; closure=True |
+| `PaymentWebhookNetwork.responsePartition` | `architecture-defined-domain` | PaymentWebhookNetwork.planResponse; closure=True |
+| `PaymentWebhookNetwork.auditPartition` | `architecture-defined-domain` | PaymentWebhookNetwork.planAudit; closure=True |
+| `PaymentWebhookNetwork.notificationPartition` | `architecture-defined-domain` | PaymentWebhookNetwork.planNotification; closure=True |
+| `PaymentWebhookNetwork.fulfillmentPartition` | `architecture-defined-domain` | PaymentWebhookNetwork.planFulfillment; closure=True |
 
 **Opaque subdomains:** none.
 

@@ -134,10 +134,12 @@ seeded defects, runtime fixtures, and explicit unsupported obligations.
 These rules guide the [AI skill](skills/archiscript/SKILL.md). Lean can check a
 precise claim even when the claim omits a real-world case. For review and handoff,
 `ArchitecturalPartition` now requires a declared carrier origin. A narrowed
-carrier must be linked to a modeled upstream value contract or an explicitly
-trusted external guarantee; the latter remains an assumption about the source.
-External narrowing retains the upstream carrier origin so the wider collection
-does not disappear from the review trail.
+carrier must be linked to an explicitly trusted external guarantee; the latter
+remains an assumption about the source. Carrier origins justify architectural
+universes; they never model a producer or a value transformation. Operations map
+VDP members, not carrier values. Architecture-defined carriers can use
+`architecturalDomain` and optional `CarrierClosure` when finite constructors
+are part of the model.
 Constructor closure proves which values exist *inside* an already chosen type;
 it cannot establish that the real boundary emits only that type.
 
@@ -240,9 +242,10 @@ keeps those predicates and their proof. Its `members_cover`, `members_disjoint`,
 and `member_nonempty` theorems make strict VDP coverage available directly for
 the stated predicates over the declared carrier. `ArchitecturalPartition` adds a declared
 carrier origin and the definition status of each selected member for review and
-handoff. External origins remain trusted claims; constructor closure and
-modeled value-level derivations carry Lean evidence. A derived origin recursively
-records the upstream carrier's origin.
+handoff. External origins remain trusted claims; `architecturalDomain` identifies
+an internal semantic universe, and constructor closure is optional evidence
+about values inside that universe. Operations still map only selected VDP
+members.
 Composition proofs
 check the first-success and duplicate-success paths. A change that maps
 `duplicateSuccess` to `fulfill` breaks the duplicate path theorem.

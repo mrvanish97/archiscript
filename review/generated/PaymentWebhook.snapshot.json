@@ -1,5 +1,5 @@
 {
-  "modelRevision": "779d75fcdb4d",
+  "modelRevision": "a84e6928443e",
   "projection": {
     "architecturalPartitions": [
       {
@@ -49,16 +49,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhook.decide",
-          "sourceOrigin": {
-            "claim": "The fixture supplies every value considered at this boundary",
-            "revision": "fixture-unversioned",
-            "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-            "source": "PaymentWebhook preclassified fixture",
-            "status": "trusted-external-root"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhook.decide",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhook.decisionPartition",
         "members": [
@@ -98,21 +91,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhook.requestLedgerCommand",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.decide",
-            "sourceOrigin": {
-              "claim": "The fixture supplies every value considered at this boundary",
-              "revision": "fixture-unversioned",
-              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-              "source": "PaymentWebhook preclassified fixture",
-              "status": "trusted-external-root"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhook.requestLedgerCommand",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhook.ledgerCommandPartition",
         "members": [

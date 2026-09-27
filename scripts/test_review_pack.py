@@ -150,11 +150,6 @@ class ReviewPackTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "external carrier guarantee"):
             review_pack.validate_review(altered, review)
         altered = copy.deepcopy(projection)
-        altered["architecturalPartitions"][0]["carrierProvenance"] = {
-            "status": "derived-contract", "upstream": "M.upstream",
-            "sourceMember": "M.upstream.accepted"}
-        with self.assertRaisesRegex(ValueError, "no upstream provenance"):
-            review_pack.validate_review(altered, review)
         altered = copy.deepcopy(projection)
         altered["architecturalPartitions"][0]["carrierProvenance"] = {
             "status": "trusted-external-narrowing", "source": "decoder",
@@ -188,8 +183,9 @@ class ReviewPackTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unrecognized carrier provenance"):
             review_pack.validate_review(altered, review)
         altered = copy.deepcopy(projection)
-        altered["architecturalPartitions"][1]["carrierProvenance"].pop("sourceOrigin")
-        with self.assertRaisesRegex(ValueError, "internal output has no source origin"):
+        altered["architecturalPartitions"][1]["carrierProvenance"] = {
+            "status": "architecture-defined-domain", "identity": ""}
+        with self.assertRaisesRegex(ValueError, "architecture-defined carrier has no identity"):
             review_pack.validate_review(altered, review)
 
     def test_opaque_leaf_propagates_through_composed_definition(self):

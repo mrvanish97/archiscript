@@ -89,8 +89,10 @@ reserves parameterization for changes to outbound operation topology.
 - Two observed checks can each see enough IPs while their joint demand exceeds
   capacity. The Lean arithmetic counterexample rejects `hasCapacity` as a
   reservation guarantee.
-- A value-level decoder that emits a natural count only for nonnegative signed
-  input supports a derived carrier claim; an absolute-value decoder does not.
+- A separate natural-count boundary is recorded only as an explicit trusted
+  external narrowing; the model does not pretend that an operation transforms
+  signed carrier values into naturals. The absolute-value decoder counterexample
+  shows why that guarantee cannot be inferred from a member mapping.
 
 It does **not** establish that the carrier contains all production facts,
 that evidence references passed, that time observations are fresh, or that any

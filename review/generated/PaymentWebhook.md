@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `779d75fcdb4d`
+Model revision: `a84e6928443e`
 
 Review state: **draft**
 
@@ -70,10 +70,10 @@ Each partition's selected member IDs and `HasMembers` proof travel in the review
 | Partition | Origin | Declared basis |
 | --- | --- | --- |
 | `PaymentWebhook.inputPartition` | `trusted-external-root` | source=PaymentWebhook preclassified fixture, scope=Input pairs decoded WebhookPayload with a LedgerObservation, claim=The fixture supplies every value considered at this boundary, revision=fixture-unversioned |
-| `PaymentWebhook.decisionPartition` | `declared-internal-output` | producer=PaymentWebhook.decide (declared model output); constructors exhaust this carrier |
-| `PaymentWebhook.ledgerCommandPartition` | `declared-internal-output` | producer=PaymentWebhook.requestLedgerCommand (declared model output); constructors exhaust this carrier |
+| `PaymentWebhook.decisionPartition` | `architecture-defined-domain` | identity=PaymentWebhook.decide (architecture-defined carrier); constructors exhaust this carrier |
+| `PaymentWebhook.ledgerCommandPartition` | `architecture-defined-domain` | identity=PaymentWebhook.requestLedgerCommand (architecture-defined carrier); constructors exhaust this carrier |
 
-External roots and guarantees are trusted premises; a checked derived contract does not prove production code conforms.
+External roots and guarantees are trusted premises; architecture-defined carriers do not model value production. Operations map VDP members only.
 
 **Opaque subdomains:** none.
 

@@ -1,5 +1,5 @@
 {
-  "modelRevision": "ce8320345cfa",
+  "modelRevision": "504b8df56f0b",
   "projection": {
     "architecturalPartitions": [
       {
@@ -49,16 +49,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhook.decide",
-          "sourceOrigin": {
-            "claim": "The fixture supplies every value considered at this boundary",
-            "revision": "fixture-unversioned",
-            "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-            "source": "PaymentWebhook preclassified fixture",
-            "status": "trusted-external-root"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhook.decide",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.decisionPartition",
         "members": [
@@ -98,21 +91,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhook.requestLedgerCommand",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.decide",
-            "sourceOrigin": {
-              "claim": "The fixture supplies every value considered at this boundary",
-              "revision": "fixture-unversioned",
-              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-              "source": "PaymentWebhook preclassified fixture",
-              "status": "trusted-external-root"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhook.requestLedgerCommand",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.ledgerCommandPartition",
         "members": [
@@ -134,21 +115,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhookNetwork.planResponse",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.decide",
-            "sourceOrigin": {
-              "claim": "The fixture supplies every value considered at this boundary",
-              "revision": "fixture-unversioned",
-              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-              "source": "PaymentWebhook preclassified fixture",
-              "status": "trusted-external-root"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhookNetwork.planResponse",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.responsePartition",
         "members": [
@@ -170,21 +139,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhookNetwork.planAudit",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.decide",
-            "sourceOrigin": {
-              "claim": "The fixture supplies every value considered at this boundary",
-              "revision": "fixture-unversioned",
-              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-              "source": "PaymentWebhook preclassified fixture",
-              "status": "trusted-external-root"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhookNetwork.planAudit",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.auditPartition",
         "members": [
@@ -224,21 +181,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhookNetwork.planNotification",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.decide",
-            "sourceOrigin": {
-              "claim": "The fixture supplies every value considered at this boundary",
-              "revision": "fixture-unversioned",
-              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-              "source": "PaymentWebhook preclassified fixture",
-              "status": "trusted-external-root"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhookNetwork.planNotification",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.notificationPartition",
         "members": [
@@ -260,26 +205,9 @@
       {
         "carrierClosure": true,
         "carrierProvenance": {
-          "limit": "Model output type; no runtime conformance proof",
-          "producer": "PaymentWebhookNetwork.planFulfillment",
-          "sourceOrigin": {
-            "limit": "Model output type; no runtime conformance proof",
-            "producer": "PaymentWebhook.requestLedgerCommand",
-            "sourceOrigin": {
-              "limit": "Model output type; no runtime conformance proof",
-              "producer": "PaymentWebhook.decide",
-              "sourceOrigin": {
-                "claim": "The fixture supplies every value considered at this boundary",
-                "revision": "fixture-unversioned",
-                "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
-                "source": "PaymentWebhook preclassified fixture",
-                "status": "trusted-external-root"
-              },
-              "status": "declared-internal-output"
-            },
-            "status": "declared-internal-output"
-          },
-          "status": "declared-internal-output"
+          "identity": "PaymentWebhookNetwork.planFulfillment",
+          "limit": "This origin identifies a semantic carrier; operations map members only",
+          "status": "architecture-defined-domain"
         },
         "id": "PaymentWebhookNetwork.fulfillmentPartition",
         "members": [

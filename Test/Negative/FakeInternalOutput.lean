@@ -5,7 +5,7 @@ open ArchiScript
 inductive ConvenientCount where
   | small | large
 
--- A string cannot certify an internal output. A typed producer and its source
--- origin are required by the constructor.
+-- Operations have no carrier-producing provenance constructor. A member
+-- mapping cannot certify the target carrier's boundary universe.
 def fakeOrigin : CarrierOrigin ConvenientCount :=
   .internalOutput "imaginary producer"

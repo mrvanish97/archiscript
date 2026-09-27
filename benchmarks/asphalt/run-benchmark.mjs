@@ -57,10 +57,8 @@ run('lake', ['build', 'ArchiScriptExamples.Asphalt'], root);
 const boundary = exportBoundary();
 assert(boundary.admissionCarrierOrigin === 'trusted-external-root',
   'Asphalt admission origin must remain explicitly trusted');
-assert(boundary.naturalCountCarrierOrigin === 'derived-contract',
-  'Asphalt count narrowing must remain a checked modeled contract');
-assert(boundary.naturalCountUpstreamOrigin === 'trusted-external-root',
-  'derived count carrier must retain upstream origin');
+assert(boundary.naturalCountCarrierOrigin === 'trusted-external-narrowing',
+  'Asphalt count narrowing must remain an explicit external guarantee');
 assert(boundary.opaqueSupportingSubdomains.includes('externalScanPasses'),
   'opaque scan semantics must remain visible');
 const leanMs = Math.round(performance.now() - started);
@@ -77,7 +75,6 @@ process.stdout.write(`${JSON.stringify({
   carrierOrigins: {
     admission: boundary.admissionCarrierOrigin,
     naturalCount: boundary.naturalCountCarrierOrigin,
-    naturalCountUpstream: boundary.naturalCountUpstreamOrigin,
   },
   opaqueSubdomainWarnings: boundary.opaqueSupportingSubdomains,
   naiveCartesianCombinations,

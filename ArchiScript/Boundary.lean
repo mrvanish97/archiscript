@@ -13,24 +13,14 @@ structure ExternalBoundary where
   deriving Repr
 
 /-- Why this carrier, rather than a convenient subset, is the model's universe.
-The derived case checks an exact modeled image over an upstream semantic member.
-It does not assert that production code implements `emits`. -/
+Carrier origin is a boundary statement. It does not model computation or a
+value-producing dataflow between carriers. Operations relate VDP members only. -/
 inductive CarrierOrigin : Type → Type 1 where
   | externalRoot {α : Type} (boundary : ExternalBoundary) : CarrierOrigin α
   | externalNarrowing {α β : Type} (upstream : CarrierOrigin β)
       (guarantee : ExternalBoundary) : CarrierOrigin α
-  | internalOutput {α : Type} (producer : String) (source target : Partition)
-      (operation : Operation source target)
-      (sourceOrigin : CarrierOrigin source.Carrier)
-      (sameCarrier : target.Carrier = α) : CarrierOrigin α
-  | derived {α : Type} (upstreamId sourceMemberId : String)
-      (upstream : SemanticPartition)
-      (upstreamOrigin : CarrierOrigin upstream.partition.Carrier)
-      (sourceMember : upstream.partition.MemberIndex)
-      (emits : upstream.partition.Carrier → Option α)
-      (emitsOnlySource : ∀ x y, emits x = some y →
-        upstream.members sourceMember x)
-      (coversCarrier : ∀ y : α, ∃ x, emits x = some y) : CarrierOrigin α
+  | architecturalDomain {α : Type} (identity : String)
+      (identified : identity ≠ "") : CarrierOrigin α
 
 /-- Constructor closure concerns a carrier's internal values. It cannot
 establish that an external boundary emits only values of this carrier. -/

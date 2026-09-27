@@ -53,7 +53,9 @@ the available transformations, and which paths must compose or agree. Derive
 objects from the boundary and connect them with arrows. Do not begin by copying
 an implementation's functions, services, or execution order into a graph.
 An external appearance is a boundary assumption, not a fabricated producer
-operation; the Lean core currently has no appearance registry.
+operation. `Operation X Y` is a partial function from members of `X` to members
+of `Y`; it is never a function between carrier values and cannot establish the
+origin of `Y`.
 
 Keep subdomain relationships distinct from the operation graph. Subdomains
 describe regions and their containment; operations connect VDPs at a chosen
@@ -163,22 +165,18 @@ complete handoff.
 
 For implementation handoff, package each selected partition in an
 `ArchitecturalPartition`. Its `carrierOrigin` records an external root, an
-explicit external narrowing guarantee, a checked value-level derived contract,
-or an internal output tied to a typed model operation and its source origin.
+explicit external narrowing guarantee, or an architecture-defined semantic
+domain. It never records a value-producing operation.
 Use `externalRoot` for the independently given appearance universe. A trusted
 post-validator boundary is `externalNarrowing` and must retain its upstream
 origin; do not relabel it as a root to erase rejected inputs. The external
 guarantee remains a premise about an identified source, scope, and revision.
-An internal output still does not prove runtime value selection or code
-conformance. `carrierClosure` separately proves finite
-constructor exhaustiveness *inside* an already justified carrier. It cannot
-establish that a production boundary emits only that type. External entries need an identifiable source,
-scope, claim, and revision; they remain trusted premises. A derived contract
-proves that its *modeled* emitter only emits from the named upstream member and
-that every downstream carrier value is in that modeled image; it
-does not prove production code conforms. An operation's member mapping alone
-cannot establish narrowing. Derived origins also carry the upstream carrier's
-origin recursively; do not stop the chain at an ungrounded intermediate VDP.
+Use `architecturalDomain` for an internally defined semantic universe. It does
+not claim that an operation produced values of that type. `carrierClosure`
+separately proves finite constructor exhaustiveness *inside* an already
+justified carrier. It cannot establish that a production boundary emits only
+that type. An operation's member mapping alone cannot establish narrowing;
+preserve the wider carrier and refine meaning with typed subdomains instead.
 
 Give each `selectedMembers` entry an independently stated `meaning` predicate
 and a `DomainDerivation` indexed by that exact predicate. Use `.predicate p`

@@ -128,32 +128,28 @@ def planFulfillment : Operation PaymentWebhook.ledgerCommandPartition fulfillmen
 
 def responseArchitecture : ArchitecturalPartition where
   partition := responsePartition
-  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planResponse"
-    PaymentWebhook.decisionPartition responsePartition planResponse PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planResponse" (by decide)
   carrierClosure := some responseCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
 def auditArchitecture : ArchitecturalPartition where
   partition := auditPartition
-  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planAudit"
-    PaymentWebhook.decisionPartition auditPartition planAudit PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planAudit" (by decide)
   carrierClosure := some auditCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
 def notificationArchitecture : ArchitecturalPartition where
   partition := notificationPartition
-  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planNotification"
-    PaymentWebhook.decisionPartition notificationPartition planNotification PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planNotification" (by decide)
   carrierClosure := some notificationCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
 def fulfillmentArchitecture : ArchitecturalPartition where
   partition := fulfillmentPartition
-  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planFulfillment"
-    PaymentWebhook.ledgerCommandPartition fulfillmentPartition planFulfillment PaymentWebhook.ledgerCommandArchitecture.carrierOrigin rfl
+  carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planFulfillment" (by decide)
   carrierClosure := some fulfillmentCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl

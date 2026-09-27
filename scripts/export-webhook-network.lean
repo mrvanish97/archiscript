@@ -128,14 +128,10 @@ private def provenanceJson {α : Type} : CarrierOrigin α → Json
       ("upstreamOrigin", provenanceJson upstream),
       ("source", toJson boundary.source), ("scope", toJson boundary.scope),
       ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
-  | .internalOutput producer _ _ _ sourceOrigin _ => Json.mkObj [
-      ("status", toJson "declared-internal-output"), ("producer", toJson producer),
-      ("sourceOrigin", provenanceJson sourceOrigin),
-      ("limit", toJson "Model output type; no runtime conformance proof")]
-  | .derived upstreamId sourceMemberId _ upstreamProvenance _ _ _ _ => Json.mkObj [
-      ("status", toJson "derived-contract"),
-      ("upstream", toJson upstreamId), ("sourceMember", toJson sourceMemberId),
-      ("upstreamProvenance", provenanceJson upstreamProvenance)]
+  | .architecturalDomain identity _ => Json.mkObj [
+      ("status", toJson "architecture-defined-domain"),
+      ("identity", toJson identity),
+      ("limit", toJson "This origin identifies a semantic carrier; operations map members only")]
 
 private def definitionJson {α : Type} {meaning : Domain α} :
     DomainDerivation α meaning → Json

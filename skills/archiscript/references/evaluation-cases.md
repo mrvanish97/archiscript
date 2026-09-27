@@ -151,9 +151,10 @@ modeling decision and exposes missing assumptions.
     - Prompt: “The decoder emits `Nat`; I recorded only the post-decoder type
       and called it an external narrowing from JSON.”
     - Expected: require the upstream origin in `externalNarrowing`; identify
-      the external validator, scope, claim, and revision. The guarantee remains
-      trusted unless imported or checked, and rejected raw inputs do not vanish
-      from the architecture's boundary account.
+      the external validator, scope, claim, and revision. Do not model the
+      decoder as an ArchiScript carrier transformation: operations map members
+      only. The guarantee remains trusted unless imported or checked, and
+      rejected raw inputs do not vanish from the architecture's boundary account.
 
 22. **Same type, different boundary**
     - Prompt: “Two services both use `Nat`. Can I reuse one service's carrier
