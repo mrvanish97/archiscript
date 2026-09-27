@@ -1,4 +1,4 @@
-import ArchiScript.Operation
+import ArchiScript.Operation.Declaration
 
 namespace ArchiScript
 

@@ -1,7 +1,7 @@
-import ArchiScript.Examples.UserRegistration
+import ArchiScriptExamples.UserRegistration
 
 open ArchiScript
-open ArchiScript.Examples.UserRegistration
+open ArchiScriptExamples.UserRegistration
 
 -- Expected failure: the canonical address resolves once, to the selected branch.
 example : existingUserBranchWitness.target = RegistrationMemberIndex.created := rfl

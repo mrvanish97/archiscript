@@ -1,10 +1,10 @@
 import Lean
-import ArchiScript.Examples.PaymentWebhookNetwork
+import ArchiScriptExamples.PaymentWebhookNetwork
 
 open Lean
 open ArchiScript
-open ArchiScript.Examples
-open ArchiScript.Examples.PaymentWebhookNetwork
+open ArchiScriptExamples
+open ArchiScriptExamples.PaymentWebhookNetwork
 
 private def shortName {α : Type} [Repr α] (value : α) : String :=
   (reprStr value).splitOn "." |>.getLast!
@@ -49,6 +49,13 @@ private def bindingJson (id : String) (address : Operation.BranchAddress operati
     ("id", toJson id),
     ("responsibility", toJson (operationRegistry.resolveBranchResponsibility address)),
     ("implementation", dispositionJson (operationRegistry.resolveBranchImplementation address))
+  ]
+
+private def mappingCoverageJson (name : OperationName) : Json :=
+  let declaration := operationRegistry.resolve name
+  Json.mkObj [
+    ("id", toJson s!"PaymentWebhookNetwork.{shortName name}"),
+    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
   ]
 
 private def duplicatePathJson : Json := Id.run do
@@ -142,6 +149,7 @@ private def projection : Json := Json.mkObj [
   ] : List Json)),
   ("missingResponsibility", toJson operationRegistry.branchesWithoutResponsibility.length),
   ("missingImplementation", toJson operationRegistry.branchesWithoutImplementation.length),
+  ("mappingCoverage", toJson (operationRegistry.operationNames.map mappingCoverageJson)),
   ("checkedClaims", toJson checkedClaims)
 ]
 

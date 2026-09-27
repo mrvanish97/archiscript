@@ -1,6 +1,6 @@
-import ArchiScript.Operation
+import ArchiScript.Operation.Declaration
 
-namespace ArchiScript.Examples.FormInput
+namespace ArchiScriptExamples.FormInput
 open ArchiScript
 
 /-- The boundary supplies two arbitrary strings, including empty ones. -/
@@ -72,4 +72,4 @@ def forgetFieldFailures : Operation fieldPartition formPartition where
 theorem forgetFieldFailures_preserves_classification (x : Input) :
     forgetFieldFailures (fieldPartition.classify x) = some (formPartition.classify x) := rfl
 
-end ArchiScript.Examples.FormInput
+end ArchiScriptExamples.FormInput

@@ -1,10 +1,12 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `09c2b1ec5505`
+Model revision: `3a05a3231100`
 
 Review state: **draft**
 
 Implementation gate: **CLOSED**
+
+Named branch handoff: **COMPLETE** across 2 registered operations.
 
 This is a generated snapshot. Semantic mappings, members, responsibility, and code bindings come from Lean; review notes and findings come from structured review metadata. Approval belongs to the model revision above.
 
@@ -16,7 +18,7 @@ Webhook input classification, decision mapping, and ledger-command mapping in th
 
 ### 2. Changes since previous review
 
-- First generated snapshot; no earlier projection supplied.
+- Added projection.mappingCoverage: [{'id': 'PaymentWebhook.decide', 'missingDefinedMappings': 0}, {'id': 'PaymentWebhook.requestLedgerCommand', 'missingDefinedMappings': 0}]
 
 ### 3. Boundary to challenge
 
@@ -151,6 +153,7 @@ These claims concern the declared model. Evidence references are not conformance
 
 ### Appendix: source anchors
 
-- `ArchiScript/Examples/PaymentWebhook.lean`: carrier, partitions, operations, registry, and checked claims
-- `ArchiScript/Operation.lean`: canonical branch and implementation-binding API
+- `ArchiScriptExamples/PaymentWebhook.lean`: carrier, partitions, operations, registry, and checked claims
+- `ArchiScript/Operation.lean`: partial member-map algebra
+- `ArchiScript/Operation/Declaration.lean`: branch and implementation-binding API
 - `review/payment-webhook.review.json`: review notes, findings, and approval state

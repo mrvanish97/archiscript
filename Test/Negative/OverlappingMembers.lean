@@ -1,7 +1,7 @@
 import ArchiScript
-import ArchiScript.Examples.FormInput
+import ArchiScriptExamples.FormInput
 
-open ArchiScript ArchiScript.Examples.FormInput
+open ArchiScript ArchiScriptExamples.FormInput
 
 -- Overlapping supporting domains cannot serve as two distinct VDP members.
 def overlappingRegions : formPartition.MemberIndex → Domain Input

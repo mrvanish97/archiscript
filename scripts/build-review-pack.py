@@ -13,21 +13,38 @@ ROOT = Path(__file__).resolve().parent.parent
 MODEL_SOURCES = (
     "ArchiScript/Partition.lean",
     "ArchiScript/Operation.lean",
-    "ArchiScript/Examples/PaymentWebhook.lean",
+    "ArchiScript/Operation/Declaration.lean",
+    "ArchiScriptExamples/PaymentWebhook.lean",
 )
 REVIEW_SOURCE = ROOT / "review/payment-webhook.review.json"
 OUTPUT = ROOT / "review/generated"
 
 
-def model_revision():
+def source_fingerprint():
     digest = hashlib.sha256()
     for name in MODEL_SOURCES:
         digest.update(name.encode())
         digest.update((ROOT / name).read_bytes())
-    return digest.hexdigest()[:12]
+    return digest.hexdigest()
+
+
+def reviewed_contract(review):
+    """Only review content requiring renewed approval; approval is self-referential."""
+    return {key: value for key, value in review.items()
+            if key not in {"approval", "state"}}
+
+
+def model_revision(projection, review, checked_sources=None):
+    contract = {"sources": checked_sources or source_fingerprint(),
+                "projection": projection, "review": reviewed_contract(review)}
+    encoded = json.dumps(contract, sort_keys=True, ensure_ascii=False,
+                         separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()[:12]
 
 
 def projection_from_lean():
+    subprocess.run(["lake", "build", "ArchiScriptExamples.PaymentWebhook"],
+                   cwd=ROOT, text=True, capture_output=True, check=True)
     result = subprocess.run(
         ["lake", "env", "lean", "--run", "scripts/export-payment-review.lean"],
         cwd=ROOT,
@@ -44,6 +61,14 @@ def validate_review(projection, review):
     objects = {entry["id"] for entry in projection["objects"]}
     if len(objects) != len(projection["objects"]):
         raise ValueError("projection contains duplicate canonical IDs")
+    coverage = projection["mappingCoverage"]
+    operation_ids = {item["id"] for item in projection["topology"]}
+    if (len(coverage) != len(operation_ids) or
+            {item["id"] for item in coverage} != operation_ids):
+        raise ValueError("mapping coverage must name every exported operation once")
+    missing = [item["id"] for item in coverage if item["missingDefinedMappings"]]
+    if missing:
+        raise ValueError(f"defined mappings lack named branches: {', '.join(missing)}")
     for item in [review["boundary"], *review["assumptions"],
                  *review["effectNotes"], *review["questions"], *review["findings"]]:
         if item["subject"] not in objects:
@@ -66,6 +91,7 @@ def approval_status(review, revision):
         review["state"] == "approved"
         and isinstance(approval, dict)
         and approval.get("reviewer")
+        and approval.get("revision")
         and approval.get("revision") == revision
         and not any(item["disposition"] == "open" for item in review["findings"])
     )
@@ -119,64 +145,58 @@ def latex_topology(projection):
 def semantic_changes(current, previous, current_review=None, previous_review=None):
     if previous is None:
         return ["First generated snapshot; no earlier projection supplied."]
-    changes = []
-    for key in ("inputMembers", "decisionMembers", "ledgerMembers"):
-        added = sorted(set(current[key]) - set(previous.get(key, [])))
-        removed = sorted(set(previous.get(key, [])) - set(current[key]))
-        if added:
-            changes.append(f"Added {key}: {', '.join(added)}")
-        if removed:
-            changes.append(f"Removed {key}: {', '.join(removed)}")
-    old_regions = {item["id"]: item["description"] for item in previous.get("inputRegions", [])}
-    for item in current["inputRegions"]:
-        if item["id"] in old_regions and old_regions[item["id"]] != item["description"]:
-            changes.append(f"Review meaning changed for {item['id']}: {old_regions[item['id']]} → {item['description']}")
-    for key in ("decideBranches", "ledgerBranches"):
-        old = {item["id"]: item for item in previous.get(key, [])}
-        new = {item["id"]: item for item in current[key]}
-        for branch_id in sorted(old.keys() | new.keys()):
-            if branch_id not in old:
-                changes.append(f"Added branch {branch_id}: {new[branch_id]['source']} → {new[branch_id]['target']}")
-            elif branch_id not in new:
-                changes.append(f"Removed branch {branch_id}")
-            else:
-                before, after = old[branch_id], new[branch_id]
-                for field in ("source", "target", "responsibility"):
-                    if before[field] != after[field]:
-                        changes.append(f"{branch_id} {field}: {before[field]} → {after[field]}")
-                old_binding = (before["implementation"]["status"], primary_label(before["implementation"]))
-                new_binding = (after["implementation"]["status"], primary_label(after["implementation"]))
-                if old_binding != new_binding:
-                    changes.append(f"{branch_id} implementation: {old_binding} → {new_binding}")
-    old_maps = {item["source"]: item["target"] for item in previous.get("ledgerMappings", [])}
-    for item in current["ledgerMappings"]:
-        if item["source"] in old_maps and old_maps[item["source"]] != item["target"]:
-            changes.append(f"requestLedgerCommand({item['source']}): {old_maps[item['source']]} → {item['target']}")
-    old_topology = {item["id"]: item for item in previous.get("topology", [])}
-    for item in current.get("topology", []):
-        if item["id"] in old_topology and item != old_topology[item["id"]]:
-            changes.append(f"Operation topology changed: {item['id']}")
+    missing = object()
+
+    def identity(item, path):
+        if not isinstance(item, dict):
+            return str(item)
+        if "id" in item:
+            return item["id"]
+        if path.endswith(".checkedClaims"):
+            return item.get("proof", item["claim"])
+        if path.endswith(".ledgerMappings"):
+            return item["source"]
+        if path.endswith(".supporting"):
+            return ":".join(str(item.get(key) or "")
+                            for key in ("repository", "path", "symbol"))
+        if path.endswith(".evidence"):
+            return f"{item['kind']}:{item['reference']}"
+        if "subject" in item:
+            return f"{item['subject']}:{item.get('statement', item.get('question', ''))}"
+        return json.dumps(item, sort_keys=True, ensure_ascii=False)
+
+    def indexed(items, path):
+        result = {}
+        for item in items:
+            key = identity(item, path)
+            if key in result:
+                raise ValueError(f"duplicate semantic identity at {path}: {key}")
+            result[key] = item
+        return result
+
+    def differences(before, after, path):
+        if before is missing:
+            yield f"Added {path}: {after!r}"
+        elif after is missing:
+            yield f"Removed {path}: {before!r}"
+        elif isinstance(before, dict) and isinstance(after, dict):
+            for key in sorted(before.keys() | after.keys()):
+                yield from differences(before.get(key, missing), after.get(key, missing),
+                                       f"{path}.{key}")
+        elif isinstance(before, list) and isinstance(after, list):
+            old = indexed(before, path)
+            new = indexed(after, path)
+            for key in sorted(old.keys() | new.keys()):
+                yield from differences(old.get(key, missing), new.get(key, missing),
+                                       f"{path}[{key}]")
+        elif before != after:
+            yield f"{path}: {before!r} → {after!r}"
+
+    changes = list(differences(previous, current, "projection"))
     if current_review is not None and previous_review is not None:
-        if current_review["boundary"] != previous_review.get("boundary"):
-            changes.append("Boundary description or challenge changed")
-        for key, field in (("assumptions", "statement"), ("effectNotes", "statement"),
-                           ("questions", "question")):
-            old_items = {(item["subject"], item[field]) for item in previous_review.get(key, [])}
-            new_items = {(item["subject"], item[field]) for item in current_review[key]}
-            for subject, value in sorted(new_items - old_items):
-                changes.append(f"Added or revised {key} on {subject}: {value}")
-            for subject, value in sorted(old_items - new_items):
-                changes.append(f"Removed or revised {key} on {subject}: {value}")
-        old_findings = {item["id"]: item for item in previous_review.get("findings", [])}
-        new_findings = {item["id"]: item for item in current_review["findings"]}
-        for finding_id in sorted(old_findings.keys() | new_findings.keys()):
-            if finding_id not in old_findings:
-                changes.append(f"New review finding {finding_id}: {new_findings[finding_id]['concern']}")
-            elif finding_id not in new_findings:
-                changes.append(f"Removed review finding {finding_id}")
-            elif old_findings[finding_id]["disposition"] != new_findings[finding_id]["disposition"]:
-                changes.append(f"Finding {finding_id}: {old_findings[finding_id]['disposition']} → {new_findings[finding_id]['disposition']}")
-    return changes or ["No semantic changes detected in the exported projection."]
+        changes.extend(differences(reviewed_contract(previous_review),
+                                   reviewed_contract(current_review), "review"))
+    return changes or ["No semantic changes detected in the exported projection or review contract."]
 
 
 def markdown_pack(projection, review, revision, changes, allowed):
@@ -185,6 +205,7 @@ def markdown_pack(projection, review, revision, changes, allowed):
         f"Model revision: `{revision}`", "",
         f"Review state: **{review['state']}**", "",
         f"Implementation gate: **{'OPEN' if allowed else 'CLOSED'}**", "",
+        f"Named branch handoff: **COMPLETE** across {len(projection['mappingCoverage'])} registered operations.", "",
         "This is a generated snapshot. Semantic mappings, members, responsibility, and code bindings come from Lean; review notes and findings come from structured review metadata. Approval belongs to the model revision above.", "",
         "## Fast pass", "",
         "### 1. Scope and direction", "", review["scope"], "",
@@ -253,8 +274,9 @@ def markdown_pack(projection, review, revision, changes, allowed):
     lines.append(f"- Approved model revision: `{approval['revision']}`" if approval else "- Approved model revision: none")
     lines.append(f"- Implementation allowed by review gate: **{'yes' if allowed else 'no'}**")
     lines += ["", "### Appendix: source anchors", "",
-              "- `ArchiScript/Examples/PaymentWebhook.lean`: carrier, partitions, operations, registry, and checked claims",
-              "- `ArchiScript/Operation.lean`: canonical branch and implementation-binding API",
+              "- `ArchiScriptExamples/PaymentWebhook.lean`: carrier, partitions, operations, registry, and checked claims",
+              "- `ArchiScript/Operation.lean`: partial member-map algebra",
+              "- `ArchiScript/Operation/Declaration.lean`: branch and implementation-binding API",
               "- `review/payment-webhook.review.json`: review notes, findings, and approval state", ""]
     return "\n".join(lines)
 
@@ -304,6 +326,8 @@ def latex_pack(projection, review, revision, changes, allowed):
              f"Review state: {t(review['state'])}\\\\",
              f"Approval reviewer: {t(review['approval']['reviewer'] if review.get('approval') else 'none')}\\\\",
              f"Implementation gate: {'OPEN' if allowed else 'CLOSED'}",
+             r"\\ Named branch handoff: COMPLETE across " +
+             t(str(len(projection["mappingCoverage"]))) + " registered operations",
              r"\end{center}",
              r"\textit{Generated snapshot. Semantic rows come from Lean; review notes and findings come from structured review metadata.}",
              r"\section*{Fast pass}",
@@ -371,10 +395,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--previous", type=Path, help="earlier generated snapshot JSON")
     args = parser.parse_args()
+    checked_sources = source_fingerprint()
     projection = projection_from_lean()
+    if checked_sources != source_fingerprint():
+        raise RuntimeError("model sources changed while the Lean projection was built")
     review = json.loads(REVIEW_SOURCE.read_text())
     validate_review(projection, review)
-    revision = model_revision()
+    revision = model_revision(projection, review, checked_sources)
     previous_snapshot = json.loads(args.previous.read_text()) if args.previous else None
     previous = previous_snapshot.get("projection", previous_snapshot) if previous_snapshot else None
     previous_review = previous_snapshot.get("review") if previous_snapshot else None

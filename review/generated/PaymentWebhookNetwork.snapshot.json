@@ -1,5 +1,5 @@
 {
-  "modelRevision": "f0c0290e6912",
+  "modelRevision": "0a3bcdca6eaa",
   "projection": {
     "bindingRows": [
       {
@@ -104,6 +104,32 @@
         "description": "eventId is present; status is success; ledger observation is true",
         "id": "PaymentWebhookNetwork.inputPartition.duplicateSuccess",
         "name": "duplicateSuccess"
+      }
+    ],
+    "mappingCoverage": [
+      {
+        "id": "PaymentWebhookNetwork.decide",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhookNetwork.requestLedgerCommand",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhookNetwork.planResponse",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhookNetwork.planAudit",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhookNetwork.planNotification",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhookNetwork.planFulfillment",
+        "missingDefinedMappings": 0
       }
     ],
     "missingImplementation": 0,

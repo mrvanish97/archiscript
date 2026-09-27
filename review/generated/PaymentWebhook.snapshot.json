@@ -1,5 +1,5 @@
 {
-  "modelRevision": "09c2b1ec5505",
+  "modelRevision": "3a05a3231100",
   "projection": {
     "checkedClaims": [
       {
@@ -344,6 +344,16 @@
     "ledgerMembers": [
       "recordFailure",
       "recordAndQueueFulfillment"
+    ],
+    "mappingCoverage": [
+      {
+        "id": "PaymentWebhook.decide",
+        "missingDefinedMappings": 0
+      },
+      {
+        "id": "PaymentWebhook.requestLedgerCommand",
+        "missingDefinedMappings": 0
+      }
     ],
     "model": "PaymentWebhook",
     "objects": [

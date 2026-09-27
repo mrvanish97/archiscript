@@ -1,8 +1,10 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `f0c0290e6912`
+Model revision: `0a3bcdca6eaa`
 
 Review state: **draft** · implementation gate: **CLOSED**
+
+Named branch handoff: **COMPLETE** across 6 registered operations.
 
 A connected webhook decision architecture with provider response, audit, notification, ledger-command, and fulfillment-request plans.
 
@@ -143,6 +145,6 @@ The output VDPs describe plans. The model does not establish that any HTTP respo
 
 ## Source anchors
 
-- `ArchiScript/Examples/PaymentWebhookNetwork.lean`: new VDPs, operations, canonical registry, and path proofs
-- `ArchiScript/Examples/PaymentWebhook.lean`: input semantics and the base decision/ledger operations
+- `ArchiScriptExamples/PaymentWebhookNetwork.lean`: new VDPs, operations, canonical registry, and path proofs
+- `ArchiScriptExamples/PaymentWebhook.lean`: input semantics and the base decision/ledger operations
 - `review/payment-webhook-network.review.json`: draft review questions and findings

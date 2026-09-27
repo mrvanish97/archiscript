@@ -1,9 +1,9 @@
 import Lean
-import ArchiScript.Examples.PaymentWebhook
+import ArchiScriptExamples.PaymentWebhook
 
 open Lean
 open ArchiScript
-open ArchiScript.Examples.PaymentWebhook
+open ArchiScriptExamples.PaymentWebhook
 
 private def shortName {α : Type} [Repr α] (value : α) : String :=
   (reprStr value).splitOn "." |>.getLast!
@@ -91,6 +91,13 @@ private def inputRegionJson (name : InputMember) : Json :=
     ("description", toJson (inputRegion name).description)
   ]
 
+private def mappingCoverageJson (name : OperationName) : Json :=
+  let declaration := operationRegistry.resolve name
+  Json.mkObj [
+    ("id", toJson s!"PaymentWebhook.{shortName name}"),
+    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
+  ]
+
 private def projection : Json := Json.mkObj [
   ("model", toJson "PaymentWebhook"),
   ("objects", toJson ([
@@ -138,6 +145,7 @@ private def projection : Json := Json.mkObj [
   ("decideBranches", toJson (decideDeclaration.branchNames.map decideBranchJson)),
   ("ledgerBranches", toJson (ledgerDeclaration.branchNames.map ledgerBranchJson)),
   ("ledgerMappings", toJson (decisionPartition.memberIndices.map ledgerMappingJson)),
+  ("mappingCoverage", toJson (operationRegistry.operationNames.map mappingCoverageJson)),
   ("checkedClaims", toJson checkedClaims)
 ]
 

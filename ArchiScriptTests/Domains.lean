@@ -1,8 +1,8 @@
 import ArchiScript
-import ArchiScript.Examples.FormInput
+import ArchiScriptExamples.FormInput
 
 namespace ArchiScriptTests.Domains
-open ArchiScript ArchiScript.Examples.FormInput
+open ArchiScript ArchiScriptExamples.FormInput
 
 -- Supporting subdomains may overlap and need not cover the whole carrier.
 example : emailProvided ("a@example.test", "Ada") ∧ nameProvided ("a@example.test", "Ada") := by

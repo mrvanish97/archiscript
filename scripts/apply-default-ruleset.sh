@@ -9,8 +9,14 @@ if [[ -z "$repository" ]]; then
   else
     remote_url="$(git remote get-url origin 2>/dev/null || true)"
     if [[ -n "$remote_url" ]]; then
-      if [[ "$remote_url" =~ github\.com[:/](.+)/([^/]+?)(\.git)?$ ]]; then
-        repository="${BASH_REMATCH[1]}/${BASH_REMATCH[2]}"
+      case "$remote_url" in
+        git@github.com:*) remote_path="${remote_url#git@github.com:}" ;;
+        https://github.com/*) remote_path="${remote_url#https://github.com/}" ;;
+        *) remote_path="" ;;
+      esac
+      remote_path="${remote_path%.git}"
+      if [[ "$remote_path" =~ ^[^/]+/[^/]+$ ]]; then
+        repository="$remote_path"
       fi
     fi
   fi

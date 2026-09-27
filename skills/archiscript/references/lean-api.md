@@ -74,7 +74,7 @@ implemented as `fun x => parent x ∧ ¬ s x`. Supply containment evidence
 not itself contained in `emailProvided`.
 
 A VDP groups regions at the resolution its consumers need. The library's
-`ArchiScript.Examples.FormInput` demonstrates two arbitrary string fields:
+`ArchiScriptExamples.FormInput` demonstrates two arbitrary string fields:
 `emailProvided` and `nameProvided` overlap, their intersection is `completeForm`,
 and the remaining three combinations can be either separate members or one
 incomplete member. Both VDPs have checked `Realizes` evidence. The
@@ -172,24 +172,31 @@ missing metadata. `branchesAt sourceRef` returns addresses bound to a matching
 primary or supporting source identity, ignoring line/revision drift. These
 functions inspect declarations; they do not scan repositories, validate paths
 or symbols, or prove that tests and production code conform.
+`Declaration.definedMappingsWithoutBranch` lists defined source-member mappings
+that an optional named branch subset omits. An empty missing-metadata query over
+named branches does not establish whole-operation handoff completeness; check
+this mapping query separately when handing off the full operation. Both example
+review exporters include a coverage count for every registry operation, and
+their generators reject missing coverage or unnamed defined mappings.
 
 The repository example demonstrates an effect theorem tied to a canonical
 branch:
 
 ```lean
-import ArchiScript.Examples.UserRegistration
+import ArchiScriptExamples.UserRegistration
 
-open ArchiScript.Examples.UserRegistration
+open ArchiScriptExamples.UserRegistration
 
 #check existingUserBranch
 #check existingUserBranchWitness
-#check existingUserBranch_creates_no_user
+#check ExistingSelection.input_is_selected_id
 #check NewUserCreation
 ```
 
-`existingUserBranch_creates_no_user` depends on an explicit
-`ExistingSelection` contract whose `store_preserved` premise provides the
-no-creation result. It is not derived from the member labels.
+This is a preclassified API fixture, not a raw-input registration model.
+`ExistingSelection.input_is_selected_id` requires the selected output ID to
+match the input ID. Its store premise is separate from that value relation and
+from the member map.
 The new-user contract's `absent_before` and `present_after` fields can be used
 directly; do not add a theorem merely to conjoin them. Likewise, branch aliases
 need no named equality theorem. Tests can check the API without turning those
@@ -207,7 +214,10 @@ authentication. A Lean build does not set review state or approve architecture.
 The repository's PaymentWebhook prototype exports typed model facts from Lean,
 joins them with structured review metadata, and generates Markdown and PDF
 snapshots. The generator validates that every review subject names an exported
-model object. Its revision hash changes when the relevant model sources change.
+model object. Its revision hash covers checked model sources, the exported
+projection, and substantive review metadata; approval fields are excluded.
+The generator builds the imported Lean model before export. An executable test
+compares the Lean and Python approval gates on a shared case matrix.
 General model export and automated source-location freshness checks are future
 work.
 

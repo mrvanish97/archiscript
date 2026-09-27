@@ -35,6 +35,12 @@ class NetworkShowcaseTests(unittest.TestCase):
         self.assertIn('S4 -->|"planNotification"| T2', after)
         self.assertNotEqual(before, after)
 
+    def test_missing_named_mapping_rejects_network_review(self):
+        altered = json.loads(json.dumps(self.projection))
+        altered["mappingCoverage"][0]["missingDefinedMappings"] = 1
+        with self.assertRaisesRegex(ValueError, "defined mappings lack named branches"):
+            showcase.validate(altered, self.review)
+
 
 if __name__ == "__main__":
     unittest.main()

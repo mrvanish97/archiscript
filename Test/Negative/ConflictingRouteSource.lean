@@ -1,7 +1,7 @@
-import ArchiScript.Examples.UserRegistration
+import ArchiScriptExamples.UserRegistration
 
 open ArchiScript
-open ArchiScript.Examples.UserRegistration
+open ArchiScriptExamples.UserRegistration
 
 -- Expected failure: a route cannot attach the canonical `register` payload to
 -- a specialization whose source is `registrationPartition`.

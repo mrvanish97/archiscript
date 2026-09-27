@@ -49,6 +49,13 @@ and PDF snapshot produced by `scripts/build-review-pack.py`. The exporter reads
 members, branch mappings, responsibility, bindings, and theorem-backed claims
 from Lean. Review notes and findings live in
 `review/payment-webhook.review.json`; the generator validates their subject IDs.
-The model revision is a source hash. Pass `--previous` with an older generated
+The model revision hashes the checked Lean sources, exported projection, and
+substantive review metadata (including boundary, assumptions, effects, and
+findings). Approval fields are excluded from this hash. Pass `--previous` with an older generated
 snapshot JSON to include a semantic and review-metadata change summary. This is a focused prototype, not a
 general ArchiScript compiler or authenticated review service.
+
+Each exported operation must have a mapping coverage row. Review generation
+rejects defined member mappings omitted from the named branch handoff. The
+snapshot diff compares named records by canonical identity, so row order does
+not create false semantic changes.

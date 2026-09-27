@@ -1,9 +1,12 @@
 name = "archiscript"
 version = "0.2.0"
-defaultTargets = ["ArchiScript", "ArchiScriptTests"]
+defaultTargets = ["ArchiScript", "ArchiScriptExamples", "ArchiScriptTests"]
 
 [[lean_lib]]
 name = "ArchiScript"
+
+[[lean_lib]]
+name = "ArchiScriptExamples"
 
 [[lean_lib]]
 name = "ArchiScriptTests"

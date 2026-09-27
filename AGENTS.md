@@ -29,3 +29,37 @@ departures explicitly, with references to the relevant design, rather than
 silently redefining the model. Follow explicit user changes to that design.
 If the sibling repository is unavailable, report that limitation before making
 design-sensitive assumptions.
+
+## Repository conventions and guardrails
+
+- Keep the public `ArchiScript` library focused on the calculus. Put companion
+  models in `ArchiScriptExamples`; the installed skill smoke file must compile
+  from the public library alone. Keep operation algebra separate from branch,
+  responsibility, and implementation-binding metadata.
+- Treat a complete `branchNames` list as covering only its chosen name type.
+  An empty missing-metadata query over named branches does not prove coverage of every
+  defined member mapping. For whole-operation handoff, check
+  `Declaration.definedMappingsWithoutBranch` for every registered operation and
+  make review generation reject missing coverage. Named branch subsets remain
+  valid when whole-operation completeness is not claimed.
+- Do not infer value selection or runtime effects from member mappings. State
+  needed input/output identity and state-change relations in typed contracts. A proof
+  that merely returns the same contract field adds no guarantee; use a negative
+  check for the bad case instead. Label preclassified API fixtures explicitly,
+  and do not present their constructors as a validated raw-input boundary.
+- Build imported Lean targets before `lean --run` exports. Bind review revisions
+  to the checked sources, exported projection, and substantive review metadata;
+  exclude approval fields to avoid circular hashes. Reject source changes during
+  export. Keep Lean and Python approval predicates in executable agreement.
+- Diff review snapshots by canonical IDs and source identities, covering edits
+  and removals of findings, claims, bindings, and evidence. Ignore list order
+  when it has no semantics, and report each change once. Regenerate review
+  artifacts after changing exporters or model paths; draft packs remain draft
+  until an engineer records approval.
+- Parse GitHub remote prefixes and strip `.git` explicitly in Bash. Its ERE
+  syntax has no lazy `+?` quantifier. Test remote parsing with local command
+  stubs so tests cannot mutate remote rulesets.
+- Preserve legitimate closed enums, simple `id`/`rfl` proofs, flat declarations,
+  coarsening, and optional branch subsets. Add regression checks for reproduced
+  failures rather than replacing the established model with a convenient new
+  abstraction.

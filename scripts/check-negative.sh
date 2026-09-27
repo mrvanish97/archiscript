@@ -19,6 +19,9 @@ for source in Test/Negative/*.lean; do
     *UninhabitedMember.lean)
       expected="Two.left = Two.right"
       ;;
+    *SelectionWrongId.lean)
+      expected="PreclassifiedUserInput.existingUser 7 = PreclassifiedUserInput.existingUser 42"
+      ;;
     *OverlappingMembers.lean)
       expected="formPartition.member i x ↔ overlappingRegions i x"
       ;;

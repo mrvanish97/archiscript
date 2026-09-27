@@ -1,4 +1,4 @@
 import ArchiScript.Partition
-import ArchiScript.Operation
+import ArchiScript.Operation.Declaration
 import ArchiScript.Review
 import ArchiScript.ParameterizedPartition

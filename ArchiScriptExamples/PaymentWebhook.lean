@@ -1,6 +1,6 @@
-import ArchiScript.Operation
+import ArchiScript.Operation.Declaration
 
-namespace ArchiScript.Examples.PaymentWebhook
+namespace ArchiScriptExamples.PaymentWebhook
 open ArchiScript
 
 /-- The receipt decision depends on the event and a ledger observation. -/
@@ -201,4 +201,4 @@ theorem same_event_different_ledger_member :
     inputPartition.classify ⟨"p1", "success", true⟩ = .duplicateSuccess := by
   constructor <;> rfl
 
-end ArchiScript.Examples.PaymentWebhook
+end ArchiScriptExamples.PaymentWebhook

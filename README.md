@@ -12,7 +12,7 @@ approved canonical branches.
 **Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
 · [generated Mermaid views](review/generated/PaymentWebhook.md)
 · [seven-VDP showcase](review/generated/PaymentWebhookNetwork.md)
-· [Lean model](ArchiScript/Examples/PaymentWebhook.lean)
+· [Lean model](ArchiScriptExamples/PaymentWebhook.lean)
 · [bound implementation](examples/payment-webhook.mjs)
 
 ```text
@@ -49,7 +49,7 @@ precise claim even when the claim omits a real-world case.
 
 ## Worked example: payment webhook retries
 
-The [PaymentWebhook model](ArchiScript/Examples/PaymentWebhook.lean) declares an
+The [PaymentWebhook model](ArchiScriptExamples/PaymentWebhook.lean) declares an
 input with `eventId : String`, `status : String`, and
 `alreadyRecorded : Bool`. The Boolean represents a ledger observation supplied
 to the model. The model does not establish how that observation is obtained or
@@ -114,8 +114,8 @@ check the first-success and duplicate-success paths. A change that maps
 `duplicateSuccess` to `fulfill` breaks the duplicate path theorem.
 
 ```lean
-import ArchiScript.Examples.PaymentWebhook
-open ArchiScript.Examples.PaymentWebhook
+import ArchiScriptExamples.PaymentWebhook
+open ArchiScriptExamples.PaymentWebhook
 
 example : inputPartition.Realizes inputRegions :=
   inputPartition_realizes_regions
@@ -152,7 +152,7 @@ that every production environment follows the model.
 
 ## A connected seven-VDP review
 
-The [PaymentWebhookNetwork model](ArchiScript/Examples/PaymentWebhookNetwork.lean)
+The [PaymentWebhookNetwork model](ArchiScriptExamples/PaymentWebhookNetwork.lean)
 extends the checked webhook decision with provider-response, audit,
 notification, and fulfillment-request plans. Each plan is a separate
 architectural obligation. An arrow still means a member mapping, never a
@@ -223,8 +223,8 @@ report semantic changes.
 
 [![First-page preview of the generated PaymentWebhook engineering review pack, showing the draft gate, boundary question, and operation topology](review/generated/PaymentWebhook-preview.png)](review/generated/PaymentWebhook.pdf)
 
-*The first page of the generated PDF for model revision `09c2b1ec5505`,
-rasterized for this README. Select it to open the full review pack.*
+*The first page of the generated draft review PDF, rasterized for this README.
+Select it to open the full review pack.*
 
 The prototype recognizes `draft`, `ready-for-review`, `changes-requested`,
 `approved`, and `superseded`. Approval is tied to a named reviewer and model
@@ -268,7 +268,7 @@ A **subdomain** is a predicate over a meaningful base domain. Supporting
 subdomains may overlap and need not exhaust that base. A **VDP** selects a finite
 set of nonempty, disjoint members that exhausts its carrier. Several VDPs can
 expose different resolutions of the same carrier; coarsening deliberately
-forgets distinctions. The smaller [FormInput example](ArchiScript/Examples/FormInput.lean)
+forgets distinctions. The smaller [FormInput example](ArchiScriptExamples/FormInput.lean)
 shows four field-presence cases grouped into `complete` and `incomplete`.
 The [negative examples](Test/Negative) show failed correspondence for missing
 and overlapping selected regions.
@@ -354,7 +354,9 @@ uv run --no-project python scripts/build-review-pack.py
 uv run --no-project python scripts/build-webhook-network-showcase.py
 ```
 
-The public Lean entry point is [ArchiScript.lean](ArchiScript.lean). The
+The public Lean entry point is [ArchiScript.lean](ArchiScript.lean). Companion
+models live in the separate [ArchiScriptExamples library](ArchiScriptExamples.lean).
+The installed skill smoke example imports only the public library. The
 [Lean API guide](skills/archiscript/references/lean-api.md) covers registry
 identity, bindings, routing, and effect contracts. To compare review revisions,
 run the pack builder with `--previous path/to/PaymentWebhook.snapshot.json`.

@@ -1,7 +1,7 @@
 import ArchiScript
-import ArchiScript.Examples.FormInput
+import ArchiScriptExamples.FormInput
 
-open ArchiScript ArchiScript.Examples.FormInput
+open ArchiScript ArchiScriptExamples.FormInput
 
 -- Listing only both-present and both-missing omits the mixed input cases.
 def incompleteRegions : formPartition.MemberIndex → Domain Input

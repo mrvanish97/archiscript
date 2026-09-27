@@ -13,21 +13,25 @@ REVIEW = ROOT / "review/payment-webhook-network.review.json"
 MODEL_SOURCES = (
     "ArchiScript/Partition.lean",
     "ArchiScript/Operation.lean",
-    "ArchiScript/Examples/PaymentWebhook.lean",
-    "ArchiScript/Examples/PaymentWebhookNetwork.lean",
+    "ArchiScript/Operation/Declaration.lean",
+    "ArchiScriptExamples/PaymentWebhook.lean",
+    "ArchiScriptExamples/PaymentWebhookNetwork.lean",
 )
 
 
-def revision():
+def revision(projection, review):
     digest = hashlib.sha256()
     for name in MODEL_SOURCES:
         digest.update(name.encode())
         digest.update((ROOT / name).read_bytes())
+    digest.update(json.dumps({"projection": projection, "review": review},
+                             sort_keys=True, ensure_ascii=False,
+                             separators=(",", ":")).encode())
     return digest.hexdigest()[:12]
 
 
 def export_projection():
-    subprocess.run(["lake", "build", "ArchiScript.Examples.PaymentWebhookNetwork"],
+    subprocess.run(["lake", "build", "ArchiScriptExamples.PaymentWebhookNetwork"],
                    cwd=ROOT, check=True, capture_output=True, text=True)
     result = subprocess.run(
         ["lake", "env", "lean", "--run", "scripts/export-webhook-network.lean"],
@@ -47,6 +51,14 @@ def validate(projection, review):
     for item in operations:
         if item["source"] not in partitions or item["target"] not in partitions:
             raise ValueError(f"operation endpoint is not a selected VDP: {item['id']}")
+    coverage = projection["mappingCoverage"]
+    operation_ids = {item["id"] for item in operations}
+    if (len(coverage) != len(operation_ids) or
+            {item["id"] for item in coverage} != operation_ids):
+        raise ValueError("mapping coverage must name every exported operation once")
+    missing = [item["id"] for item in coverage if item["missingDefinedMappings"]]
+    if missing:
+        raise ValueError(f"defined mappings lack named branches: {', '.join(missing)}")
     decision = next(item for item in projection["partitions"]
                     if item["name"] == "decisionPartition")
     if {item["source"] for item in projection["notificationMappings"]} != set(decision["members"]):
@@ -117,6 +129,7 @@ def markdown(projection, review, model_revision):
         "# PaymentWebhookNetwork: one model, several review views", "",
         f"Model revision: `{model_revision}`", "",
         f"Review state: **{review['state']}** · implementation gate: **CLOSED**", "",
+        f"Named branch handoff: **COMPLETE** across {len(projection['mappingCoverage'])} registered operations.", "",
         review["scope"], "",
         "These are read-only projections of the Lean model. Arrows map semantic members; they are not runtime calls.", "",
         "## Level 1 · Entire operation topology", "",
@@ -159,8 +172,8 @@ def markdown(projection, review, model_revision):
         lines.append(f"| `{item['id']}` | `{item['subject']}` | {item['concern']} | {item['disposition']} |")
     lines += ["", "The output VDPs describe plans. The model does not establish that any HTTP response, audit record, notification, ledger write, or queue publication occurs atomically or at all.", "",
               "## Source anchors", "",
-              "- `ArchiScript/Examples/PaymentWebhookNetwork.lean`: new VDPs, operations, canonical registry, and path proofs",
-              "- `ArchiScript/Examples/PaymentWebhook.lean`: input semantics and the base decision/ledger operations",
+              "- `ArchiScriptExamples/PaymentWebhookNetwork.lean`: new VDPs, operations, canonical registry, and path proofs",
+              "- `ArchiScriptExamples/PaymentWebhook.lean`: input semantics and the base decision/ledger operations",
               "- `review/payment-webhook-network.review.json`: draft review questions and findings", ""]
     return "\n".join(lines)
 
@@ -169,7 +182,7 @@ def main():
     projection = export_projection()
     review = json.loads(REVIEW.read_text())
     validate(projection, review)
-    model_revision = revision()
+    model_revision = revision(projection, review)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     snapshot = {"modelRevision": model_revision, "projection": projection, "review": review}
     (OUTPUT / "PaymentWebhookNetwork.snapshot.json").write_text(

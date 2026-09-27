@@ -1,6 +1,6 @@
-import ArchiScript.Examples.PaymentWebhook
+import ArchiScriptExamples.PaymentWebhook
 
-namespace ArchiScript.Examples.PaymentWebhookNetwork
+namespace ArchiScriptExamples.PaymentWebhookNetwork
 open ArchiScript
 
 /-- The response obligation to the provider, not an HTTP write. -/
@@ -209,4 +209,4 @@ theorem first_success_requests_fulfillment :
       (PaymentWebhook.requestLedgerCommand.comp PaymentWebhook.decide))
       .firstSuccess = some .enqueue := rfl
 
-end ArchiScript.Examples.PaymentWebhookNetwork
+end ArchiScriptExamples.PaymentWebhookNetwork

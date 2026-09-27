@@ -239,7 +239,11 @@ Keep `branchNames` and `operationNames` exhaustive and duplicate-free. Use
 `Registry.branchAddresses`, `branchesWithoutResponsibility`, and
 `branchesWithoutImplementation` for whole-model review; use `branchesAt` for
 reverse navigation from a declared source identity. An enumerable registry
-checks only its declared scope. Do not claim that it discovers all production
+checks only its declared scope. Use `Declaration.definedMappingsWithoutBranch`
+to expose defined member mappings omitted by optional named branches before
+claiming a whole-operation handoff. The example review generators require a
+coverage row for every registry operation and reject unnamed defined mappings.
+Do not claim that it discovers all production
 code or validates source paths. A source member mapped to `none` is not a typed
 `Branch` in the current API; review that undefined mapping through the operation
 itself and show it explicitly in relevant diagrams.

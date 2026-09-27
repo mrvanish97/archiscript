@@ -1,5 +1,4 @@
 import ArchiScript
-import ArchiScript.Examples.UserRegistration
 
 namespace SkillSmoke
 
@@ -74,26 +73,3 @@ def acceptedBranchWitness := registry.resolveBranch acceptedBranch
 #guard registry.branchesWithoutImplementation.length == 0
 
 end SkillSmoke
-
-namespace UserRegistrationSmoke
-
-open ArchiScript
-open ArchiScript.Examples.UserRegistration
-
-example : register existingUserBranchWitness.source =
-    some existingUserBranchWitness.target :=
-  existingUserBranchWitness.in_operation
-
-example : existingUserBranch ≠ returnExistingBranch :=
-  same_branch_name_different_operations
-
-example : existingUserBranchAlias = existingUserBranch :=
-  rfl
-
-example : ParameterizedPartition.RoutingRelevant routedRegistration :=
-  routedRegistration_is_relevant
-
-#check existingUserBranch_creates_no_user
-#check NewUserCreation
-
-end UserRegistrationSmoke

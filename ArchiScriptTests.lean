@@ -1,12 +1,12 @@
 import ArchiScript
-import ArchiScript.Examples.UserRegistration
-import ArchiScript.Examples.PaymentWebhook
-import ArchiScript.Examples.PaymentWebhookNetwork
+import ArchiScriptExamples.UserRegistration
+import ArchiScriptExamples.PaymentWebhook
+import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptTests.Domains
 
 namespace ArchiScriptTests
 open ArchiScript
-open ArchiScript.Examples.UserRegistration
+open ArchiScriptExamples.UserRegistration
 
 example (x : userPartition.Carrier) : ∃ i, userPartition.member i x :=
   userPartition.coverage x
@@ -37,6 +37,23 @@ example : ParameterizedPartition.RoutesEquivalent renamedRoutes .web .api :=
 
 -- Whole-operation responsibility, inheritance, overrides, and canonical aliases.
 #guard registerDeclaration.responsibilityOwners == ["registration"]
+#guard registerDeclaration.definedMappingsWithoutBranch.length == 0
+
+inductive EmptyBranchName deriving DecidableEq
+
+private def omittedRegisterBranches : Operation.Declaration where
+  source := userPartition
+  target := registrationPartition
+  operation := register
+  BranchName := EmptyBranchName
+  branchNameDecidableEq := inferInstance
+  branchNames := []
+  branchNames_complete := by intro name; cases name
+  branchNames_nodup := by simp
+  branch := by intro name; cases name
+
+-- Named branches are optional; this query exposes their handoff coverage.
+#guard omittedRegisterBranches.definedMappingsWithoutBranch.length == 3
 #guard operationRegistry.resolveBranchResponsibility existingUserBranch == ["registration"]
 #guard operationRegistry.resolveBranchResponsibility newUserBranch == ["user-storage"]
 #guard operationRegistry.resolveBranchResponsibility existingUserBranchAlias == ["registration"]
@@ -64,7 +81,7 @@ def explicitlyUnassigned : Operation.Declaration :=
 #guard (operationRegistry.resolveBranch newUserBranch).target == RegistrationMemberIndex.created
 
 -- The companion implementation binds every defined PaymentWebhook branch.
-private def webhookRegistry := ArchiScript.Examples.PaymentWebhook.operationRegistry
+private def webhookRegistry := ArchiScriptExamples.PaymentWebhook.operationRegistry
 #guard webhookRegistry.branchAddresses.length == 7
 #guard webhookRegistry.branchesWithoutResponsibility.length == 0
 #guard webhookRegistry.branchesWithoutImplementation.length == 0
@@ -75,7 +92,7 @@ private def webhookRegistry := ArchiScript.Examples.PaymentWebhook.operationRegi
   repository := "archiscript", path := "examples/payment-webhook.mjs",
   symbol := some "handleWebhook" }).length == 7
 
-private def networkRegistry := ArchiScript.Examples.PaymentWebhookNetwork.operationRegistry
+private def networkRegistry := ArchiScriptExamples.PaymentWebhookNetwork.operationRegistry
 #guard networkRegistry.operationNames.length == 6
 #guard networkRegistry.branchAddresses.length == 20
 #guard networkRegistry.branchesWithoutResponsibility.length == 0

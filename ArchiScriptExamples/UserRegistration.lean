@@ -1,9 +1,11 @@
 import ArchiScript.ParameterizedPartition
 
-namespace ArchiScript.Examples.UserRegistration
+namespace ArchiScriptExamples.UserRegistration
 open ArchiScript
 
-inductive UserInput where
+/-- Preclassified API fixture. These constructors assume upstream classification;
+they do not model untrusted registration input or validate email strings. -/
+inductive PreclassifiedUserInput where
   | malformed
   | newUser (email : String)
   | existingUser (id : Nat)
@@ -16,7 +18,7 @@ inductive UserMemberIndex where
   deriving DecidableEq, Repr
 
 def userPartition : Partition where
-  Carrier := UserInput
+  Carrier := PreclassifiedUserInput
   MemberIndex := UserMemberIndex
   carrierNonempty := ⟨.malformed⟩
   memberIndexDecidableEq := inferInstance
@@ -65,9 +67,6 @@ def register : Operation userPartition registrationPartition where
     | .validExisting => some .selected
 
 abbrev UserStore := Nat → Prop
-
-def NoNewUserCreated (before after : UserStore) : Prop :=
-  ∀ id, after id → before id
 
 inductive Channel where | web | api deriving DecidableEq, Repr
 
@@ -191,33 +190,26 @@ def existingUserBranchAlias : Operation.BranchAddress operationRegistry :=
   ⟨registerAlias, .existingUser⟩
 
 /--
-The existing-user effect contract is indexed by the canonical resolved branch.
-Its store conclusion comes from `store_preserved`, not from member mapping.
+The existing-user value and effect contract is indexed by the canonical resolved
+branch. The selected ID relation and store premise are separate from the member map.
 -/
 structure ExistingSelection (branch : Operation.Branch register)
     (before after : UserStore) where
   source_is_existing : branch.source = UserMemberIndex.validExisting
-  input : UserInput
+  input : PreclassifiedUserInput
   input_in_branch : userPartition.classify input = branch.source
   output : RegistrationResult
   output_in_branch : registrationPartition.classify output = branch.target
   selectedId : Nat
+  input_is_selected_id : input = .existingUser selectedId
   selected_was_present : before selectedId
   output_is_selected : output = .selected selectedId
   store_preserved : after = before
 
-theorem existingUserBranch_creates_no_user
-    {before after : UserStore}
-    (step : ExistingSelection existingUserBranchWitness before after) :
-    NoNewUserCreated before after := by
-  intro id presentAfter
-  rw [step.store_preserved] at presentAfter
-  exact presentAfter
-
 structure NewUserCreation (branch : Operation.Branch register)
     (before after : UserStore) where
   source_is_new : branch.source = UserMemberIndex.validNew
-  input : UserInput
+  input : PreclassifiedUserInput
   input_in_branch : userPartition.classify input = branch.source
   output : RegistrationResult
   output_in_branch : registrationPartition.classify output = branch.target
@@ -303,4 +295,4 @@ def regionalChannelRegistration : ParameterizedPartition.Nested regionPartition 
 example : (regionalChannelRegistration.specialize .domestic .web).MemberIndex =
     RegistrationMemberIndex := rfl
 
-end ArchiScript.Examples.UserRegistration
+end ArchiScriptExamples.UserRegistration
