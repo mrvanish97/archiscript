@@ -361,7 +361,7 @@ def markdown_pack(projection, review, revision, changes, allowed):
         "**Opaque subdomains:** " + ("; ".join(f"`{name}` — {reason}"
             for name, reason in opaque_member_warnings(projection)) or "none") + ".", "",
         "An opaque subdomain has a declared extension but no formula available for deduction. Review its meaning and consider specifying a formula.", "",
-        "The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.", "",
+        "The input carrier pairs `WebhookPayload` with a separate `LedgerObservation`; the model does not establish how that observation was acquired.", "",
         "Coarsening: none represented in this scoped review projection.", "",
         "| Input member | Review meaning |", "| --- | --- |",
         *[f"| `{item['name']}` | {item['description']} |" for item in projection["inputRegions"]], "",

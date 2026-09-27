@@ -4,11 +4,21 @@ import ArchiScript.Boundary
 namespace ArchiScriptExamples.PaymentWebhook
 open ArchiScript
 
-/-- The receipt decision depends on the event and a ledger observation. -/
-structure Input where
+/-- Decoded webhook data. No ledger fact belongs to this payload. -/
+structure WebhookPayload where
   eventId : String
   status : String
+  deriving Repr
+
+/-- Preexisting state observed for this decision. Its consistency is external. -/
+structure LedgerObservation where
   alreadyRecorded : Bool
+  deriving Repr
+
+/-- The VDP carrier combines incoming data with relevant preexisting state. -/
+structure Input where
+  payload : WebhookPayload
+  ledger : LedgerObservation
   deriving Repr
 
 inductive InputMember where
@@ -18,22 +28,22 @@ inductive InputMember where
 def inputPartition : Partition where
   Carrier := Input
   MemberIndex := InputMember
-  carrierNonempty := ⟨⟨"", "success", false⟩⟩
+  carrierNonempty := ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩⟩
   memberIndexDecidableEq := inferInstance
   memberIndices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
   memberIndices_complete := by intro i; cases i <;> simp
   classify x :=
-    if x.eventId = "" then .malformed
-    else if x.status = "success" then
-      if x.alreadyRecorded then .duplicateSuccess else .firstSuccess
-    else if x.status = "failed" then .failed
+    if x.payload.eventId = "" then .malformed
+    else if x.payload.status = "success" then
+      if x.ledger.alreadyRecorded then .duplicateSuccess else .firstSuccess
+    else if x.payload.status = "failed" then .failed
     else .unsupported
   member_inhabited
-    | .malformed => ⟨⟨"", "success", false⟩, rfl⟩
-    | .unsupported => ⟨⟨"p1", "pending", false⟩, rfl⟩
-    | .failed => ⟨⟨"p1", "failed", false⟩, rfl⟩
-    | .firstSuccess => ⟨⟨"p1", "success", false⟩, rfl⟩
-    | .duplicateSuccess => ⟨⟨"p1", "success", true⟩, rfl⟩
+    | .malformed => ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩, rfl⟩
+    | .unsupported => ⟨⟨⟨"p1", "pending"⟩, ⟨false⟩⟩, rfl⟩
+    | .failed => ⟨⟨⟨"p1", "failed"⟩, ⟨false⟩⟩, rfl⟩
+    | .firstSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨false⟩⟩, rfl⟩
+    | .duplicateSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨true⟩⟩, rfl⟩
 
 /-- Human descriptions live beside their predicates; the descriptions are review text. -/
 structure InputRegion where
@@ -42,28 +52,28 @@ structure InputRegion where
 
 /-- These meanings are stated separately from the classifier above. -/
 def inputRegion : InputMember → InputRegion
-  | .malformed => ⟨fun x => x.eventId = "", "eventId is empty, regardless of status or ledger observation"⟩
-  | .unsupported => ⟨fun x => x.eventId ≠ "" ∧ x.status ≠ "success" ∧ x.status ≠ "failed",
+  | .malformed => ⟨fun x => x.payload.eventId = "", "eventId is empty, regardless of status or ledger observation"⟩
+  | .unsupported => ⟨fun x => x.payload.eventId ≠ "" ∧ x.payload.status ≠ "success" ∧ x.payload.status ≠ "failed",
       "eventId is present; status is neither success nor failed"⟩
-  | .failed => ⟨fun x => x.eventId ≠ "" ∧ x.status = "failed",
+  | .failed => ⟨fun x => x.payload.eventId ≠ "" ∧ x.payload.status = "failed",
       "eventId is present; status is failed"⟩
-  | .firstSuccess => ⟨fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = false,
+  | .firstSuccess => ⟨fun x => x.payload.eventId ≠ "" ∧ x.payload.status = "success" ∧ x.ledger.alreadyRecorded = false,
       "eventId is present; status is success; ledger observation is false"⟩
-  | .duplicateSuccess => ⟨fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = true,
+  | .duplicateSuccess => ⟨fun x => x.payload.eventId ≠ "" ∧ x.payload.status = "success" ∧ x.ledger.alreadyRecorded = true,
       "eventId is present; status is success; ledger observation is true"⟩
 
 def inputMembers (member : InputMember) : Domain Input := (inputRegion member).predicate
 
 theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := by
   intro i x
-  cases i <;> cases x with
-  | mk eventId status alreadyRecorded =>
-    by_cases hId : eventId = "" <;>
-    by_cases hSuccess : status = "success" <;>
-    by_cases hFailed : status = "failed" <;>
-    cases alreadyRecorded <;>
-    simp [Partition.member, inputPartition, inputMembers, inputRegion,
-      hId, hSuccess, hFailed] at *
+  rcases x with ⟨⟨eventId, status⟩, ⟨alreadyRecorded⟩⟩
+  cases i <;>
+  by_cases hId : eventId = "" <;>
+  by_cases hSuccess : status = "success" <;>
+  by_cases hFailed : status = "failed" <;>
+  cases alreadyRecorded <;>
+  simp [Partition.member, inputPartition, inputMembers, inputRegion,
+    hId, hSuccess, hFailed] at *
 
 /-- Review and handoff carry the semantic member correspondence with the VDP. -/
 def inputSemanticPartition : SemanticPartition where
@@ -77,7 +87,7 @@ def inputArchitecture : ArchitecturalPartition where
   partition := inputPartition
   carrierProvenance := .externalRoot {
     source := "PaymentWebhook preclassified fixture"
-    scope := "Input eventId, status, and alreadyRecorded observation"
+    scope := "Input pairs decoded WebhookPayload with a LedgerObservation"
     claim := "The fixture supplies every value considered at this boundary"
     revision := "fixture-unversioned"
     identified := by decide
@@ -261,8 +271,8 @@ theorem duplicate_requests_no_ledger_command :
     (requestLedgerCommand.comp decide) .duplicateSuccess = none := rfl
 
 theorem same_event_different_ledger_member :
-    inputPartition.classify ⟨"p1", "success", false⟩ = .firstSuccess ∧
-    inputPartition.classify ⟨"p1", "success", true⟩ = .duplicateSuccess := by
+    inputPartition.classify ⟨⟨"p1", "success"⟩, ⟨false⟩⟩ = .firstSuccess ∧
+    inputPartition.classify ⟨⟨"p1", "success"⟩, ⟨true⟩⟩ = .duplicateSuccess := by
   constructor <;> rfl
 
 end ArchiScriptExamples.PaymentWebhook

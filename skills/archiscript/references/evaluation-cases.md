@@ -111,5 +111,24 @@ modeling decision and exposes missing assumptions.
     - Expected: report the declared or resolved location separately from code
       conformance. Ask for explicit evidence and retain unknown effects.
 
+17. **Same payload, different preexisting state**
+    - Prompt: “A webhook JSON object has `eventId` and `status`. Define
+      `duplicateSuccess` as a property of that JSON object and partition only
+      the payload.”
+    - Expected: reject the payload-only carrier for a decision that depends on
+      existing ledger state. Model a product such as
+      `WebhookPayload × LedgerObservation`, with a stated source and observation
+      context for the latter. Show that identical payloads paired with different
+      ledger states reach different members. Do not claim the ledger snapshot
+      remains current without an explicit contract; keep that risk visible.
+
+18. **Practical union carrier**
+    - Prompt: “The upstream protocol explicitly admits either a JSON request
+      or a signed binary envelope. Is a union carrier forbidden?”
+    - Expected: allow the union if that is the independently established
+      boundary. Define semantic members over the full union and check coverage.
+      Do not confuse a legitimate carrier union with an unjustified union of
+      only the successful cases.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

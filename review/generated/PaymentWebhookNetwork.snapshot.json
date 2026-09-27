@@ -1,12 +1,12 @@
 {
-  "modelRevision": "fae01dc3e29d",
+  "modelRevision": "440765ecff10",
   "projection": {
     "architecturalPartitions": [
       {
         "carrierProvenance": {
           "claim": "The fixture supplies every value considered at this boundary",
           "revision": "fixture-unversioned",
-          "scope": "Input eventId, status, and alreadyRecorded observation",
+          "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
           "source": "PaymentWebhook preclassified fixture",
           "status": "trusted-external-root"
         },

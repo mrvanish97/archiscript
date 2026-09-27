@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `12937bcad6f9`
+Model revision: `d133a964ada4`
 
 Review state: **draft**
 
@@ -22,7 +22,7 @@ Webhook input classification, decision mapping, and ledger-command mapping in th
 
 ### 3. Boundary to challenge
 
-**PaymentWebhook.Input** — Input combines eventId, status, and an alreadyRecorded Boolean supplied by a ledger observation.
+**PaymentWebhook.Input** — Input pairs decoded WebhookPayload with a separate LedgerObservation. alreadyRecorded is not a webhook field.
 
 **Review challenge:** Is the observation from a stable transaction or snapshot? Can concurrent deliveries change it before effects occur?
 
@@ -45,7 +45,7 @@ The arrows are semantic member mappings, not runtime calls.
 
 ### 5. Major assumptions and open questions
 
-- **PaymentWebhook.Input**: The model receives alreadyRecorded as a Boolean; its acquisition and consistency are not modeled.
+- **PaymentWebhook.Input**: The model receives LedgerObservation.alreadyRecorded separately from the webhook payload; its acquisition and consistency are not modeled.
 
 - **PaymentWebhook.Input**: What guarantees that alreadyRecorded remains valid until the handler finishes?
 - **PaymentWebhook.decide.duplicateSuccess**: Are duplicate acknowledgments required to be idempotent under concurrent delivery?
@@ -69,7 +69,7 @@ Each partition's selected member IDs and `HasMembers` proof travel in the review
 
 | Partition | Origin | Declared basis |
 | --- | --- | --- |
-| `PaymentWebhook.inputPartition` | `trusted-external-root` | source=PaymentWebhook preclassified fixture, scope=Input eventId, status, and alreadyRecorded observation, claim=The fixture supplies every value considered at this boundary, revision=fixture-unversioned |
+| `PaymentWebhook.inputPartition` | `trusted-external-root` | source=PaymentWebhook preclassified fixture, scope=Input pairs decoded WebhookPayload with a LedgerObservation, claim=The fixture supplies every value considered at this boundary, revision=fixture-unversioned |
 | `PaymentWebhook.decisionPartition` | `closed-constructors` | finite constructors exhaust carrier |
 | `PaymentWebhook.ledgerCommandPartition` | `closed-constructors` | finite constructors exhaust carrier |
 
@@ -79,7 +79,7 @@ External roots and guarantees are trusted premises; a checked derived contract d
 
 An opaque subdomain has a declared extension but no formula available for deduction. Review its meaning and consider specifying a formula.
 
-The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.
+The input carrier pairs `WebhookPayload` with a separate `LedgerObservation`; the model does not establish how that observation was acquired.
 
 Coarsening: none represented in this scoped review projection.
 

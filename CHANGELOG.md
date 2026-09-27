@@ -33,6 +33,9 @@
   Markdown, Mermaid, TikZ source, and PDF views show topology, semantic members,
   branch mappings, review questions, code bindings, and checked claims. Detailed
   diagrams place member boxes inside their VDP containers.
+- Made the webhook input carrier an explicit pair of decoded payload and
+  preexisting ledger observation. Duplicate membership depends on both factors;
+  the review still marks observation acquisition and consistency as unresolved.
 - Added Project Asphalt's adversarial deployment-control-plane slice, seeded
   defect catalog, executable fake-adapter scenarios, and explicit unknowns.
   Its signed-count probe demonstrates a checked modeled narrowing and a

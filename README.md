@@ -18,21 +18,26 @@ flowchart LR
   D["status = pending"] -.->|"omitted"| Q
 ```
 
-**With ArchiScript: start with the carrier.** Here the carrier is every possible
-`Input` record. One concrete value, shown in JSON form, is:
+**With ArchiScript: start with the carrier.** The incoming webhook payload and
+the existing ledger observation are separate inputs to the decision:
 
 ```json
-{"eventId":"p1","status":"pending","alreadyRecorded":false}
+{"eventId":"p1","status":"pending"}
 ```
 
-`eventId` and `status` can be *any* strings; `alreadyRecorded` can be either
-Boolean value. The latter is a supplied ledger observation, not a webhook field.
-The input VDP must cover **all** such records, including this `pending` value,
-empty IDs, and duplicate successes.
+```json
+{"alreadyRecorded":false}
+```
+
+The carrier is every pair `Input = WebhookPayload × LedgerObservation`.
+`eventId` and `status` can be *any* strings; the ledger observation can have
+either Boolean value. The input VDP must cover **all** such pairs, including
+this `pending` payload, empty IDs, and successful payloads paired with either
+ledger state.
 
 ```mermaid
 flowchart TB
-  subgraph CARRIER["Carrier: every Input record · eventId: String · status: String · alreadyRecorded: Bool"]
+  subgraph CARRIER["Carrier: Input = WebhookPayload × LedgerObservation"]
     subgraph INPUT["inputPartition · selected members"]
       direction TB
       M["malformed · empty ID"]
@@ -44,12 +49,13 @@ flowchart TB
   end
 ```
 
-Lean checks that every `Input` value belongs to exactly one independently
-defined member. If `unsupported` is omitted while this carrier stays intact,
+Lean checks that every payload and ledger-state pair belongs to exactly one
+independently defined member. If `unsupported` is omitted while this carrier
+stays intact,
 `eventId = "p1", status = "pending"` exposes the gap and `HasMembers` cannot be
 proved.
-The example treats this input as a trusted fixture boundary with a ledger
-observation; it does not prove how a raw HTTP request reaches that boundary.
+The example treats this pair as a trusted fixture boundary. It does not prove
+how raw HTTP data is decoded or how the ledger observation is acquired.
 
 **With ArchiScript: map the important members.** First and duplicate successes
 now have different outcomes. This view hides the other three members.
@@ -128,12 +134,12 @@ trusted external guarantee; the latter remains an assumption about the source.
 
 ## Worked example: payment webhook retries
 
-The [PaymentWebhook model](ArchiScriptExamples/PaymentWebhook.lean) declares an
-input with `eventId : String`, `status : String`, and
-`alreadyRecorded : Bool`. The Boolean represents a ledger observation supplied
-to the model. The model does not establish how that observation is obtained or
-kept stable. Its carrier is the whole `Input` type: empty IDs, unsupported
-statuses, and both ledger outcomes remain possible.
+The [PaymentWebhook model](ArchiScriptExamples/PaymentWebhook.lean) declares
+`WebhookPayload` with `eventId : String` and `status : String`, and a separate
+`LedgerObservation` with `alreadyRecorded : Bool`. Its `Input` carrier pairs
+them. The model does not establish how the observation is obtained or kept
+stable. Empty IDs, unsupported statuses, and both ledger outcomes remain
+possible.
 
 The input partition selects five members. Their predicates are stated
 separately from the classifier:

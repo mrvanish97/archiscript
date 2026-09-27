@@ -5,13 +5,13 @@
   "scope": "Webhook input classification, decision mapping, and ledger-command mapping in the companion example.",
   "boundary": {
     "subject": "PaymentWebhook.Input",
-    "description": "Input combines eventId, status, and an alreadyRecorded Boolean supplied by a ledger observation.",
+    "description": "Input pairs decoded WebhookPayload with a separate LedgerObservation. alreadyRecorded is not a webhook field.",
     "challenge": "Is the observation from a stable transaction or snapshot? Can concurrent deliveries change it before effects occur?"
   },
   "assumptions": [
     {
       "subject": "PaymentWebhook.Input",
-      "statement": "The model receives alreadyRecorded as a Boolean; its acquisition and consistency are not modeled."
+      "statement": "The model receives LedgerObservation.alreadyRecorded separately from the webhook payload; its acquisition and consistency are not modeled."
     }
   ],
   "effectNotes": [

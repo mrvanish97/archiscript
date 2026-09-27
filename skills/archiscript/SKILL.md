@@ -12,6 +12,14 @@ design people and agents can reason from. Lean checks that declared design; it
 cannot discover requirements omitted from the carrier or prove conformance of
 production code that is not modeled.
 
+**The wide carrier is the first and most important modeling obligation.** Begin
+with the full universe of values that can reach the chosen boundary, including
+outcome-relevant preexisting state, environment, and observation context. Then
+deduce semantic subdomains and select the VDP members. If a relevant factor is
+omitted, every later coverage, `HasMembers`, and operation proof can be green
+while the architecture misses a real case. Treat that as an incomplete model,
+not as a successful simplification.
+
 Lean is the machine-checkable source of truth. Human engineering review is a
 required architecture workflow stage. Review packs and diagrams are projections
 of the model for people, and implementation bindings navigate to production
@@ -54,14 +62,47 @@ cases one wants to handle; a semantic name is not a semantic definition; and a
 classifier is not evidence for its own meaning. State what supplies values at
 the boundary, which upstream contracts exclude cases, and what remains
 unresolved. A narrow carrier is sound when an independently specified upstream
-contract actually guarantees it.
+contract actually guarantees it. "Wide" means complete for the stated boundary,
+not the entire system universe.
+
+Before choosing a carrier, ask: **Can two situations with identical request
+data require different architectural outcomes?** If so, find the differing
+fact and include it in the carrier or establish a checked upstream derivation
+or explicitly trusted guarantee that fixes it. Common factors are existing
+records, configuration or policy revision, ownership and lease epoch, capacity
+reservations, time context, and the state of external services. Do not turn
+these into unexplained flags or pretend they arrived in the request payload.
+Give each factor its own source and state when it was observed.
+
+For example, a webhook payload may be
+`{eventId, status}` while a ledger observation is
+`{alreadyRecorded}`. The input carrier for the decision is their product:
+
+```text
+Input = WebhookPayload × LedgerObservation
+firstSuccess(x) := x.payload.eventId ≠ ""
+                   ∧ x.payload.status = "success"
+                   ∧ x.ledger.alreadyRecorded = false
+duplicateSuccess(x) := x.payload.eventId ≠ ""
+                       ∧ x.payload.status = "success"
+                       ∧ x.ledger.alreadyRecorded = true
+```
+
+The same payload can therefore occupy different VDP members when paired with
+different ledger states. The product shape states what the model considers; it
+does not establish that the observation is current or stays stable until an
+effect occurs. Carry that question as an assumption or open obligation.
 
 Use this order:
 
 1. Identify the actual independent input universe, prerequisites, and boundary
    evidence. State excluded cases and the contracts responsible for them.
 2. State the carrier without deleting empty, invalid, missing, unsupported, or
-   unresolved cases that can occur at that boundary.
+   unresolved cases that can occur at that boundary. Include relevant
+   preexisting state or environment as separate product factors. For example,
+   a webhook decision may classify `WebhookPayload × LedgerObservation`;
+   duplicate delivery is a relation to the ledger observation, not a property
+   of the payload alone.
 3. Define each meaningful subdomain's membership predicate independently of
    the classifier. Use the narrowest meaningful base, intersections, and
    relative complements. Record containment laws and the parent of each
@@ -76,9 +117,12 @@ Use this order:
    justifies the narrower boundary.
 
 Never construct the carrier by enumerating convenient successful leaves merely
-to make coverage tautological. A coverage proof shows that the classifier
-covers the carrier that was declared; it does not prove that the carrier is
-adequate for the intended external problem.
+to make coverage tautological. Never drop a state factor just because it makes
+the member formulas harder. A coverage proof shows that the classifier covers
+the carrier that was declared; it does not prove that the carrier is adequate
+for the intended external problem. If the complete carrier cannot yet be
+specified, mark the boundary unresolved and do not present the VDP as a
+complete handoff.
 
 For implementation handoff, package each selected partition in an
 `ArchitecturalPartition`. Its `carrierProvenance` records an external root, an
@@ -111,7 +155,10 @@ constructor equality may define its members; a simple `id` classifier and
 
 Respect independently specified closed protocol domains. Unions are not
 intrinsically wrong; assess what the carrier means instead of warning on a
-keyword.
+keyword. A practical carrier may be a record, product, sum, union, JSON value,
+or other type justified by the actual boundary. Deductively define its semantic
+subdomains and selected VDP members; do not confuse the carrier's representation
+with the proof that the selected members cover it.
 
 ## Subdomains and VDPs have different obligations
 
@@ -294,6 +341,15 @@ inhabited, exhaustive, and disjoint; and `Partition.HasMembers` connects the
 predicates to the classifier. Apply these checks to selected VDP members,
 without demanding that all supporting subdomains form a partition.
 
+Before accepting those proofs, audit carrier completeness separately. Name the
+source of each input factor and each relevant preexisting-state factor. Give a
+counterexample candidate for every excluded factor: hold the modeled carrier
+fixed and vary the excluded fact. If the required member or downstream action
+could change, add that fact to the carrier or record a justified upstream
+guarantee that makes the variation impossible. Review unions, products, and
+records by their admitted values, not by their syntax. Keep unknown acquisition,
+staleness, and concurrency guarantees visible in the review pack.
+
 For the architecture-to-implementation workflow, check the review record before
 implementation. `draft`, `ready-for-review`, `changes-requested`, and
 `superseded` do not authorize implementation. `approved` applies only to the
@@ -321,8 +377,9 @@ Separate architecture status, binding status, and code conformance status.
 
 For a nontrivial architecture review, produce a two-pass review pack that an
 engineer unfamiliar with Lean can criticize without opening a `.lean` file.
-The fast pass exposes scope, boundary, topology, major assumptions, owners,
-changes since the prior revision, and open questions. The deep pass exposes
+The fast pass exposes scope, all carrier factors and their sources, boundary,
+topology, major assumptions, owners, changes since the prior revision, and open
+questions. The deep pass exposes
 semantic distinctions and coarsenings, all relevant branch and `none` mappings,
 effects, bindings, proof references, conditional claims, unknowns, and findings.
 Make questionable choices visible rather than smoothing them away. Attach every
@@ -367,6 +424,10 @@ presenting them as new guarantees about the system.
   `unjustified-generalization` as a review finding; Lean records declared
   provenance but cannot infer that an external claim is true or discover every
   omitted upstream value. Do not treat a trusted premise as a proof.
+- Check the wide-carrier audit with a same-request/different-state probe. If
+  different prior states can demand different outcomes but the modeled carrier
+  cannot distinguish them, the reviewable model is incomplete even when Lean
+  compiles. Escalate the missing factor or record a scoped external guarantee.
 - Show every `.opaque` selected member or supporting subdomain with its reason
   in review. It remains valid but cannot support deduction from an unavailable
   formula.
