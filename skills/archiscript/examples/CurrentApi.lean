@@ -42,7 +42,7 @@ def requestSemanticPartition : SemanticPartition where
 
 def requestArchitecture : ArchitecturalPartition where
   partition := requestPartition
-  carrierProvenance := .externalRoot {
+  carrierOrigin := .externalRoot {
     source := "request protocol"
     scope := "count field after decoding"
     claim := "the decoder emits Nat values at this boundary"
@@ -51,7 +51,7 @@ def requestArchitecture : ArchitecturalPartition where
   }
   selectedMembers := fun i => {
     meaning := requestMembers i
-    definition := .formula "zero or positive count"
+    definition := .predicate (requestMembers i)
   }
   hasMembers := requestSemanticPartition.hasMembers
 

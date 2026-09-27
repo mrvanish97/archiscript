@@ -23,14 +23,8 @@ def responseSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def responseCarrierProvenance : CarrierProvenance ProviderResponse :=
-  .closedConstructors [.rejectRequest, .acknowledge] (by intro x; cases x <;> simp)
-
-def responseArchitecture : ArchitecturalPartition where
-  partition := responsePartition
-  carrierProvenance := responseCarrierProvenance
-  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
-  hasMembers := by intro i x; rfl
+private def responseCarrierClosure : CarrierClosure ProviderResponse :=
+  ⟨[.rejectRequest, .acknowledge], by intro x; cases x <;> simp⟩
 
 /-- Audit categories are intent to record, not evidence that a record exists. -/
 inductive AuditIntent where
@@ -54,15 +48,9 @@ def auditSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def auditCarrierProvenance : CarrierProvenance AuditIntent :=
-  .closedConstructors [.invalidDelivery, .unsupportedDelivery, .paymentFailed,
-    .firstSuccess, .duplicateSuccess] (by intro x; cases x <;> simp)
-
-def auditArchitecture : ArchitecturalPartition where
-  partition := auditPartition
-  carrierProvenance := auditCarrierProvenance
-  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
-  hasMembers := by intro i x; rfl
+private def auditCarrierClosure : CarrierClosure AuditIntent :=
+  ⟨[.invalidDelivery, .unsupportedDelivery, .paymentFailed,
+    .firstSuccess, .duplicateSuccess], by intro x; cases x <;> simp⟩
 
 /-- A possible customer notification, not proof that a message was sent. -/
 inductive NotificationIntent where
@@ -84,14 +72,8 @@ def notificationSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def notificationCarrierProvenance : CarrierProvenance NotificationIntent :=
-  .closedConstructors [.paymentFailure, .successReceipt] (by intro x; cases x <;> simp)
-
-def notificationArchitecture : ArchitecturalPartition where
-  partition := notificationPartition
-  carrierProvenance := notificationCarrierProvenance
-  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
-  hasMembers := by intro i x; rfl
+private def notificationCarrierClosure : CarrierClosure NotificationIntent :=
+  ⟨[.paymentFailure, .successReceipt], by intro x; cases x <;> simp⟩
 
 /-- The fulfillment boundary has one request kind in this scoped example. -/
 inductive FulfillmentRequest where
@@ -113,14 +95,8 @@ def fulfillmentSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def fulfillmentCarrierProvenance : CarrierProvenance FulfillmentRequest :=
-  .closedConstructors [.enqueue] (by intro x; cases x <;> simp)
-
-def fulfillmentArchitecture : ArchitecturalPartition where
-  partition := fulfillmentPartition
-  carrierProvenance := fulfillmentCarrierProvenance
-  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
-  hasMembers := by intro i x; rfl
+private def fulfillmentCarrierClosure : CarrierClosure FulfillmentRequest :=
+  ⟨[.enqueue], by intro x; cases x <;> simp⟩
 
 /-- Every decision has a provider response plan. -/
 def planResponse : Operation PaymentWebhook.decisionPartition responsePartition where
@@ -149,6 +125,46 @@ def planFulfillment : Operation PaymentWebhook.ledgerCommandPartition fulfillmen
   run
     | .recordAndQueueFulfillment => some .enqueue
     | .recordFailure => none
+
+def responseArchitecture : ArchitecturalPartition where
+  partition := responsePartition
+  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planResponse"
+    PaymentWebhook.decisionPartition responsePartition planResponse PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierClosure := some responseCarrierClosure
+  selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
+  hasMembers := by intro i x; rfl
+
+def auditArchitecture : ArchitecturalPartition where
+  partition := auditPartition
+  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planAudit"
+    PaymentWebhook.decisionPartition auditPartition planAudit PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierClosure := some auditCarrierClosure
+  selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
+  hasMembers := by intro i x; rfl
+
+def notificationArchitecture : ArchitecturalPartition where
+  partition := notificationPartition
+  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planNotification"
+    PaymentWebhook.decisionPartition notificationPartition planNotification PaymentWebhook.decisionArchitecture.carrierOrigin rfl
+  carrierClosure := some notificationCarrierClosure
+  selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
+  hasMembers := by intro i x; rfl
+
+def fulfillmentArchitecture : ArchitecturalPartition where
+  partition := fulfillmentPartition
+  carrierOrigin := .internalOutput "PaymentWebhookNetwork.planFulfillment"
+    PaymentWebhook.ledgerCommandPartition fulfillmentPartition planFulfillment PaymentWebhook.ledgerCommandArchitecture.carrierOrigin rfl
+  carrierClosure := some fulfillmentCarrierClosure
+  selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
+  hasMembers := by intro i x; rfl
+
+def architecture : Architecture where
+  operations := PaymentWebhook.architecture.operations ++ [
+    ⟨PaymentWebhook.decisionArchitecture, responseArchitecture, planResponse⟩,
+    ⟨PaymentWebhook.decisionArchitecture, auditArchitecture, planAudit⟩,
+    ⟨PaymentWebhook.decisionArchitecture, notificationArchitecture, planNotification⟩,
+    ⟨PaymentWebhook.ledgerCommandArchitecture, fulfillmentArchitecture, planFulfillment⟩
+  ]
 
 private def plannedCode (symbol : String) : Operation.ImplementationDisposition :=
   .planned { primary := {

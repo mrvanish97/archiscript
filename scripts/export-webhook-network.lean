@@ -104,7 +104,7 @@ private def checkedClaims : List Json := Id.run do
       .firstSuccess = some .enqueue := first_success_requests_fulfillment
   return [
     Json.mkObj [("proof", toJson "PaymentWebhook.inputSemanticPartition.hasMembers"),
-                ("claim", toJson "inputPartition has independently stated inputMembers")],
+                ("claim", toJson "inputPartition classifier agrees with inputMembers")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_acknowledged"),
                 ("claim", toJson "duplicateSuccess has an acknowledge response plan")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_has_no_notification_intent"),
@@ -118,41 +118,53 @@ private def checkedClaims : List Json := Id.run do
 private def semanticPartitionJson (id proof : String) (members : List String) : Json :=
   Json.mkObj [("id", toJson id), ("members", toJson members), ("proof", toJson proof)]
 
-private def provenanceJson {α : Type} : CarrierProvenance α → Json
+private def provenanceJson {α : Type} : CarrierOrigin α → Json
   | .externalRoot boundary => Json.mkObj [
       ("status", toJson "trusted-external-root"),
       ("source", toJson boundary.source), ("scope", toJson boundary.scope),
       ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
-  | .externalNarrowing boundary => Json.mkObj [
+  | .externalNarrowing upstream boundary => Json.mkObj [
       ("status", toJson "trusted-external-narrowing"),
+      ("upstreamOrigin", provenanceJson upstream),
       ("source", toJson boundary.source), ("scope", toJson boundary.scope),
       ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
+  | .internalOutput producer _ _ _ sourceOrigin _ => Json.mkObj [
+      ("status", toJson "declared-internal-output"), ("producer", toJson producer),
+      ("sourceOrigin", provenanceJson sourceOrigin),
+      ("limit", toJson "Model output type; no runtime conformance proof")]
   | .derived upstreamId sourceMemberId _ upstreamProvenance _ _ _ _ => Json.mkObj [
       ("status", toJson "derived-contract"),
       ("upstream", toJson upstreamId), ("sourceMember", toJson sourceMemberId),
       ("upstreamProvenance", provenanceJson upstreamProvenance)]
-  | .closedConstructors _ _ => Json.mkObj [("status", toJson "closed-constructors")]
+
+private def definitionJson {α : Type} {meaning : Domain α} :
+    DomainDerivation α meaning → Json
+  | .predicate _ => Json.mkObj [("status", toJson "lean-predicate")]
+  | .opaque reason _ _ => Json.mkObj [
+      ("status", toJson "opaque"), ("reason", toJson reason)]
+  | .intersection left right => Json.mkObj [
+      ("status", toJson "intersection"),
+      ("parts", toJson [definitionJson left, definitionJson right])]
+  | .union left right => Json.mkObj [
+      ("status", toJson "union"),
+      ("parts", toJson [definitionJson left, definitionJson right])]
+  | .relativeComplement base removed _ => Json.mkObj [
+      ("status", toJson "relative-complement"),
+      ("parts", toJson [definitionJson base, definitionJson removed])]
 
 private def architectureJson (id : String) (P : ArchitecturalPartition)
     (memberName : P.partition.MemberIndex → String) : Json :=
   Json.mkObj [
-    ("id", toJson id), ("carrierProvenance", provenanceJson P.carrierProvenance),
+    ("id", toJson id), ("carrierProvenance", provenanceJson P.carrierOrigin),
+    ("carrierClosure", toJson P.carrierClosure.isSome),
     ("supportingSubdomains", toJson (P.supportingSubdomains.map fun s =>
       Json.mkObj [
         ("id", toJson s!"{id}.{s.name}"),
-        ("definition", match s.definition with
-          | .formula description => Json.mkObj [
-              ("status", toJson "formula"), ("description", toJson description)]
-          | .opaque reason => Json.mkObj [
-              ("status", toJson "opaque"), ("reason", toJson reason)])])),
+        ("definition", definitionJson s.definition)])),
     ("members", toJson (P.partition.memberIndices.map fun i =>
       Json.mkObj [
         ("id", toJson s!"{id}.{memberName i}"),
-        ("definition", match (P.selectedMembers i).definition with
-          | .formula description => Json.mkObj [
-              ("status", toJson "formula"), ("description", toJson description)]
-          | .opaque reason => Json.mkObj [
-              ("status", toJson "opaque"), ("reason", toJson reason)])]))
+        ("definition", definitionJson (P.selectedMembers i).definition)]))
   ]
 
 private def projection : Json := Json.mkObj [

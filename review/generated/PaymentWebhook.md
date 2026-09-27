@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `d133a964ada4`
+Model revision: `779d75fcdb4d`
 
 Review state: **draft**
 
@@ -70,8 +70,8 @@ Each partition's selected member IDs and `HasMembers` proof travel in the review
 | Partition | Origin | Declared basis |
 | --- | --- | --- |
 | `PaymentWebhook.inputPartition` | `trusted-external-root` | source=PaymentWebhook preclassified fixture, scope=Input pairs decoded WebhookPayload with a LedgerObservation, claim=The fixture supplies every value considered at this boundary, revision=fixture-unversioned |
-| `PaymentWebhook.decisionPartition` | `closed-constructors` | finite constructors exhaust carrier |
-| `PaymentWebhook.ledgerCommandPartition` | `closed-constructors` | finite constructors exhaust carrier |
+| `PaymentWebhook.decisionPartition` | `declared-internal-output` | producer=PaymentWebhook.decide (declared model output); constructors exhaust this carrier |
+| `PaymentWebhook.ledgerCommandPartition` | `declared-internal-output` | producer=PaymentWebhook.requestLedgerCommand (declared model output); constructors exhaust this carrier |
 
 External roots and guarantees are trusted premises; a checked derived contract does not prove production code conforms.
 
@@ -161,7 +161,7 @@ flowchart LR
 
 ### 11. Machine-checked claims
 
-- inputPartition has independently stated inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- inputPartition classifier agrees with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment — `PaymentWebhook.first_success_requests_fulfillment`
 - requestLedgerCommand.comp decide maps duplicateSuccess to none — `PaymentWebhook.duplicate_requests_no_ledger_command`
 

@@ -85,7 +85,7 @@ def inputSemanticPartition : SemanticPartition where
 fixture boundary, not evidence that an HTTP decoder enforces this shape. -/
 def inputArchitecture : ArchitecturalPartition where
   partition := inputPartition
-  carrierProvenance := .externalRoot {
+  carrierOrigin := .externalRoot {
     source := "PaymentWebhook preclassified fixture"
     scope := "Input pairs decoded WebhookPayload with a LedgerObservation"
     claim := "The fixture supplies every value considered at this boundary"
@@ -94,7 +94,7 @@ def inputArchitecture : ArchitecturalPartition where
   }
   selectedMembers := fun i => {
     meaning := inputMembers i
-    definition := .formula (inputRegion i).description
+    definition := .predicate (inputMembers i)
   }
   hasMembers := inputPartition_has_members
 
@@ -118,19 +118,9 @@ def decisionSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def decisionCarrierProvenance : CarrierProvenance Decision :=
-  .closedConstructors
-    [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
-    (by intro x; cases x <;> simp)
-
-def decisionArchitecture : ArchitecturalPartition where
-  partition := decisionPartition
-  carrierProvenance := decisionCarrierProvenance
-  selectedMembers := fun i => {
-    meaning := fun x => x = i
-    definition := .formula "constructor equality"
-  }
-  hasMembers := by intro i x; rfl
+private def decisionCarrierClosure : CarrierClosure Decision :=
+  ⟨[.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate],
+    by intro x; cases x <;> simp⟩
 
 /-- A member-level decision, not a value-level handler or a database write. -/
 def decide : Operation inputPartition decisionPartition where
@@ -161,19 +151,8 @@ def ledgerCommandSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
-private def ledgerCommandCarrierProvenance : CarrierProvenance LedgerCommand :=
-  .closedConstructors
-    [.recordFailure, .recordAndQueueFulfillment]
-    (by intro x; cases x <;> simp)
-
-def ledgerCommandArchitecture : ArchitecturalPartition where
-  partition := ledgerCommandPartition
-  carrierProvenance := ledgerCommandCarrierProvenance
-  selectedMembers := fun i => {
-    meaning := fun x => x = i
-    definition := .formula "constructor equality"
-  }
-  hasMembers := by intro i x; rfl
+private def ledgerCommandCarrierClosure : CarrierClosure LedgerCommand :=
+  ⟨[.recordFailure, .recordAndQueueFulfillment], by intro x; cases x <;> simp⟩
 
 /-- `none` means there is no ledger-command mapping for this decision. -/
 def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition where
@@ -181,6 +160,35 @@ def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition wh
     | .recordFailure => some .recordFailure
     | .fulfill => some .recordAndQueueFulfillment
     | .reject | .ignore | .acknowledgeDuplicate => none
+
+def decisionArchitecture : ArchitecturalPartition where
+  partition := decisionPartition
+  carrierOrigin := .internalOutput "PaymentWebhook.decide" inputPartition decisionPartition
+    decide inputArchitecture.carrierOrigin rfl
+  carrierClosure := some decisionCarrierClosure
+  selectedMembers := fun i => {
+    meaning := fun x => x = i
+    definition := .predicate (fun x => x = i)
+  }
+  hasMembers := by intro i x; rfl
+
+def ledgerCommandArchitecture : ArchitecturalPartition where
+  partition := ledgerCommandPartition
+  carrierOrigin := .internalOutput "PaymentWebhook.requestLedgerCommand"
+    decisionPartition ledgerCommandPartition requestLedgerCommand
+    decisionArchitecture.carrierOrigin rfl
+  carrierClosure := some ledgerCommandCarrierClosure
+  selectedMembers := fun i => {
+    meaning := fun x => x = i
+    definition := .predicate (fun x => x = i)
+  }
+  hasMembers := by intro i x; rfl
+
+def architecture : Architecture where
+  operations := [
+    ⟨inputArchitecture, decisionArchitecture, decide⟩,
+    ⟨decisionArchitecture, ledgerCommandArchitecture, requestLedgerCommand⟩
+  ]
 
 inductive OperationName where
   | decide | requestLedgerCommand

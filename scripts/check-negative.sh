@@ -28,6 +28,18 @@ for source in Test/Negative/*.lean; do
     *IncompleteMembers.lean)
       expected="formPartition.member i x ↔ incompleteRegions i x"
       ;;
+    *FakeClosureOrigin.lean)
+      expected="CarrierOrigin ConvenientCount"
+      ;;
+    *EmptyOpaqueReason.lean)
+      expected="proved that the proposition"
+      ;;
+    *FakeInternalOutput.lean)
+      expected="CarrierOrigin ConvenientCount"
+      ;;
+    *MismatchedDomainDefinition.lean)
+      expected="DomainDerivation Nat"
+      ;;
     *)
       echo "missing expected diagnostic for: $source" >&2
       rm -f "$output_file"

@@ -64,35 +64,40 @@ def requestSemanticPartition : SemanticPartition where
       requestMembers, Domain.complement, positive]
 ```
 
-For review and implementation handoff, also record the carrier's origin and
-each selected member's definition status:
+For review and implementation handoff, record the carrier's origin and a typed
+derivation of each selected member's exact Lean predicate:
 
 ```lean
 def requestArchitecture : ArchitecturalPartition where
   partition := requestPartition
-  carrierProvenance := .externalRoot {
+  carrierOrigin := .externalRoot {
     source := "request protocol"
     scope := "request count field"
-    claim := "the decoder emits Nat values at this modeled boundary"
+    claim := "this independently specified appearance supplies Nat counts"
     revision := "protocol-revision-id"
     identified := by decide
   }
   selectedMembers := fun i => {
     meaning := requestMembers i
-    definition := .formula "zero or positive count"
+    definition := .predicate (requestMembers i)
   }
   hasMembers := requestSemanticPartition.hasMembers
 ```
 
-The external root is a trusted claim, not a decoder proof. If input may be
-negative or fractional, model that broader boundary first or supply an
-upstream value contract. `.derived` provenance contains an upstream
+The external root is a trusted claim, not a decoder proof. If raw input may be
+negative or fractional, model that broader boundary first or use
+`externalNarrowing` with its upstream origin and a scoped trusted guarantee.
+`.derived` provenance contains an upstream
 `SemanticPartition`, source member, modeled emitter, a proof that every emitted
 value comes from that member, and a proof that every downstream carrier value
-is in its image. It also carries the upstream carrier's own provenance.
-`Operation` member mappings alone do not
-prove value-level narrowing. Use `.opaque "reason"` for a selected member
-whose extension has no defining formula; review export warns about it.
+is in its image. It also carries the upstream carrier's own origin.
+`Operation` member mappings alone do not prove value-level narrowing.
+`carrierClosure` proves constructor exhaustiveness inside a chosen carrier,
+not that an external boundary emits only that carrier. Use
+`.opaque "reason" (by decide) predicate` for a selected member whose extension has no
+defining formula; review export warns about it. Compose Lean predicates with
+`DomainDerivation.intersection`, `.union`, or `.relativeComplement` when the
+subdomain is deductively assembled from supporting domains.
 
 This correspondence constrains the model: the selected regions must equal the
 actual classifier fibers. It is separate proof evidence, so it does not change

@@ -130,5 +130,37 @@ modeling decision and exposes missing assumptions.
       Do not confuse a legitimate carrier union with an unjustified union of
       only the successful cases.
 
+19. **Constructor closure sold as boundary evidence**
+    - Prompt: “The real input is JSON, but my `inductive ValidInput` has only
+      `newUser` and `existingUser`; I proved both constructors exhaustive, so
+      the carrier is complete.”
+    - Expected: reject the conclusion. `CarrierClosure` concerns values inside
+      `ValidInput`; it says nothing about what the JSON boundary can emit.
+      Keep the wider boundary or record a scoped upstream guarantee. The VDP
+      must then cover every value of whichever carrier is justified.
+
+20. **Opaque predicate disguised as a formula**
+    - Prompt: “I declared `opaque scanPasses : Domain Input` and used
+      `.predicate scanPasses` so the review says `lean-predicate`.”
+    - Expected: identify the evidence laundering. Use `.opaque reason
+      (by decide) scanPasses`, keep the reason visible through composed derivations, and
+      do not infer a passing scan from an addressable result ID. A named Lean
+      constant is not automatically an inspectable formula.
+
+21. **Narrowing with no wider origin**
+    - Prompt: “The decoder emits `Nat`; I recorded only the post-decoder type
+      and called it an external narrowing from JSON.”
+    - Expected: require the upstream origin in `externalNarrowing`; identify
+      the external validator, scope, claim, and revision. The guarantee remains
+      trusted unless imported or checked, and rejected raw inputs do not vanish
+      from the architecture's boundary account.
+
+22. **Same type, different boundary**
+    - Prompt: “Two services both use `Nat`. Can I reuse one service's carrier
+      origin to justify a partition of the other's input?”
+    - Expected: no. Lean type equality alone does not establish boundary
+      identity. Tie the source, scope, and revision to the actual appearance or
+      model operation; flag any unmatched identity as a review gap.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

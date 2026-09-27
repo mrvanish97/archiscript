@@ -56,7 +56,7 @@ theorem decodeNatural_covers_carrier (n : Nat) :
   refine ⟨Int.ofNat n, ?_⟩
   simp [decodeNatural]
 
-def naturalCarrierProvenance : CarrierProvenance Nat :=
+def naturalCarrierOrigin : CarrierOrigin Nat :=
   .derived "Asphalt.countPartition" "Asphalt.countPartition.nonnegative"
     countSemanticPartition
     (.externalRoot {
@@ -77,6 +77,41 @@ theorem absoluteValue_decoder_is_not_narrowing :
   intro h
   have hneg := h (-1) 1 (by decide)
   simp [countMembers] at hneg
+
+/-- A capacity observation is a carrier value, not an unexplained `hasCapacity`
+flag. These supporting subdomains may overlap; they are not a VDP by themselves. -/
+structure AllocationContext where
+  capacity : Nat
+  requestA : Nat
+  requestB : Nat
+
+def aFits : Domain AllocationContext := fun x => x.requestA ≤ x.capacity
+def bFits : Domain AllocationContext := fun x => x.requestB ≤ x.capacity
+def jointlyFits : Domain AllocationContext :=
+  fun x => x.requestA + x.requestB ≤ x.capacity
+def individuallyFits : Domain AllocationContext :=
+  fun x => aFits x ∧ bFits x
+def contended : Domain AllocationContext :=
+  Domain.relativeComplement individuallyFits jointlyFits (by
+    intro x h
+    simp only [aFits, bFits, individuallyFits, jointlyFits] at *
+    omega)
+
+/-- The derivation has exactly the same denotation as `contended`. The source
+predicates are Lean formulas, and the complement is checked against its base. -/
+def contendedDerivation : DomainDerivation AllocationContext contended :=
+  .relativeComplement
+    (.intersection (.predicate aFits) (.predicate bFits))
+    (.predicate jointlyFits)
+    (by
+      intro x h
+      change x.requestA + x.requestB ≤ x.capacity at h
+      change x.requestA ≤ x.capacity ∧ x.requestB ≤ x.capacity
+      omega)
+
+example : contended ⟨4, 3, 2⟩ := by
+  simp [contended, Domain.relativeComplement, individuallyFits,
+    aFits, bFits, jointlyFits]
 
 structure Identity where
   requestId : String
@@ -329,7 +364,7 @@ opaque externalScanPasses : Domain Input := fun _ => True
 
 def admissionArchitecture : ArchitecturalPartition where
   partition := admissionPartition
-  carrierProvenance := .externalRoot {
+  carrierOrigin := .externalRoot {
     source := "Asphalt admission fixture"
     scope := "fixed Input observation, excluding open B-01 through B-23 facts"
     claim := "The fixture supplies the modeled observation structure"
@@ -338,7 +373,7 @@ def admissionArchitecture : ArchitecturalPartition where
   }
   selectedMembers := fun i => {
     meaning := admissionMembers i
-    definition := .formula "precedence predicate over the fixed admission observation"
+    definition := .predicate (admissionMembers i)
   }
   supportingSubdomains := [{
     name := "externalScanPasses"
@@ -346,6 +381,7 @@ def admissionArchitecture : ArchitecturalPartition where
     meaning := externalScanPasses
     contained := by intro _ _; trivial
     definition := .opaque "Security service result semantics are not imported or verified"
+      (by decide) externalScanPasses
   }]
   hasMembers := admission_has_members
 

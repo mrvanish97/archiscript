@@ -1,8 +1,9 @@
 {
-  "modelRevision": "440765ecff10",
+  "modelRevision": "ce8320345cfa",
   "projection": {
     "architecturalPartitions": [
       {
+        "carrierClosure": false,
         "carrierProvenance": {
           "claim": "The fixture supplies every value considered at this boundary",
           "revision": "fixture-unversioned",
@@ -14,36 +15,31 @@
         "members": [
           {
             "definition": {
-              "description": "eventId is empty, regardless of status or ledger observation",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.inputPartition.malformed"
           },
           {
             "definition": {
-              "description": "eventId is present; status is neither success nor failed",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.inputPartition.unsupported"
           },
           {
             "definition": {
-              "description": "eventId is present; status is failed",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.inputPartition.failed"
           },
           {
             "definition": {
-              "description": "eventId is present; status is success; ledger observation is false",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.inputPartition.firstSuccess"
           },
           {
             "definition": {
-              "description": "eventId is present; status is success; ledger observation is true",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.inputPartition.duplicateSuccess"
           }
@@ -51,43 +47,48 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhook.decide",
+          "sourceOrigin": {
+            "claim": "The fixture supplies every value considered at this boundary",
+            "revision": "fixture-unversioned",
+            "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+            "source": "PaymentWebhook preclassified fixture",
+            "status": "trusted-external-root"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.decisionPartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.decisionPartition.reject"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.decisionPartition.ignore"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.decisionPartition.recordFailure"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.decisionPartition.fulfill"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.decisionPartition.acknowledgeDuplicate"
           }
@@ -95,22 +96,35 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhook.requestLedgerCommand",
+          "sourceOrigin": {
+            "limit": "Model output type; no runtime conformance proof",
+            "producer": "PaymentWebhook.decide",
+            "sourceOrigin": {
+              "claim": "The fixture supplies every value considered at this boundary",
+              "revision": "fixture-unversioned",
+              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+              "source": "PaymentWebhook preclassified fixture",
+              "status": "trusted-external-root"
+            },
+            "status": "declared-internal-output"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.ledgerCommandPartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.ledgerCommandPartition.recordFailure"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.ledgerCommandPartition.recordAndQueueFulfillment"
           }
@@ -118,22 +132,35 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhookNetwork.planResponse",
+          "sourceOrigin": {
+            "limit": "Model output type; no runtime conformance proof",
+            "producer": "PaymentWebhook.decide",
+            "sourceOrigin": {
+              "claim": "The fixture supplies every value considered at this boundary",
+              "revision": "fixture-unversioned",
+              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+              "source": "PaymentWebhook preclassified fixture",
+              "status": "trusted-external-root"
+            },
+            "status": "declared-internal-output"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.responsePartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.responsePartition.rejectRequest"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.responsePartition.acknowledge"
           }
@@ -141,43 +168,53 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhookNetwork.planAudit",
+          "sourceOrigin": {
+            "limit": "Model output type; no runtime conformance proof",
+            "producer": "PaymentWebhook.decide",
+            "sourceOrigin": {
+              "claim": "The fixture supplies every value considered at this boundary",
+              "revision": "fixture-unversioned",
+              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+              "source": "PaymentWebhook preclassified fixture",
+              "status": "trusted-external-root"
+            },
+            "status": "declared-internal-output"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.auditPartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.auditPartition.invalidDelivery"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.auditPartition.unsupportedDelivery"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.auditPartition.paymentFailed"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.auditPartition.firstSuccess"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.auditPartition.duplicateSuccess"
           }
@@ -185,22 +222,35 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhookNetwork.planNotification",
+          "sourceOrigin": {
+            "limit": "Model output type; no runtime conformance proof",
+            "producer": "PaymentWebhook.decide",
+            "sourceOrigin": {
+              "claim": "The fixture supplies every value considered at this boundary",
+              "revision": "fixture-unversioned",
+              "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+              "source": "PaymentWebhook preclassified fixture",
+              "status": "trusted-external-root"
+            },
+            "status": "declared-internal-output"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.notificationPartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.notificationPartition.paymentFailure"
           },
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.notificationPartition.successReceipt"
           }
@@ -208,15 +258,34 @@
         "supportingSubdomains": []
       },
       {
+        "carrierClosure": true,
         "carrierProvenance": {
-          "status": "closed-constructors"
+          "limit": "Model output type; no runtime conformance proof",
+          "producer": "PaymentWebhookNetwork.planFulfillment",
+          "sourceOrigin": {
+            "limit": "Model output type; no runtime conformance proof",
+            "producer": "PaymentWebhook.requestLedgerCommand",
+            "sourceOrigin": {
+              "limit": "Model output type; no runtime conformance proof",
+              "producer": "PaymentWebhook.decide",
+              "sourceOrigin": {
+                "claim": "The fixture supplies every value considered at this boundary",
+                "revision": "fixture-unversioned",
+                "scope": "Input pairs decoded WebhookPayload with a LedgerObservation",
+                "source": "PaymentWebhook preclassified fixture",
+                "status": "trusted-external-root"
+              },
+              "status": "declared-internal-output"
+            },
+            "status": "declared-internal-output"
+          },
+          "status": "declared-internal-output"
         },
         "id": "PaymentWebhookNetwork.fulfillmentPartition",
         "members": [
           {
             "definition": {
-              "description": "constructor equality",
-              "status": "formula"
+              "status": "lean-predicate"
             },
             "id": "PaymentWebhookNetwork.fulfillmentPartition.enqueue"
           }
@@ -276,7 +345,7 @@
     ],
     "checkedClaims": [
       {
-        "claim": "inputPartition has independently stated inputMembers",
+        "claim": "inputPartition classifier agrees with inputMembers",
         "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
       },
       {

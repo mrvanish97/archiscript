@@ -35,6 +35,10 @@ either Boolean value. The input VDP must cover **all** such pairs, including
 this `pending` payload, empty IDs, and successful payloads paired with either
 ledger state.
 
+The carrier is the collection of things under consideration. It need not be a
+list of cases or a closed enum. The selected VDP members supply the strict
+classification: each carrier value must belong to exactly one nonempty member.
+
 ```mermaid
 flowchart TB
   subgraph CARRIER["Carrier: Input = WebhookPayload × LedgerObservation"]
@@ -50,7 +54,8 @@ flowchart TB
 ```
 
 Lean checks that every payload and ledger-state pair belongs to exactly one
-independently defined member. If `unsupported` is omitted while this carrier
+separately stated member. Reviewers check that those predicates were defined
+independently of the classifier. If `unsupported` is omitted while this carrier
 stays intact,
 `eventId = "p1", status = "pending"` exposes the gap and `HasMembers` cannot be
 proved.
@@ -131,6 +136,10 @@ precise claim even when the claim omits a real-world case. For review and handof
 `ArchitecturalPartition` now requires a declared carrier origin. A narrowed
 carrier must be linked to a modeled upstream value contract or an explicitly
 trusted external guarantee; the latter remains an assumption about the source.
+External narrowing retains the upstream carrier origin so the wider collection
+does not disappear from the review trail.
+Constructor closure proves which values exist *inside* an already chosen type;
+it cannot establish that the real boundary emits only that type.
 
 ## Worked example: payment webhook retries
 
@@ -143,6 +152,23 @@ possible.
 
 The input partition selects five members. Their predicates are stated
 separately from the classifier:
+
+```lean
+def firstSuccess : Domain Input := fun x =>
+  x.payload.eventId ≠ "" ∧
+  x.payload.status = "success" ∧
+  x.ledger.alreadyRecorded = false
+
+def duplicateSuccess : Domain Input := fun x =>
+  x.payload.eventId ≠ "" ∧
+  x.payload.status = "success" ∧
+  x.ledger.alreadyRecorded = true
+```
+
+These are Lean predicates over the whole carrier, including observed ledger
+state. In the checked model, `inputMembers` states all five predicates,
+`DomainDerivation.predicate` records each exact predicate as its definition,
+and `inputPartition.HasMembers inputMembers` proves classifier agreement.
 
 | Canonical member | Semantic membership condition |
 | --- | --- |
@@ -209,8 +235,10 @@ the canonical branch registry. The table above adds the partial downstream
 ledger mapping; `none` means that operation is undefined for the member.
 
 `Partition.HasMembers` checks that every carrier value is classified into the
-member whose independently stated predicate it satisfies. `SemanticPartition`
-keeps those predicates and their proof. `ArchitecturalPartition` adds a declared
+member whose stated predicate it satisfies. `SemanticPartition`
+keeps those predicates and their proof. Its `members_cover`, `members_disjoint`,
+and `member_nonempty` theorems make strict VDP coverage available directly for
+the stated predicates over the declared carrier. `ArchitecturalPartition` adds a declared
 carrier origin and the definition status of each selected member for review and
 handoff. External origins remain trusted claims; constructor closure and
 modeled value-level derivations carry Lean evidence. A derived origin recursively
@@ -225,6 +253,9 @@ open ArchiScriptExamples.PaymentWebhook
 
 example : inputPartition.HasMembers inputMembers :=
   inputSemanticPartition.hasMembers
+
+example (x : Input) : ∃ i, inputMembers i x :=
+  inputSemanticPartition.members_cover x
 
 example : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
   duplicate_requests_no_ledger_command
@@ -365,7 +396,7 @@ claim without opening a `.lean` file.
 
 | Layer | What this example establishes |
 | --- | --- |
-| Architecture | **PROVED:** the input classifier has the independently stated members; the two named composition paths have the stated results. |
+| Architecture | **PROVED:** the input classifier agrees with the stated members; the two named composition paths have the stated results. |
 | Carrier adequacy | **REVIEW FINDING:** ledger-observation consistency and scope need engineering judgment. |
 | Implementation binding | **RESOLVED:** defined branches point to symbols in the companion code. |
 | Code conformance | **PARTIAL EVIDENCE:** named tests cover selected behavior; no general conformance proof. |
@@ -392,21 +423,44 @@ shows four field-presence cases grouped into `complete` and `incomplete`.
 The [negative examples](Test/Negative) show failed correspondence for missing
 and overlapping selected regions.
 
-A subdomain may have a precise formula, such as `0 ≤ x` within a signed count
-domain, or remain opaque when its extension has no available defining formula.
-Opaque status records that weaker basis and surfaces a review warning;
-it does not make the subdomain empty or invalid. The formula/opaque label is
-author-supplied; Lean does not inspect predicate bodies to verify that their
-descriptions explain their meaning. [Asphalt](benchmarks/asphalt/README.md)
-includes both a checked signed-count narrowing and an opaque security-result
-region.
+A subdomain may have a precise Lean formula, such as `0 ≤ x` within a signed
+count domain. [Asphalt](ArchiScriptExamples/Asphalt.lean) defines a capacity
+subdomain from three formulas:
+
+```lean
+def aFits : Domain AllocationContext := fun x => x.requestA ≤ x.capacity
+def bFits : Domain AllocationContext := fun x => x.requestB ≤ x.capacity
+def jointlyFits : Domain AllocationContext :=
+  fun x => x.requestA + x.requestB ≤ x.capacity
+def individuallyFits : Domain AllocationContext :=
+  fun x => aFits x ∧ bFits x
+def contended : Domain AllocationContext :=
+  Domain.relativeComplement individuallyFits jointlyFits (by
+    intro x h
+    simp only [aFits, bFits, individuallyFits, jointlyFits] at *
+    omega)
+```
+
+Its checked `contendedDerivation` composes the individual predicates with
+intersection and relative complement; `capacity = 4`, `requestA = 3`, and
+`requestB = 2` belong to that region. The definitions are Lean objects whose
+denotations must match the member meanings. An `opaque` leaf remains valid when
+no defining formula is available, but its reason and every derived domain that
+depends on it carry a review warning. The opaque Asphalt security-result region
+does not become a Lean proof of a passing scan.
+The type index prevents a derivation for one predicate from being attached to a
+different member. It cannot detect a classifier restatement or an opaque Lean
+constant deliberately passed to `.predicate`; reviewers must reject those as
+semantic justification.
 
 Lean's `Partition` represents a VDP with finite member indices and a
 classifier. `Partition.HasMembers` checks its classifier fibers against separately
 defined semantic predicates. A `SemanticPartition` carries those predicates and
 the proof. An `ArchitecturalPartition` additionally records where its carrier
 comes from and whether each selected subdomain has a formula or is opaque. The
-generated webhook review packs require this evidence for every reviewed VDP.
+`Architecture` container lists `ArchitecturalOperation` values whose source and
+target are both architectural partitions. The generated webhook review packs
+require this evidence for every reviewed VDP.
 Opaque subdomains remain valid, but their missing formula and reason appear as
 review warnings. A `Domain α` is a predicate;
 `Domain.relativeComplement` defines a remainder within an explicit parent.

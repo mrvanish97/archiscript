@@ -9,24 +9,24 @@ private def projection : Json := Id.run do
   have _ : admissionArchitecture.partition.HasMembers
       (fun i => (admissionArchitecture.selectedMembers i).meaning) :=
     admissionArchitecture.hasMembers
-  have _ : CarrierProvenance Nat := naturalCarrierProvenance
-  let status := match admissionArchitecture.carrierProvenance with
+  have _ : CarrierOrigin Nat := naturalCarrierOrigin
+  let status := match admissionArchitecture.carrierOrigin with
     | .externalRoot _ => "trusted-external-root"
-    | .externalNarrowing _ => "trusted-external-narrowing"
+    | .externalNarrowing .. => "trusted-external-narrowing"
+    | .internalOutput .. => "declared-internal-output"
     | .derived .. => "derived-contract"
-    | .closedConstructors .. => "closed-constructors"
-  let naturalStatus := match naturalCarrierProvenance with
+  let naturalStatus := match naturalCarrierOrigin with
     | .externalRoot _ => "trusted-external-root"
-    | .externalNarrowing _ => "trusted-external-narrowing"
+    | .externalNarrowing .. => "trusted-external-narrowing"
+    | .internalOutput .. => "declared-internal-output"
     | .derived .. => "derived-contract"
-    | .closedConstructors .. => "closed-constructors"
-  let naturalUpstreamStatus := match naturalCarrierProvenance with
+  let naturalUpstreamStatus := match naturalCarrierOrigin with
     | .derived _ _ _ upstream _ _ _ _ =>
       match upstream with
       | .externalRoot _ => "trusted-external-root"
-      | .externalNarrowing _ => "trusted-external-narrowing"
+      | .externalNarrowing .. => "trusted-external-narrowing"
+      | .internalOutput .. => "declared-internal-output"
       | .derived .. => "derived-contract"
-      | .closedConstructors .. => "closed-constructors"
     | _ => "none"
   return Json.mkObj [
     ("model", toJson "Asphalt admission slice"),

@@ -68,6 +68,11 @@ warning visible instead of promoting a scan reference to a passing result.
 The signed-count probe preserves all `Int` inputs upstream and shows a checked
 contract for narrowing to `Nat`; an absolute-value decoder fails that source
 member claim. This checks the modeled decoder relation, not runtime conformance.
+The same Lean file defines `aFits`, `bFits`, and `jointlyFits` over an
+`AllocationContext` carrier. Its typed `contendedDerivation` is their
+intersection minus the jointly fitting region, with a containment proof;
+`capacity = 4`, `requestA = 3`, and `requestB = 2` satisfy that subdomain.
+These are supporting semantic domains, not a claim that capacity was reserved.
 The classifier is scoped to *admission at a fixed observation*. Other outcome
 relevant facts remain open obligations in the
 [boundary ledger](boundary-ledger.md). No PVDP parameter is

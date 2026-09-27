@@ -20,6 +20,13 @@ omitted, every later coverage, `HasMembers`, and operation proof can be green
 while the architecture misses a real case. Treat that as an incomplete model,
 not as a successful simplification.
 
+A carrier is the collection of things being classified. It can be a broad
+primitive type, record/product, union, or other practical type; it does not
+need constructor-by-constructor semantic cases. Strict completeness belongs to
+the selected VDP members: they must be nonempty, disjoint, and cover every
+carrier value. Constructor closure can describe a legitimate finite carrier,
+but cannot justify that the collection matches an external input boundary.
+
 Lean is the machine-checkable source of truth. Human engineering review is a
 required architecture workflow stage. Review packs and diagrams are projections
 of the model for people, and implementation bindings navigate to production
@@ -78,20 +85,50 @@ For example, a webhook payload may be
 `{eventId, status}` while a ledger observation is
 `{alreadyRecorded}`. The input carrier for the decision is their product:
 
-```text
-Input = WebhookPayload × LedgerObservation
-firstSuccess(x) := x.payload.eventId ≠ ""
-                   ∧ x.payload.status = "success"
-                   ∧ x.ledger.alreadyRecorded = false
-duplicateSuccess(x) := x.payload.eventId ≠ ""
-                       ∧ x.payload.status = "success"
-                       ∧ x.ledger.alreadyRecorded = true
+```lean
+structure Input where
+  payload : WebhookPayload
+  ledger : LedgerObservation
+
+def firstSuccess : Domain Input := fun x =>
+  x.payload.eventId ≠ "" ∧
+  x.payload.status = "success" ∧
+  x.ledger.alreadyRecorded = false
+
+def duplicateSuccess : Domain Input := fun x =>
+  x.payload.eventId ≠ "" ∧
+  x.payload.status = "success" ∧
+  x.ledger.alreadyRecorded = true
 ```
 
 The same payload can therefore occupy different VDP members when paired with
 different ledger states. The product shape states what the model considers; it
 does not establish that the observation is current or stays stable until an
 effect occurs. Carry that question as an assumption or open obligation.
+
+For a capacity decision, put arithmetic in semantic predicates over a carrier
+containing the observation, rather than inside a member operation:
+
+```lean
+structure AllocationContext where
+  capacity : Nat
+  requestA : Nat
+  requestB : Nat
+
+def aFits : Domain AllocationContext := fun x => x.requestA ≤ x.capacity
+def bFits : Domain AllocationContext := fun x => x.requestB ≤ x.capacity
+def jointlyFits : Domain AllocationContext :=
+  fun x => x.requestA + x.requestB ≤ x.capacity
+
+-- The checked model may compose these with intersection and relative complement.
+def contended : Domain AllocationContext := fun x =>
+  aFits x ∧ bFits x ∧ ¬ jointlyFits x
+```
+
+See `ArchiScriptExamples/Asphalt.lean` for the checked
+`contendedDerivation` and its containment proof. An operation should consume
+the resulting VDP distinction; if it must inspect `jointlyFits` to choose its
+architectural target, reconsider the source VDP resolution.
 
 Use this order:
 
@@ -125,9 +162,17 @@ specified, mark the boundary unresolved and do not present the VDP as a
 complete handoff.
 
 For implementation handoff, package each selected partition in an
-`ArchitecturalPartition`. Its `carrierProvenance` records an external root, an
+`ArchitecturalPartition`. Its `carrierOrigin` records an external root, an
 explicit external narrowing guarantee, a checked value-level derived contract,
-or exhaustive closed constructors. External entries need an identifiable source,
+or an internal output tied to a typed model operation and its source origin.
+Use `externalRoot` for the independently given appearance universe. A trusted
+post-validator boundary is `externalNarrowing` and must retain its upstream
+origin; do not relabel it as a root to erase rejected inputs. The external
+guarantee remains a premise about an identified source, scope, and revision.
+An internal output still does not prove runtime value selection or code
+conformance. `carrierClosure` separately proves finite
+constructor exhaustiveness *inside* an already justified carrier. It cannot
+establish that a production boundary emits only that type. External entries need an identifiable source,
 scope, claim, and revision; they remain trusted premises. A derived contract
 proves that its *modeled* emitter only emits from the named upstream member and
 that every downstream carrier value is in that modeled image; it
@@ -136,10 +181,18 @@ cannot establish narrowing. Derived origins also carry the upstream carrier's
 origin recursively; do not stop the chain at an ungrounded intermediate VDP.
 
 Give each `selectedMembers` entry an independently stated `meaning` predicate
-and a definition status. Use `.formula` when the predicate has a mathematical
-definition available for deduction; its description is review text, not proof.
-Use `.opaque` when the extension is declared but no defining formula is
-available. Supply a reason and surface an opaque warning in review. Opaque is
+and a `DomainDerivation` indexed by that exact predicate. Use `.predicate p`
+for a Lean-defined atomic predicate `p`; use `.intersection`, `.union`, and
+`.relativeComplement` to record deductions, including containment proof for
+the latter. Do not place a prose summary in the definition field and call it a
+formula. Human descriptions are review annotations only. Use
+`.opaque reason (by decide) p` when the extension `p` is declared but no
+defining formula is available; Lean requires the reason to be nonempty.
+Do not pass an opaque Lean constant to `.predicate` merely to obtain a stronger
+review label. The type index checks denotation equality; it cannot decide
+whether an atomic predicate was independently motivated or inspectable.
+Supply a reason and surface an opaque warning for any derived domain depending
+on that leaf. Opaque is
 valid, but weakens what the model can establish and prompts the author to
 consider a more precise formula or an external obligation. `HasMembers` still
 checks classifier correspondence. An opaque meaning supplies no formula-derived
@@ -249,9 +302,13 @@ Use the public vocabulary exactly:
 - `Domain`, `Domain.complement`, and `Domain.relativeComplement` for predicates
   and remainders within an explicit parent;
 - `Partition.HasMembers` for checked correspondence with selected region predicates;
-- `SemanticPartition` for member predicates and correspondence proof;
-- `CarrierProvenance` and `ArchitecturalPartition` for reviewable carrier origins
-  and selected-member definition status;
+- `SemanticPartition` for member predicates, correspondence proof, and named
+  coverage, disjointness, and nonemptiness theorems over the declared carrier;
+- `CarrierOrigin`, `CarrierClosure`, `DomainDerivation`, and
+  `ArchitecturalPartition` for reviewable origins, internal closure, and
+  selected-member definitions;
+- `ArchitecturalOperation` and `Architecture` to list handoff operations with
+  evidence for both endpoints;
 - `Operation` for partial member mappings, with scoped `Operation.id` and
   right-to-left `Operation.comp`;
 - `ParameterizedPartition` for specialization by finite parameter members.
@@ -428,9 +485,9 @@ presenting them as new guarantees about the system.
   different prior states can demand different outcomes but the modeled carrier
   cannot distinguish them, the reviewable model is incomplete even when Lean
   compiles. Escalate the missing factor or record a scoped external guarantee.
-- Show every `.opaque` selected member or supporting subdomain with its reason
-  in review. It remains valid but cannot support deduction from an unavailable
-  formula.
+- Show every `.opaque` selected member or supporting subdomain, including opaque
+  leaves inside a composed derivation, with its reason in review. It remains
+  valid but cannot support deduction from an unavailable formula.
 - Do not use `sorry`, `admit`, or invented axioms to silence obligations.
 - Report missing assumptions and unsupported checks honestly.
 - For nontrivial authoring, report boundary/carrier justification, semantic

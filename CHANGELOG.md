@@ -4,22 +4,32 @@
 
 - Added `Domain.relativeComplement` and `Partition.HasMembers`. A
   `SemanticPartition` carries the selected member predicates and their
-  classifier correspondence proof. An `ArchitecturalPartition` now carries
-  carrier provenance and definition status for selected and supporting
+  classifier correspondence proof, with named theorems for semantic member
+  coverage, disjointness, and nonemptiness. An `ArchitecturalPartition` now carries
+  carrier origin, optional constructor closure, and typed derivations for selected and supporting
   subdomains into review and implementation handoff.
   Supporting subdomains may overlap; selected VDP members remain nonempty,
   exhaustive, and disjoint. The FormInput example checks a four-member view
   and its two-member coarsening without requiring a taxonomy tree.
 - Added explicit carrier origins: identified external roots or narrowing
-  guarantees, checked finite constructor coverage, and derived value contracts.
+  guarantees, internal outputs tied to typed model operations and recursive
+  source origins, and derived value contracts.
+  External narrowing also retains its upstream origin; a post-validator carrier
+  cannot be presented as a root without an explicit trusted claim.
+  Finite constructor coverage is a separate `CarrierClosure` and never supplies
+  boundary origin by itself.
   Derived contracts prove that emitted values come from a named upstream member,
   cover the downstream carrier, and retain the upstream carrier's provenance.
   External claims remain trusted premises; the model does not prove that
   production code or external validators enforce them.
-- Kept opaque subdomains valid and made their weaker basis visible. Review
-  projections distinguish formula-described and opaque selected members and
-  supporting subdomains; opaque entries carry a reason and render as warnings.
-  The definition-status label and English description remain author-supplied.
+- Replaced prose `.formula` labels with typed `DomainDerivation` values indexed
+  by their exact Lean predicate. Atomic predicates and composition by
+  intersection, union, and relative complement have checked denotations.
+  Opaque leaves require a nonempty reason and propagate review warnings through composed
+  definitions; English descriptions remain review annotations, not formulas.
+- Added an `Architecture` handoff container whose listed operations carry
+  evidence for both VDP endpoints. The webhook examples now build this object;
+  low-level partitions and operations remain independent of review metadata.
 - Kept the public `ArchiScript` library focused on the calculus and moved
   companion models into `ArchiScriptExamples`. The registration example now
   preserves selected-user identity in its typed contract. Removed redundant

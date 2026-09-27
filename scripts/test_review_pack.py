@@ -155,6 +155,12 @@ class ReviewPackTests(unittest.TestCase):
             "sourceMember": "M.upstream.accepted"}
         with self.assertRaisesRegex(ValueError, "no upstream provenance"):
             review_pack.validate_review(altered, review)
+        altered = copy.deepcopy(projection)
+        altered["architecturalPartitions"][0]["carrierProvenance"] = {
+            "status": "trusted-external-narrowing", "source": "decoder",
+            "scope": "request field", "claim": "emits Nat", "revision": "v1"}
+        with self.assertRaisesRegex(ValueError, "external narrowing has no upstream origin"):
+            review_pack.validate_review(altered, review)
 
     def test_opaque_member_remains_valid_and_visible(self):
         projection = review_pack.projection_from_lean()
@@ -171,6 +177,32 @@ class ReviewPackTests(unittest.TestCase):
         definition["reason"] = ""
         with self.assertRaisesRegex(ValueError, "opaque subdomain needs a reason"):
             review_pack.validate_review(altered, review)
+
+    def test_constructor_closure_cannot_replace_carrier_origin(self):
+        projection = review_pack.projection_from_lean()
+        review = json.loads(review_pack.REVIEW_SOURCE.read_text())
+        altered = copy.deepcopy(projection)
+        origin = altered["architecturalPartitions"][0]
+        origin["carrierClosure"] = True
+        origin["carrierProvenance"] = {"status": "closed-constructors"}
+        with self.assertRaisesRegex(ValueError, "unrecognized carrier provenance"):
+            review_pack.validate_review(altered, review)
+        altered = copy.deepcopy(projection)
+        altered["architecturalPartitions"][1]["carrierProvenance"].pop("sourceOrigin")
+        with self.assertRaisesRegex(ValueError, "internal output has no source origin"):
+            review_pack.validate_review(altered, review)
+
+    def test_opaque_leaf_propagates_through_composed_definition(self):
+        projection = review_pack.projection_from_lean()
+        review = json.loads(review_pack.REVIEW_SOURCE.read_text())
+        altered = copy.deepcopy(projection)
+        member = altered["architecturalPartitions"][0]["members"][0]
+        member["definition"] = {"status": "intersection", "parts": [
+            {"status": "lean-predicate"},
+            {"status": "opaque", "reason": "provider relation unavailable"}]}
+        review_pack.validate_review(altered, review)
+        self.assertIn((member["id"], "provider relation unavailable"),
+                      review_pack.opaque_member_warnings(altered))
 
     def test_semantic_diff_reports_changed_branch_target(self):
         branch = {

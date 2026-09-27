@@ -142,4 +142,28 @@ structure SemanticPartition where
   members : partition.MemberIndex → Domain partition.Carrier
   hasMembers : partition.HasMembers members
 
+namespace SemanticPartition
+
+/-- The stated semantic members cover every value of the declared carrier. -/
+theorem members_cover (S : SemanticPartition) (x : S.partition.Carrier) :
+    ∃ i, S.members i x := by
+  obtain ⟨i, hi⟩ := S.partition.coverage x
+  exact ⟨i, (S.hasMembers i x).mp hi⟩
+
+/-- Every selected semantic member has at least one carrier value. -/
+theorem member_nonempty (S : SemanticPartition) (i : S.partition.MemberIndex) :
+    ∃ x, S.members i x := by
+  obtain ⟨x, hx⟩ := S.partition.member_nonempty i
+  exact ⟨x, (S.hasMembers i x).mp hx⟩
+
+/-- Distinct selected semantic members cannot share a carrier value. -/
+theorem members_disjoint (S : SemanticPartition)
+    {i j : S.partition.MemberIndex} (different : i ≠ j)
+    (x : S.partition.Carrier) : ¬ (S.members i x ∧ S.members j x) := by
+  intro h
+  exact S.partition.disjoint different x
+    ⟨(S.hasMembers i x).mpr h.1, (S.hasMembers j x).mpr h.2⟩
+
+end SemanticPartition
+
 end ArchiScript

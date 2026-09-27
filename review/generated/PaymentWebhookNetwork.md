@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `440765ecff10`
+Model revision: `ce8320345cfa`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
@@ -136,13 +136,13 @@ Every selected VDP carries semantic member evidence:
 
 | Partition | Origin | Declared source |
 | --- | --- | --- |
-| `PaymentWebhookNetwork.inputPartition` | `trusted-external-root` | PaymentWebhook preclassified fixture |
-| `PaymentWebhookNetwork.decisionPartition` | `closed-constructors` | finite constructors |
-| `PaymentWebhookNetwork.ledgerCommandPartition` | `closed-constructors` | finite constructors |
-| `PaymentWebhookNetwork.responsePartition` | `closed-constructors` | finite constructors |
-| `PaymentWebhookNetwork.auditPartition` | `closed-constructors` | finite constructors |
-| `PaymentWebhookNetwork.notificationPartition` | `closed-constructors` | finite constructors |
-| `PaymentWebhookNetwork.fulfillmentPartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.inputPartition` | `trusted-external-root` | PaymentWebhook preclassified fixture; closure=False |
+| `PaymentWebhookNetwork.decisionPartition` | `declared-internal-output` | PaymentWebhook.decide; closure=True |
+| `PaymentWebhookNetwork.ledgerCommandPartition` | `declared-internal-output` | PaymentWebhook.requestLedgerCommand; closure=True |
+| `PaymentWebhookNetwork.responsePartition` | `declared-internal-output` | PaymentWebhookNetwork.planResponse; closure=True |
+| `PaymentWebhookNetwork.auditPartition` | `declared-internal-output` | PaymentWebhookNetwork.planAudit; closure=True |
+| `PaymentWebhookNetwork.notificationPartition` | `declared-internal-output` | PaymentWebhookNetwork.planNotification; closure=True |
+| `PaymentWebhookNetwork.fulfillmentPartition` | `declared-internal-output` | PaymentWebhookNetwork.planFulfillment; closure=True |
 
 **Opaque subdomains:** none.
 
@@ -165,7 +165,7 @@ The base `decide` binding is resolved in companion code. New output-plan binding
 
 **PROVED over the declared model**
 
-- inputPartition has independently stated inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- inputPartition classifier agrees with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - duplicateSuccess has an acknowledge response plan — `PaymentWebhookNetwork.duplicate_acknowledged`
 - duplicateSuccess has no notification mapping — `PaymentWebhookNetwork.duplicate_has_no_notification_intent`
 - duplicateSuccess has no fulfillment-request mapping — `PaymentWebhookNetwork.duplicate_requests_no_fulfillment`

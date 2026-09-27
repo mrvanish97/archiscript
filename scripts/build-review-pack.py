@@ -61,14 +61,41 @@ def validate_carrier_origin(origin, partition_id):
     if status in {"trusted-external-root", "trusted-external-narrowing"}:
         if not all(origin.get(key) for key in ("source", "scope", "claim", "revision")):
             raise ValueError(f"incomplete external carrier guarantee: {partition_id}")
+        if status == "trusted-external-narrowing":
+            if "upstreamOrigin" not in origin:
+                raise ValueError(f"external narrowing has no upstream origin: {partition_id}")
+            validate_carrier_origin(origin["upstreamOrigin"], partition_id)
     elif status == "derived-contract":
         if not origin.get("upstream") or not origin.get("sourceMember"):
             raise ValueError(f"incomplete derived carrier contract: {partition_id}")
         if "upstreamProvenance" not in origin:
             raise ValueError(f"derived carrier has no upstream provenance: {partition_id}")
         validate_carrier_origin(origin["upstreamProvenance"], origin["upstream"])
-    elif status != "closed-constructors":
+    elif status == "declared-internal-output":
+        if not origin.get("producer"):
+            raise ValueError(f"internal output has no producer: {partition_id}")
+        if "sourceOrigin" not in origin:
+            raise ValueError(f"internal output has no source origin: {partition_id}")
+        validate_carrier_origin(origin["sourceOrigin"], origin["producer"])
+    else:
         raise ValueError(f"unrecognized carrier provenance: {partition_id}")
+
+
+def validate_definition(definition, member_id):
+    status = definition["status"]
+    if status == "opaque":
+        if not definition.get("reason"):
+            raise ValueError(f"opaque subdomain needs a reason: {member_id}")
+    elif status == "lean-predicate":
+        return
+    elif status in {"intersection", "union", "relative-complement"}:
+        parts = definition.get("parts", [])
+        if len(parts) != 2:
+            raise ValueError(f"incomplete domain derivation: {member_id}")
+        for part in parts:
+            validate_definition(part, member_id)
+    else:
+        raise ValueError(f"unrecognized subdomain definition: {member_id}")
 
 
 def validate_review(projection, review):
@@ -101,15 +128,7 @@ def validate_review(projection, review):
         if len(definitions) != len(expected) or {entry["id"] for entry in definitions} != expected:
             raise ValueError(f"incomplete selected member definitions: {item['id']}")
         for entry in [*definitions, *item.get("supportingSubdomains", [])]:
-            definition = entry["definition"]
-            if definition["status"] == "opaque":
-                if not definition.get("reason"):
-                    raise ValueError(f"opaque subdomain needs a reason: {entry['id']}")
-            elif definition["status"] == "formula":
-                if not definition.get("description"):
-                    raise ValueError(f"formula subdomain needs a review description: {entry['id']}")
-            else:
-                raise ValueError(f"unrecognized subdomain definition: {entry['id']}")
+            validate_definition(entry["definition"], entry["id"])
     coverage = projection["mappingCoverage"]
     operation_ids = {item["id"] for item in projection["topology"]}
     if (len(coverage) != len(operation_ids) or
@@ -175,15 +194,26 @@ def architecture_summary(projection):
         detail = ", ".join(f"{key}={origin[key]}" for key in
                            ("source", "scope", "claim", "revision", "upstream", "sourceMember")
                            if key in origin)
-        rows.append((item["id"], origin["status"], detail or "finite constructors exhaust carrier"))
+        if "producer" in origin:
+            detail = f"producer={origin['producer']} (declared model output)"
+        if item.get("carrierClosure"):
+            detail += "; constructors exhaust this carrier"
+        rows.append((item["id"], origin["status"], detail))
     return rows
 
 
+def opaque_reasons(definition):
+    if definition["status"] == "opaque":
+        return [definition["reason"]]
+    return [reason for part in definition.get("parts", [])
+            for reason in opaque_reasons(part)]
+
+
 def opaque_member_warnings(projection):
-    return [(member["id"], member["definition"]["reason"])
+    return [(member["id"], reason)
             for item in projection["architecturalPartitions"]
             for member in [*item["members"], *item.get("supportingSubdomains", [])]
-            if member["definition"]["status"] == "opaque"]
+            for reason in opaque_reasons(member["definition"])]
 
 
 def mermaid_topology(projection):
