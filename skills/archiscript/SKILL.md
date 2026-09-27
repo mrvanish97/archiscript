@@ -98,7 +98,8 @@ Use `.opaque` when the extension is declared but no defining formula is
 available. Supply a reason and surface an opaque warning in review. Opaque is
 valid, but weakens what the model can establish and prompts the author to
 consider a more precise formula or an external obligation. `HasMembers` still
-checks classifier correspondence; it cannot derive facts from an opaque meaning.
+checks classifier correspondence. An opaque meaning supplies no formula-derived
+consequences without additional assumptions or proofs.
 Do not use `members i := P.member i`, `classify`,
 or a mechanical restatement of the classifier as the member definitions this
 proof is meant to validate. Classifier fibers may be useful as derived views,
@@ -367,8 +368,8 @@ presenting them as new guarantees about the system.
   provenance but cannot infer that an external claim is true or discover every
   omitted upstream value. Do not treat a trusted premise as a proof.
 - Show every `.opaque` selected member or supporting subdomain with its reason
-  in review. It remains
-  valid but cannot support deduction from an unavailable formula.
+  in review. It remains valid but cannot support deduction from an unavailable
+  formula.
 - Do not use `sorry`, `admit`, or invented axioms to silence obligations.
 - Report missing assumptions and unsupported checks honestly.
 - For nontrivial authoring, report boundary/carrier justification, semantic

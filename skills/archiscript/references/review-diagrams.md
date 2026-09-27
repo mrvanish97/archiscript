@@ -10,7 +10,7 @@ view's **level**, **focus**, and **hidden detail** above or below the graph.
 | 0 — boundary | What enters the system? | External appearances, major VDPs and boundaries | Members, branches, proofs, source lines |
 | 1 — topology | Which VDPs are connected? | VDPs and canonical operation names; partial nature, responsibility and primary code in nearby text | Individual members |
 | 2 — branch map | What does one operation do? | Every relevant source member and its target or `∅`; selective branch metadata | Unrelated operations and supporting predicates |
-| 3 — partition | Are distinctions sound? | Carrier, supporting predicates, selected members, and any coarsening | Operation flow and code |
+| 3 — partition | Are distinctions sound? | Carrier provenance; supporting subdomain bases and formulas or opaque status; selected members and any coarsening | Operation flow and code |
 | 4 — implementation | Where is one path implemented, and what is established? | Selected branch/path, primary and supporting code, evidence and unknowns | Entire registry |
 
 Use Level 0 for scope/product review, Level 1 for architecture review, Level 2
@@ -32,7 +32,17 @@ label such as `Duplicate successful delivery [duplicateSuccess]`. If several
 members are collapsed, label the aggregate `[display group: ...]` and list its
 members in the caption; never treat the group as a new model member.
 
-An ArchiScript arrow is a member mapping, not a runtime call. If code or call
+At Level 3, show supporting subdomains beside the VDP, with their base,
+containment relationship, and defining formula when available. Label an opaque
+subdomain `OPAQUE` and give its reason. Supporting subdomains may overlap and
+need not exhaust the carrier; do not draw them as selected member boxes unless
+the VDP actually selects them. Show whether carrier provenance is a checked
+closed or derived claim or a trusted external premise. Neither a formula label
+nor a diagram proves that an external predicate is enforced at runtime.
+
+At Level 1, a VDP-to-VDP arrow summarizes one canonical operation on member
+sets. At Level 2, an arrow connects one source member to its mapped target.
+Neither arrow is a runtime call. If code or call
 information is necessary, use a separate **Implementation binding** section.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of

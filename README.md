@@ -2,12 +2,64 @@
 
 **Machine-checked software design for human review before AI writes code.**
 
-**AI proposes. Lean checks. Engineers review. AI implements.** ArchiScript sits
-between a requirement and the code an AI agent writes. It makes the assumed
-input boundary, semantic cases, branch decisions, responsibilities, and intended
-code locations explicit. Lean checks claims over that declared model. Engineers
-review the decisions Lean cannot make, then implementation agents work from
-approved canonical branches.
+Use ArchiScript when an AI coding task has consequential cases: retries, stale
+state, failures, approvals, or several possible downstream actions. It makes
+the intended branches checkable and reviewable before implementation.
+
+**An unchecked shortcut:** “successful webhook → fulfill.” It merges a first
+delivery with a duplicate because both have status `success`.
+
+```mermaid
+flowchart LR
+  A["First successful delivery"] --> S["status = success"]
+  B["Duplicate successful delivery"] --> S
+  S --> F["Fulfill for both"]
+```
+
+**The checked design:** the input includes whether the event was already
+recorded. The VDP has separate members, so the operation can give them different
+outcomes. This focused view hides malformed, failed, and unsupported deliveries.
+
+```mermaid
+flowchart LR
+  subgraph INPUT["inputPartition"]
+    A["firstSuccess"]
+    B["duplicateSuccess"]
+  end
+  subgraph DECISION["decisionPartition"]
+    F["fulfill"]
+    D["acknowledgeDuplicate"]
+  end
+  subgraph LEDGER["ledgerCommandPartition"]
+    L["recordAndQueueFulfillment"]
+  end
+  U(["∅ · undefined"])
+  A -->|"decide"| F
+  B -->|"decide"| D
+  F -->|"requestLedgerCommand"| L
+  D -->|"requestLedgerCommand"| U
+```
+
+Arrows map semantic members, not runtime calls. `∅` means this ledger-command
+operation is undefined for the duplicate.
+
+**What fails automatically:** if an agent changes `duplicateSuccess` to
+`fulfill`, the checked theorem `duplicate_requests_no_ledger_command` fails
+before production code is written.
+
+```mermaid
+flowchart LR
+  C["Proposed change: duplicateSuccess → fulfill"]
+  P["Theorem: duplicateSuccess → ∅ ledger command"]
+  X["Lean proof fails"]
+  C --> P --> X
+```
+
+**AI proposes. Lean checks. Engineers review. AI implements.** Lean checks
+coverage and consistency over the **declared** input. Engineers review whether
+that input and the claimed behavior match reality. The generated pack shows
+branches, code locations, assumptions, and unknowns; approval is tied to the
+checked revision. The model does not establish that production code conforms.
 
 **Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
 · [generated Mermaid views](review/generated/PaymentWebhook.md)
@@ -19,20 +71,6 @@ approved canonical branches.
 **Stress the boundary:** [Project Asphalt](benchmarks/asphalt/README.md) is an
 adversarial deployment-control-plane benchmark with checked admission semantics,
 seeded defects, runtime fixtures, and explicit unsupported obligations.
-
-```text
-requirement → AI architecture agent → ArchiScript model → Lean checks
-            → human review pack → approval or requested changes
-            → implementation agents → code and evidence
-```
-
-An agent can write consistent code for an incomplete understanding of a problem.
-For “handle successful payment webhooks idempotently,” a plausible model is
-`success → fulfill`. It misses that a first delivery and a retry carry the same
-event status but need different decisions. The input boundary needs an event
-**and** a ledger observation. Whether that observation stays valid during
-concurrent deliveries then becomes a question for an engineer, rather than a
-hidden coding assumption.
 
 ## Three modeling rules
 
@@ -50,7 +88,10 @@ hidden coding assumption.
    same fibers adds no independent semantic evidence.
 
 These rules guide the [AI skill](skills/archiscript/SKILL.md). Lean can check a
-precise claim even when the claim omits a real-world case.
+precise claim even when the claim omits a real-world case. For review and handoff,
+`ArchitecturalPartition` now requires a declared carrier origin. A narrowed
+carrier must be linked to a modeled upstream value contract or an explicitly
+trusted external guarantee; the latter remains an assumption about the source.
 
 ## Worked example: payment webhook retries
 
@@ -89,7 +130,8 @@ flowchart LR
 [generated Markdown review pack](review/generated/PaymentWebhook.md), which
 projects the Lean operation registry. It hides members, effects, and proofs.
 
-These arrows map **semantic members**, not runtime calls. The two operations
+At this level, each arrow summarizes an **operation on semantic members**, not
+a runtime call. The two operations
 yield this path table:
 
 | Input member | `decide` target | `requestLedgerCommand` target |
@@ -205,11 +247,24 @@ flowchart LR
 
 The same generated artifact lets a reviewer narrow the question to one path:
 
+**Focused composition.** Focus: duplicate delivery, its decision, response
+plan, and undefined ledger mapping. Hidden: other branches and runtime effects.
+
 ```mermaid
 flowchart LR
-  A(["duplicateSuccess"]) -->|"decide"| B(["acknowledgeDuplicate"])
-  B -->|"requestLedgerCommand"| C(["∅"])
-  B -->|"planResponse"| D(["acknowledge"])
+  subgraph INPUT["inputPartition"]
+    A["duplicateSuccess"]
+  end
+  subgraph DECISION["decisionPartition"]
+    B["acknowledgeDuplicate"]
+  end
+  subgraph RESPONSE["responsePartition"]
+    D["acknowledge"]
+  end
+  C(["∅ · undefined"])
+  A -->|"decide"| B
+  B -->|"requestLedgerCommand"| C
+  B -->|"planResponse"| D
 ```
 
 Here the duplicate has a provider-response plan and no ledger-command mapping.
@@ -299,8 +354,8 @@ The [negative examples](Test/Negative) show failed correspondence for missing
 and overlapping selected regions.
 
 A subdomain may have a precise formula, such as `0 ≤ x` within a signed count
-domain, or remain opaque when its extension is known only through an external
-predicate. Opaque status records that weaker basis and surfaces a review warning;
+domain, or remain opaque when its extension has no available defining formula.
+Opaque status records that weaker basis and surfaces a review warning;
 it does not make the subdomain empty or invalid. The formula/opaque label is
 author-supplied; Lean does not inspect predicate bodies to verify that their
 descriptions explain their meaning. [Asphalt](benchmarks/asphalt/README.md)
