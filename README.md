@@ -6,19 +6,45 @@ Use ArchiScript when an AI coding task has consequential cases: retries, stale
 state, failures, approvals, or several possible downstream actions. It makes
 the intended branches checkable and reviewable before implementation.
 
-**An unchecked shortcut:** “successful webhook → fulfill.” It merges a first
-delivery with a duplicate because both have status `success`.
+**Without ArchiScript: an unchecked shortcut.** “Successful webhook → fulfill”
+merges first and duplicate deliveries and leaves other inputs out of the plan.
 
 ```mermaid
 flowchart LR
-  A["First successful delivery"] --> S["status = success"]
-  B["Duplicate successful delivery"] --> S
+  A["First success"] --> S["status = success"]
+  B["Duplicate success"] --> S
   S --> F["Fulfill for both"]
+  C["Empty event ID"] -.->|"omitted"| Q["No case in plan"]
+  D["status = pending"] -.->|"omitted"| Q
 ```
 
-**The checked design:** the input includes whether the event was already
-recorded. The VDP has separate members, so the operation can give them different
-outcomes. This focused view hides malformed, failed, and unsupported deliveries.
+**With ArchiScript: start with the carrier.** The modeled input allows *any*
+`eventId` and `status` string and either ledger observation. The input VDP must
+cover that whole declared carrier, including empty IDs and unsupported statuses.
+
+```mermaid
+flowchart TB
+  subgraph CARRIER["Carrier: Input · eventId: String · status: String · alreadyRecorded: Bool"]
+    subgraph INPUT["inputPartition · selected members"]
+      direction TB
+      M["malformed · empty ID"]
+      U["unsupported · nonempty ID, other status"]
+      E["failed · nonempty ID, failed status"]
+      A["firstSuccess · nonempty ID, success, not recorded"]
+      B["duplicateSuccess · nonempty ID, success, recorded"]
+    end
+  end
+```
+
+Lean checks that every `Input` value belongs to exactly one independently
+defined member. If `unsupported` is omitted while this carrier stays intact,
+`eventId = "p1", status = "pending"` exposes the gap and `HasMembers` cannot be
+proved.
+The example treats this input as a trusted fixture boundary with a ledger
+observation; it does not prove how a raw HTTP request reaches that boundary.
+
+**With ArchiScript: map the important members.** First and duplicate successes
+now have different outcomes. This view hides the other three members.
 
 ```mermaid
 flowchart LR
@@ -43,21 +69,20 @@ flowchart LR
 Arrows map semantic members, not runtime calls. `∅` means this ledger-command
 operation is undefined for the duplicate.
 
-**What fails automatically:** if an agent changes `duplicateSuccess` to
-`fulfill`, the checked theorem `duplicate_requests_no_ledger_command` fails
-before production code is written.
+**What fails automatically, before coding:**
 
 ```mermaid
 flowchart LR
-  C["Proposed change: duplicateSuccess → fulfill"]
-  P["Theorem: duplicateSuccess → ∅ ledger command"]
-  X["Lean proof fails"]
-  C --> P --> X
+  O["Omit unsupported from full Input"] --> V["eventId=p1, status=pending has no member"]
+  V --> H["HasMembers proof fails"]
+  C["Map duplicateSuccess to fulfill"] --> P["duplicate_requests_no_ledger_command fails"]
 ```
 
 **AI proposes. Lean checks. Engineers review. AI implements.** Lean checks
 coverage and consistency over the **declared** input. Engineers review whether
-that input and the claimed behavior match reality. The generated pack shows
+that input and the claimed behavior match reality. If an author silently narrows
+the carrier to success-only values, these proofs cannot recover omitted inputs;
+carrier provenance makes that choice explicit for review. The generated pack shows
 branches, code locations, assumptions, and unknowns; approval is tied to the
 checked revision. The model does not establish that production code conforms.
 
