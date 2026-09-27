@@ -16,6 +16,10 @@ approved canonical branches.
 · [Lean model](ArchiScriptExamples/PaymentWebhook.lean)
 · [bound implementation](examples/payment-webhook.mjs)
 
+**Stress the boundary:** [Project Asphalt](benchmarks/asphalt/README.md) is an
+adversarial deployment-control-plane benchmark with checked admission semantics,
+seeded defects, runtime fixtures, and explicit unsupported obligations.
+
 ```text
 requirement → AI architecture agent → ArchiScript model → Lean checks
             → human review pack → approval or requested changes

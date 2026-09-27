@@ -1,0 +1,13 @@
+{
+  "interpretation": "Illustrative independent dimensions from the benchmark brief; product is a pressure metric, not a set of reachable system states.",
+  "dimensions": [
+    {"name":"deployment","states":6},
+    {"name":"retry","states":4},
+    {"name":"lease","states":4},
+    {"name":"capacity","states":4},
+    {"name":"approval","states":3},
+    {"name":"migration","states":5},
+    {"name":"network","states":4},
+    {"name":"regional","states":4}
+  ]
+}
