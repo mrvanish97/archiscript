@@ -138,6 +138,40 @@ class ReviewPackTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "semantic member evidence"):
             review_pack.validate_review(altered, review)
 
+    def test_review_rejects_missing_carrier_provenance(self):
+        projection = review_pack.projection_from_lean()
+        review = json.loads(review_pack.REVIEW_SOURCE.read_text())
+        altered = copy.deepcopy(projection)
+        altered["architecturalPartitions"].pop()
+        with self.assertRaisesRegex(ValueError, "carrier provenance"):
+            review_pack.validate_review(altered, review)
+        altered = copy.deepcopy(projection)
+        altered["architecturalPartitions"][0]["carrierProvenance"]["revision"] = ""
+        with self.assertRaisesRegex(ValueError, "external carrier guarantee"):
+            review_pack.validate_review(altered, review)
+        altered = copy.deepcopy(projection)
+        altered["architecturalPartitions"][0]["carrierProvenance"] = {
+            "status": "derived-contract", "upstream": "M.upstream",
+            "sourceMember": "M.upstream.accepted"}
+        with self.assertRaisesRegex(ValueError, "no upstream provenance"):
+            review_pack.validate_review(altered, review)
+
+    def test_opaque_member_remains_valid_and_visible(self):
+        projection = review_pack.projection_from_lean()
+        review = json.loads(review_pack.REVIEW_SOURCE.read_text())
+        altered = copy.deepcopy(projection)
+        definition = altered["architecturalPartitions"][0]["members"][0]["definition"]
+        definition.clear()
+        definition.update({"status": "opaque", "reason": "upstream predicate has no formula"})
+        review_pack.validate_review(altered, review)
+        self.assertIn("upstream predicate has no formula",
+                      review_pack.markdown_pack(altered, review, "test", [], False))
+        self.assertNotEqual(review_pack.model_revision(projection, review, "sources"),
+                            review_pack.model_revision(altered, review, "sources"))
+        definition["reason"] = ""
+        with self.assertRaisesRegex(ValueError, "opaque subdomain needs a reason"):
+            review_pack.validate_review(altered, review)
+
     def test_semantic_diff_reports_changed_branch_target(self):
         branch = {
             "id": "M.decide.success", "source": "success", "target": "fulfill",

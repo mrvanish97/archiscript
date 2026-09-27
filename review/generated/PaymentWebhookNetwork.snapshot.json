@@ -1,6 +1,229 @@
 {
-  "modelRevision": "159b6b0202fb",
+  "modelRevision": "fae01dc3e29d",
   "projection": {
+    "architecturalPartitions": [
+      {
+        "carrierProvenance": {
+          "claim": "The fixture supplies every value considered at this boundary",
+          "revision": "fixture-unversioned",
+          "scope": "Input eventId, status, and alreadyRecorded observation",
+          "source": "PaymentWebhook preclassified fixture",
+          "status": "trusted-external-root"
+        },
+        "id": "PaymentWebhookNetwork.inputPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "eventId is empty, regardless of status or ledger observation",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.inputPartition.malformed"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is neither success nor failed",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.inputPartition.unsupported"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is failed",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.inputPartition.failed"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is success; ledger observation is false",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.inputPartition.firstSuccess"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is success; ledger observation is true",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.inputPartition.duplicateSuccess"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.decisionPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.decisionPartition.reject"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.decisionPartition.ignore"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.decisionPartition.recordFailure"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.decisionPartition.fulfill"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.decisionPartition.acknowledgeDuplicate"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.ledgerCommandPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.ledgerCommandPartition.recordFailure"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.ledgerCommandPartition.recordAndQueueFulfillment"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.responsePartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.responsePartition.rejectRequest"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.responsePartition.acknowledge"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.auditPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.auditPartition.invalidDelivery"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.auditPartition.unsupportedDelivery"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.auditPartition.paymentFailed"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.auditPartition.firstSuccess"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.auditPartition.duplicateSuccess"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.notificationPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.notificationPartition.paymentFailure"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.notificationPartition.successReceipt"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhookNetwork.fulfillmentPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhookNetwork.fulfillmentPartition.enqueue"
+          }
+        ],
+        "supportingSubdomains": []
+      }
+    ],
     "bindingRows": [
       {
         "id": "PaymentWebhookNetwork.decide.duplicateSuccess",

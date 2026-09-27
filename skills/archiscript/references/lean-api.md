@@ -64,6 +64,36 @@ def requestSemanticPartition : SemanticPartition where
       requestMembers, Domain.complement, positive]
 ```
 
+For review and implementation handoff, also record the carrier's origin and
+each selected member's definition status:
+
+```lean
+def requestArchitecture : ArchitecturalPartition where
+  partition := requestPartition
+  carrierProvenance := .externalRoot {
+    source := "request protocol"
+    scope := "request count field"
+    claim := "the decoder emits Nat values at this modeled boundary"
+    revision := "protocol-revision-id"
+    identified := by decide
+  }
+  selectedMembers := fun i => {
+    meaning := requestMembers i
+    definition := .formula "zero or positive count"
+  }
+  hasMembers := requestSemanticPartition.hasMembers
+```
+
+The external root is a trusted claim, not a decoder proof. If input may be
+negative or fractional, model that broader boundary first or supply an
+upstream value contract. `.derived` provenance contains an upstream
+`SemanticPartition`, source member, modeled emitter, a proof that every emitted
+value comes from that member, and a proof that every downstream carrier value
+is in its image. It also carries the upstream carrier's own provenance.
+`Operation` member mappings alone do not
+prove value-level narrowing. Use `.opaque "reason"` for a selected member
+whose extension has no defining formula; review export warns about it.
+
 This correspondence constrains the model: the selected regions must equal the
 actual classifier fibers. It is separate proof evidence, so it does not change
 partition identity or composition endpoints. Core coverage and disjointness

@@ -39,8 +39,30 @@ function run(command, args, cwd) {
   }
 }
 
+function exportBoundary() {
+  const result = spawnSync('lake', ['env', 'lean', '--run',
+    'scripts/export-asphalt-boundary.lean'],
+  { cwd: root, encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    process.stderr.write(result.stdout);
+    process.stderr.write(result.stderr);
+    process.exit(result.status || 1);
+  }
+  return JSON.parse(result.stdout);
+}
+
 const started = performance.now();
 run('lake', ['build', 'ArchiScriptExamples.Asphalt'], root);
+const boundary = exportBoundary();
+assert(boundary.admissionCarrierOrigin === 'trusted-external-root',
+  'Asphalt admission origin must remain explicitly trusted');
+assert(boundary.naturalCountCarrierOrigin === 'derived-contract',
+  'Asphalt count narrowing must remain a checked modeled contract');
+assert(boundary.naturalCountUpstreamOrigin === 'trusted-external-root',
+  'derived count carrier must retain upstream origin');
+assert(boundary.opaqueSupportingSubdomains.includes('externalScanPasses'),
+  'opaque scan semantics must remain visible');
 const leanMs = Math.round(performance.now() - started);
 run('node', ['--test', resolve(directory, 'control-plane.test.mjs')], root);
 const totalMs = Math.round(performance.now() - started);
@@ -52,6 +74,12 @@ process.stdout.write(`${JSON.stringify({
   catalogCases: ids.length,
   pendingCases: ids.length - testIds.length,
   checkedCanonicalBranches: Number(branchCountMatch[1]),
+  carrierOrigins: {
+    admission: boundary.admissionCarrierOrigin,
+    naturalCount: boundary.naturalCountCarrierOrigin,
+    naturalCountUpstream: boundary.naturalCountUpstreamOrigin,
+  },
+  opaqueSubdomainWarnings: boundary.opaqueSupportingSubdomains,
   naiveCartesianCombinations,
   comparisonArmsRun: 0,
   productionSafetyClaims: 0,

@@ -43,6 +43,12 @@ class NetworkShowcaseTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "defined mappings lack named branches"):
             showcase.validate(altered, self.review)
 
+    def test_missing_carrier_origin_rejects_network_review(self):
+        altered = json.loads(json.dumps(self.projection))
+        altered["architecturalPartitions"].pop()
+        with self.assertRaisesRegex(ValueError, "carrier provenance"):
+            showcase.validate(altered, self.review)
+
 
 if __name__ == "__main__":
     unittest.main()

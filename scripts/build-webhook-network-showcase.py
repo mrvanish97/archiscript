@@ -12,6 +12,7 @@ OUTPUT = ROOT / "review/generated"
 REVIEW = ROOT / "review/payment-webhook-network.review.json"
 MODEL_SOURCES = (
     "ArchiScript/Partition.lean",
+    "ArchiScript/Boundary.lean",
     "ArchiScript/Operation.lean",
     "ArchiScript/Operation/Declaration.lean",
     "ArchiScriptExamples/PaymentWebhook.lean",
@@ -39,6 +40,21 @@ def export_projection():
     return json.loads(result.stdout)
 
 
+def validate_carrier_origin(origin, partition_id):
+    status = origin["status"]
+    if status in {"trusted-external-root", "trusted-external-narrowing"}:
+        if not all(origin.get(key) for key in ("source", "scope", "claim", "revision")):
+            raise ValueError(f"incomplete external carrier guarantee: {partition_id}")
+    elif status == "derived-contract":
+        if not origin.get("upstream") or not origin.get("sourceMember"):
+            raise ValueError(f"incomplete derived carrier contract: {partition_id}")
+        if "upstreamProvenance" not in origin:
+            raise ValueError(f"derived carrier has no upstream provenance: {partition_id}")
+        validate_carrier_origin(origin["upstreamProvenance"], origin["upstream"])
+    elif status != "closed-constructors":
+        raise ValueError(f"unrecognized carrier provenance: {partition_id}")
+
+
 def validate(projection, review):
     if projection["model"] != review["model"] or review["state"] != "draft":
         raise ValueError("showcase metadata must describe the draft exported model")
@@ -54,6 +70,22 @@ def validate(projection, review):
         expected = {f"{item['id']}.{member}" for member in item["members"]}
         if not entry["proof"] or len(entry["members"]) != len(expected) or set(entry["members"]) != expected:
             raise ValueError(f"incomplete semantic member evidence: {item['id']}")
+    architectural = projection.get("architecturalPartitions", [])
+    if (len(architectural) != len(partitions) or
+            {item["id"] for item in architectural} != {item["id"] for item in projection["partitions"]}):
+        raise ValueError("every reviewed partition needs carrier provenance")
+    for item in architectural:
+        validate_carrier_origin(item["carrierProvenance"], item["id"])
+        partition = next(row for row in projection["partitions"] if row["id"] == item["id"])
+        expected = {f"{item['id']}.{member}" for member in partition["members"]}
+        if (len(item["members"]) != len(expected) or
+                {member["id"] for member in item["members"]} != expected):
+            raise ValueError(f"incomplete selected member definitions: {item['id']}")
+        for member in [*item["members"], *item.get("supportingSubdomains", [])]:
+            definition = member["definition"]
+            field = {"opaque": "reason", "formula": "description"}.get(definition["status"])
+            if not field or not definition.get(field):
+                raise ValueError(f"incomplete subdomain definition: {member['id']}")
     operations = projection["topology"]
     if len({item["id"] for item in operations}) != len(operations):
         raise ValueError("duplicate canonical operation identity")
@@ -190,6 +222,18 @@ def markdown(projection, review, model_revision):
     lines += ["", "Every selected VDP carries semantic member evidence:", ""]
     lines += [f"- `{item['id']}` — `{item['proof']}`"
               for item in projection["semanticPartitions"]]
+    lines += ["", "**Carrier provenance**", "",
+              "| Partition | Origin | Declared source |", "| --- | --- | --- |"]
+    for item in projection["architecturalPartitions"]:
+        origin = item["carrierProvenance"]
+        lines.append(f"| `{item['id']}` | `{origin['status']}` | {origin.get('source', 'finite constructors')} |")
+    opaque = [(member["id"], member["definition"]["reason"])
+              for item in projection["architecturalPartitions"]
+              for member in [*item["members"], *item.get("supportingSubdomains", [])]
+              if member["definition"]["status"] == "opaque"]
+    lines += ["", "**Opaque subdomains:** " + ("; ".join(
+        f"`{name}` — {reason}" for name, reason in opaque) or "none") + ".", "",
+              "Opaque means no defining formula is available for deduction. External roots are trusted claims, not Lean proofs of their source."]
     lines += ["", "The descriptions sit beside independent Lean predicates. Lean checks predicate/classifier correspondence, not the English wording or the adequacy of the chosen boundary.", "",
               "## Level 4 · Branch-to-code handoff", "",
               "| Canonical branch | Responsibility | Primary implementation |", "| --- | --- | --- |"]

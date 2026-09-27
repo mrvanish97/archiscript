@@ -129,7 +129,11 @@ ledger mapping; `none` means that operation is undefined for the member.
 
 `Partition.HasMembers` checks that every carrier value is classified into the
 member whose independently stated predicate it satisfies. `SemanticPartition`
-keeps those predicates and the proof with the partition for review and handoff.
+keeps those predicates and their proof. `ArchitecturalPartition` adds a declared
+carrier origin and the definition status of each selected member for review and
+handoff. External origins remain trusted claims; constructor closure and
+modeled value-level derivations carry Lean evidence. A derived origin recursively
+records the upstream carrier's origin.
 Composition proofs
 check the first-success and duplicate-success paths. A change that maps
 `duplicateSuccess` to `fulfill` breaks the duplicate path theorem.
@@ -294,10 +298,23 @@ shows four field-presence cases grouped into `complete` and `incomplete`.
 The [negative examples](Test/Negative) show failed correspondence for missing
 and overlapping selected regions.
 
+A subdomain may have a precise formula, such as `0 ≤ x` within a signed count
+domain, or remain opaque when its extension is known only through an external
+predicate. Opaque status records that weaker basis and surfaces a review warning;
+it does not make the subdomain empty or invalid. The formula/opaque label is
+author-supplied; Lean does not inspect predicate bodies to verify that their
+descriptions explain their meaning. [Asphalt](benchmarks/asphalt/README.md)
+includes both a checked signed-count narrowing and an opaque security-result
+region.
+
 Lean's `Partition` represents a VDP with finite member indices and a
 classifier. `Partition.HasMembers` checks its classifier fibers against separately
 defined semantic predicates. A `SemanticPartition` carries those predicates and
-the proof as a normal review and handoff object. A `Domain α` is a predicate;
+the proof. An `ArchitecturalPartition` additionally records where its carrier
+comes from and whether each selected subdomain has a formula or is opaque. The
+generated webhook review packs require this evidence for every reviewed VDP.
+Opaque subdomains remain valid, but their missing formula and reason appear as
+review warnings. A `Domain α` is a predicate;
 `Domain.relativeComplement` defines a remainder within an explicit parent.
 
 An `Operation X Y` is a partial function between the **member sets** of VDPs
@@ -322,8 +339,10 @@ repository's current API.
 
 The review exporter and PDF generator are currently **PaymentWebhook-specific**;
 there is no general Review IR renderer yet. The registry does not inspect source
-files for stale symbols or prove conformance. The Lean core does not infer
-carrier adequacy, emit `unjustified-generalization` diagnostics automatically,
+files for stale symbols or prove conformance. The Lean core records declared
+carrier provenance but cannot infer whether an external source enforces its
+claim or discover omitted upstream values. It does not emit
+`unjustified-generalization` diagnostics automatically,
 model temporal concurrency, or prove code effects. There is no parser, runtime,
 or review UI. `ParameterizedPartition` supports finite member-indexed
 specialization and routing, rather than the general recursive language of the

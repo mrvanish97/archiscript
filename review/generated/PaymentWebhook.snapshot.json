@@ -1,6 +1,123 @@
 {
-  "modelRevision": "143a10dfecd6",
+  "modelRevision": "12937bcad6f9",
   "projection": {
+    "architecturalPartitions": [
+      {
+        "carrierProvenance": {
+          "claim": "The fixture supplies every value considered at this boundary",
+          "revision": "fixture-unversioned",
+          "scope": "Input eventId, status, and alreadyRecorded observation",
+          "source": "PaymentWebhook preclassified fixture",
+          "status": "trusted-external-root"
+        },
+        "id": "PaymentWebhook.inputPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "eventId is empty, regardless of status or ledger observation",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.inputPartition.malformed"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is neither success nor failed",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.inputPartition.unsupported"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is failed",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.inputPartition.failed"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is success; ledger observation is false",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.inputPartition.firstSuccess"
+          },
+          {
+            "definition": {
+              "description": "eventId is present; status is success; ledger observation is true",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.inputPartition.duplicateSuccess"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhook.decisionPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.decisionPartition.reject"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.decisionPartition.ignore"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.decisionPartition.recordFailure"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.decisionPartition.fulfill"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.decisionPartition.acknowledgeDuplicate"
+          }
+        ],
+        "supportingSubdomains": []
+      },
+      {
+        "carrierProvenance": {
+          "status": "closed-constructors"
+        },
+        "id": "PaymentWebhook.ledgerCommandPartition",
+        "members": [
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.ledgerCommandPartition.recordFailure"
+          },
+          {
+            "definition": {
+              "description": "constructor equality",
+              "status": "formula"
+            },
+            "id": "PaymentWebhook.ledgerCommandPartition.recordAndQueueFulfillment"
+          }
+        ],
+        "supportingSubdomains": []
+      }
+    ],
     "checkedClaims": [
       {
         "claim": "inputPartition has independently stated inputMembers",

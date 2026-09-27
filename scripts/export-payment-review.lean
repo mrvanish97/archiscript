@@ -68,6 +68,9 @@ private def ledgerBranchJson (name : LedgerBranch) : Json := Id.run do
 
 private def checkedClaims : List Json := Id.run do
   have _ : inputPartition.HasMembers inputMembers := inputSemanticPartition.hasMembers
+  have _ : inputArchitecture.partition.HasMembers
+      (fun i => (inputArchitecture.selectedMembers i).meaning) :=
+    inputArchitecture.hasMembers
   have _ : decisionPartition.HasMembers decisionSemanticPartition.members :=
     decisionSemanticPartition.hasMembers
   have _ : ledgerCommandPartition.HasMembers ledgerCommandSemanticPartition.members :=
@@ -90,6 +93,48 @@ private def objectJson (kind id : String) : Json :=
 
 private def semanticPartitionJson (id proof : String) (members : List String) : Json :=
   Json.mkObj [("id", toJson id), ("members", toJson members), ("proof", toJson proof)]
+
+private def provenanceJson {α : Type} : CarrierProvenance α → Json
+  | .externalRoot boundary => Json.mkObj [
+      ("status", toJson "trusted-external-root"),
+      ("source", toJson boundary.source), ("scope", toJson boundary.scope),
+      ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
+  | .externalNarrowing boundary => Json.mkObj [
+      ("status", toJson "trusted-external-narrowing"),
+      ("source", toJson boundary.source), ("scope", toJson boundary.scope),
+      ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
+  | .derived upstreamId sourceMemberId _ upstreamProvenance _ _ _ _ => Json.mkObj [
+      ("status", toJson "derived-contract"),
+      ("upstream", toJson upstreamId),
+      ("sourceMember", toJson sourceMemberId),
+      ("upstreamProvenance", provenanceJson upstreamProvenance),
+      ("limit", toJson "Value-level contract checked in Lean; implementation conformance unverified")]
+  | .closedConstructors _ _ => Json.mkObj [("status", toJson "closed-constructors")]
+
+private def architectureJson (id : String) (P : ArchitecturalPartition)
+    (memberName : P.partition.MemberIndex → String) : Json :=
+  Json.mkObj [
+    ("id", toJson id),
+    ("carrierProvenance", provenanceJson P.carrierProvenance),
+    ("supportingSubdomains", toJson (P.supportingSubdomains.map fun s =>
+      Json.mkObj [
+        ("id", toJson s!"{id}.{s.name}"),
+        ("definition", match s.definition with
+          | .formula description => Json.mkObj [
+              ("status", toJson "formula"), ("description", toJson description)]
+          | .opaque reason => Json.mkObj [
+              ("status", toJson "opaque"), ("reason", toJson reason)])])),
+    ("members", toJson (P.partition.memberIndices.map fun i =>
+      let definition := (P.selectedMembers i).definition
+      Json.mkObj [
+        ("id", toJson s!"{id}.{memberName i}"),
+        ("definition", match definition with
+          | .formula description => Json.mkObj [
+              ("status", toJson "formula"), ("description", toJson description)]
+          | .opaque reason => Json.mkObj [
+              ("status", toJson "opaque"), ("reason", toJson reason)])
+      ]))
+  ]
 
 private def inputRegionJson (name : InputMember) : Json :=
   Json.mkObj [
@@ -143,6 +188,14 @@ private def projection : Json := Json.mkObj [
       "PaymentWebhook.ledgerCommandSemanticPartition.hasMembers"
       (ledgerCommandSemanticPartition.partition.memberIndices.map
         (fun (m : LedgerCommand) => s!"PaymentWebhook.ledgerCommandPartition.{shortName m}"))
+  ] : List Json)),
+  ("architecturalPartitions", toJson ([
+    architectureJson "PaymentWebhook.inputPartition" inputArchitecture
+      (fun i => shortName (show InputMember from i)),
+    architectureJson "PaymentWebhook.decisionPartition" decisionArchitecture
+      (fun i => shortName (show Decision from i)),
+    architectureJson "PaymentWebhook.ledgerCommandPartition" ledgerCommandArchitecture
+      (fun i => shortName (show LedgerCommand from i))
   ] : List Json)),
   ("decisionMembers", toJson (decisionPartition.memberIndices.map (fun (m : Decision) => shortName m))),
   ("ledgerMembers", toJson (ledgerCommandPartition.memberIndices.map (fun (m : LedgerCommand) => shortName m))),

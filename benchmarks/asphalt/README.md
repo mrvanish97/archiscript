@@ -15,7 +15,8 @@ node benchmarks/asphalt/run-benchmark.mjs
 The runner builds [the Lean admission model](../../ArchiScriptExamples/Asphalt.lean),
 runs the deterministic [control-plane fixtures](control-plane.test.mjs), checks
 that their IDs match the [seeded-defect catalog](seeded-defects.json), and prints
-observed counts. It does not run cloud analyzers or the four comparison arms.
+observed counts, carrier-origin states, and opaque-subdomain warnings exported
+from Lean. It does not run cloud analyzers or the four comparison arms.
 
 ## System boundary
 
@@ -26,9 +27,10 @@ provider operations, callbacks, and regional write authority. The provider is a
 fake adapter; leases, fencing, reservations, late callbacks, timeouts, and
 unknown outcomes remain explicit.
 
-The current Lean slice has **two VDPs and one operation**. It is a deliberately
-small vertical slice, not the target 25–40 VDP / 40–70 operation / 150–250 branch
-scale trial. The operation maps ten admission members to ten requested actions.
+The current Lean slice has **two admission VDPs, one upstream count-provenance
+probe VDP, and one operation**. It is a deliberately small vertical slice, not
+the target 25–40 VDP / 40–70 operation / 150–250 branch scale trial. The
+operation maps ten admission members to ten requested actions.
 Its ten canonical branches have checked whole-operation coverage; their
 implementation disposition is explicitly `unimplemented`.
 Its `requestReservation` target means *ask an allocator to attempt an atomic
@@ -58,6 +60,14 @@ The Lean carrier retains separate request, logical deployment, attempt, tenant,
 artifact digest, lease epoch, policy revision, infrastructure revision, network
 revision, schema revision, retry state, capacity observation, and evidence
 references. `HasMembers` checks the selected predicates against the classifier.
+`admissionArchitecture` explicitly marks that carrier as a trusted fixture
+boundary; it does not establish completeness against production inputs. Its
+supporting `externalScanPasses` subdomain is marked **opaque** because no
+security-service result formula has been imported. The review must keep that
+warning visible instead of promoting a scan reference to a passing result.
+The signed-count probe preserves all `Int` inputs upstream and shows a checked
+contract for narrowing to `Nat`; an absolute-value decoder fails that source
+member claim. This checks the modeled decoder relation, not runtime conformance.
 The classifier is scoped to *admission at a fixed observation*. Other outcome
 relevant facts remain open obligations in the
 [boundary ledger](boundary-ledger.md). No PVDP parameter is
@@ -74,6 +84,8 @@ reserves parameterization for changes to outbound operation topology.
 - Two observed checks can each see enough IPs while their joint demand exceeds
   capacity. The Lean arithmetic counterexample rejects `hasCapacity` as a
   reservation guarantee.
+- A value-level decoder that emits a natural count only for nonnegative signed
+  input supports a derived carrier claim; an absolute-value decoder does not.
 
 It does **not** establish that the carrier contains all production facts,
 that evidence references passed, that time observations are fresh, or that any

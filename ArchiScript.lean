@@ -1,4 +1,5 @@
 import ArchiScript.Partition
+import ArchiScript.Boundary
 import ArchiScript.Operation.Declaration
 import ArchiScript.Review
 import ArchiScript.ParameterizedPartition

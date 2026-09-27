@@ -9,6 +9,75 @@ or authorize a production mutation. See benchmarks/asphalt/README.md.
 namespace ArchiScriptExamples.Asphalt
 open ArchiScript
 
+/-! Carrier provenance probe: the upstream universe is all signed counts.
+The downstream Nat carrier is justified only for values emitted by a contract
+that rejects negative counts. This is not a runtime decoder conformance proof. -/
+inductive CountMember where
+  | negative | nonnegative
+  deriving DecidableEq
+
+def countMembers : CountMember → Domain Int
+  | .negative => fun x => x < 0
+  | .nonnegative => fun x => 0 ≤ x
+
+def countPartition : Partition where
+  Carrier := Int
+  MemberIndex := CountMember
+  carrierNonempty := ⟨0⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := [.negative, .nonnegative]
+  memberIndices_complete := by intro i; cases i <;> simp
+  classify x := if x < 0 then .negative else .nonnegative
+  member_inhabited
+    | .negative => ⟨-1, by decide⟩
+    | .nonnegative => ⟨0, by decide⟩
+
+def countSemanticPartition : SemanticPartition where
+  partition := countPartition
+  members := countMembers
+  hasMembers := by
+    intro i x
+    cases i
+    · simp [Partition.member, countPartition, countMembers]
+    · simp [Partition.member, countPartition, countMembers]
+      omega
+
+def decodeNatural (x : Int) : Option Nat :=
+  if 0 ≤ x then some x.toNat else none
+
+theorem decodeNatural_only_nonnegative (x : Int) (n : Nat)
+    (h : decodeNatural x = some n) : countMembers .nonnegative x := by
+  by_cases hx : 0 ≤ x
+  · exact hx
+  · simp [decodeNatural, hx] at h
+
+theorem decodeNatural_covers_carrier (n : Nat) :
+    ∃ x : Int, decodeNatural x = some n := by
+  refine ⟨Int.ofNat n, ?_⟩
+  simp [decodeNatural]
+
+def naturalCarrierProvenance : CarrierProvenance Nat :=
+  .derived "Asphalt.countPartition" "Asphalt.countPartition.nonnegative"
+    countSemanticPartition
+    (.externalRoot {
+      source := "Asphalt signed-count fixture"
+      scope := "all signed request counts before decoding"
+      claim := "The fixture supplies Int counts, including negative values"
+      revision := "benchmark-slice-1"
+      identified := by decide
+    })
+    .nonnegative decodeNatural
+    decodeNatural_only_nonnegative decodeNatural_covers_carrier
+
+/-- A decoder that maps negative values to naturals cannot claim this source
+member. The counterexample is the missing boundary case. -/
+theorem absoluteValue_decoder_is_not_narrowing :
+    ¬ ∀ x n, (some x.natAbs : Option Nat) = some n →
+      countMembers .nonnegative x := by
+  intro h
+  have hneg := h (-1) 1 (by decide)
+  simp [countMembers] at hneg
+
 structure Identity where
   requestId : String
   logicalDeploymentId : String
@@ -251,6 +320,33 @@ theorem admission_has_members : admissionPartition.HasMembers admissionMembers :
 def admissionSemanticPartition : SemanticPartition where
   partition := admissionPartition
   members := admissionMembers
+  hasMembers := admission_has_members
+
+/-- No formula for the actual security service's pass relation is available.
+This supporting subdomain is deliberately opaque and does not authorize a
+deployment. `scanResultId.isSome` remains only addressability. -/
+opaque externalScanPasses : Domain Input := fun _ => True
+
+def admissionArchitecture : ArchitecturalPartition where
+  partition := admissionPartition
+  carrierProvenance := .externalRoot {
+    source := "Asphalt admission fixture"
+    scope := "fixed Input observation, excluding open B-01 through B-23 facts"
+    claim := "The fixture supplies the modeled observation structure"
+    revision := "benchmark-slice-1"
+    identified := by decide
+  }
+  selectedMembers := fun i => {
+    meaning := admissionMembers i
+    definition := .formula "precedence predicate over the fixed admission observation"
+  }
+  supportingSubdomains := [{
+    name := "externalScanPasses"
+    base := fun _ => True
+    meaning := externalScanPasses
+    contained := by intro _ _; trivial
+    definition := .opaque "Security service result semantics are not imported or verified"
+  }]
   hasMembers := admission_has_members
 
 inductive NextAction where

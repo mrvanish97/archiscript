@@ -27,6 +27,8 @@ model proves only its declared admission classification at one observation.
 | B-19 | Data deletion and retention copies | `deleted` cannot be one state | Data inventory, legal review, deletion evidence |
 | B-20 | Restore epoch, dedupe tables and audit continuity | Backup restore can resurrect processed work | Recovery drills and epoch design |
 | B-21 | Source, Terraform and test revision binding | `.resolved` and evidence strings are assertions | Source/evidence resolver |
+| B-22 | Admission carrier completeness | The Lean `Input` structure may omit production facts before partition checks begin | Reviewed external root scope or checked upstream value contract |
+| B-23 | Opaque policy/security subdomains | A named region without a formula cannot support formula-based deduction | Explicit opaque status, reason and review question |
 
 ## Open findings for the current Lean slice
 
@@ -53,6 +55,12 @@ model proves only its declared admission classification at one observation.
   before writing durable intent. AS-031 demonstrates capacity consumed without
   an outbox record or deployment history. Recovery needs an allocation lease or
   reconciliation protocol. **Status: open.**
+- **F-07 — high, carrier provenance.** The signed-count probe preserves `Int`
+  upstream and proves that a decoder emitting `Nat` values only for nonnegative
+  inputs satisfies its declared source member. A decoder returning the absolute
+  value of `-1` cannot satisfy that contract. This checks a *modeled* value
+  relation, not the production parser or completeness of Asphalt's `Input`.
+  **Status: open for the full admission boundary.**
 
 No finding is considered addressed by a passing Lean build or by the fake
 adapter tests. To close one, link a specific check, its source and observed

@@ -1,4 +1,5 @@
 import ArchiScript.Operation.Declaration
+import ArchiScript.Boundary
 
 namespace ArchiScriptExamples.PaymentWebhook
 open ArchiScript
@@ -70,6 +71,23 @@ def inputSemanticPartition : SemanticPartition where
   members := inputMembers
   hasMembers := inputPartition_has_members
 
+/-- The example starts after raw input decoding. This is an explicitly trusted
+fixture boundary, not evidence that an HTTP decoder enforces this shape. -/
+def inputArchitecture : ArchitecturalPartition where
+  partition := inputPartition
+  carrierProvenance := .externalRoot {
+    source := "PaymentWebhook preclassified fixture"
+    scope := "Input eventId, status, and alreadyRecorded observation"
+    claim := "The fixture supplies every value considered at this boundary"
+    revision := "fixture-unversioned"
+    identified := by decide
+  }
+  selectedMembers := fun i => {
+    meaning := inputMembers i
+    definition := .formula (inputRegion i).description
+  }
+  hasMembers := inputPartition_has_members
+
 inductive Decision where
   | reject | ignore | recordFailure | fulfill | acknowledgeDuplicate
   deriving DecidableEq, Repr
@@ -88,6 +106,20 @@ def decisionPartition : Partition where
 def decisionSemanticPartition : SemanticPartition where
   partition := decisionPartition
   members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
+private def decisionCarrierProvenance : CarrierProvenance Decision :=
+  .closedConstructors
+    [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
+    (by intro x; cases x <;> simp)
+
+def decisionArchitecture : ArchitecturalPartition where
+  partition := decisionPartition
+  carrierProvenance := decisionCarrierProvenance
+  selectedMembers := fun i => {
+    meaning := fun x => x = i
+    definition := .formula "constructor equality"
+  }
   hasMembers := by intro i x; rfl
 
 /-- A member-level decision, not a value-level handler or a database write. -/
@@ -117,6 +149,20 @@ def ledgerCommandPartition : Partition where
 def ledgerCommandSemanticPartition : SemanticPartition where
   partition := ledgerCommandPartition
   members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
+private def ledgerCommandCarrierProvenance : CarrierProvenance LedgerCommand :=
+  .closedConstructors
+    [.recordFailure, .recordAndQueueFulfillment]
+    (by intro x; cases x <;> simp)
+
+def ledgerCommandArchitecture : ArchitecturalPartition where
+  partition := ledgerCommandPartition
+  carrierProvenance := ledgerCommandCarrierProvenance
+  selectedMembers := fun i => {
+    meaning := fun x => x = i
+    definition := .formula "constructor equality"
+  }
   hasMembers := by intro i x; rfl
 
 /-- `none` means there is no ledger-command mapping for this decision. -/

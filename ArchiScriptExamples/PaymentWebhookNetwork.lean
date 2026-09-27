@@ -23,6 +23,15 @@ def responseSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
+private def responseCarrierProvenance : CarrierProvenance ProviderResponse :=
+  .closedConstructors [.rejectRequest, .acknowledge] (by intro x; cases x <;> simp)
+
+def responseArchitecture : ArchitecturalPartition where
+  partition := responsePartition
+  carrierProvenance := responseCarrierProvenance
+  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
+  hasMembers := by intro i x; rfl
+
 /-- Audit categories are intent to record, not evidence that a record exists. -/
 inductive AuditIntent where
   | invalidDelivery | unsupportedDelivery | paymentFailed
@@ -45,6 +54,16 @@ def auditSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
+private def auditCarrierProvenance : CarrierProvenance AuditIntent :=
+  .closedConstructors [.invalidDelivery, .unsupportedDelivery, .paymentFailed,
+    .firstSuccess, .duplicateSuccess] (by intro x; cases x <;> simp)
+
+def auditArchitecture : ArchitecturalPartition where
+  partition := auditPartition
+  carrierProvenance := auditCarrierProvenance
+  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
+  hasMembers := by intro i x; rfl
+
 /-- A possible customer notification, not proof that a message was sent. -/
 inductive NotificationIntent where
   | paymentFailure | successReceipt
@@ -65,6 +84,15 @@ def notificationSemanticPartition : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
+private def notificationCarrierProvenance : CarrierProvenance NotificationIntent :=
+  .closedConstructors [.paymentFailure, .successReceipt] (by intro x; cases x <;> simp)
+
+def notificationArchitecture : ArchitecturalPartition where
+  partition := notificationPartition
+  carrierProvenance := notificationCarrierProvenance
+  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
+  hasMembers := by intro i x; rfl
+
 /-- The fulfillment boundary has one request kind in this scoped example. -/
 inductive FulfillmentRequest where
   | enqueue
@@ -83,6 +111,15 @@ def fulfillmentPartition : Partition where
 def fulfillmentSemanticPartition : SemanticPartition where
   partition := fulfillmentPartition
   members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
+private def fulfillmentCarrierProvenance : CarrierProvenance FulfillmentRequest :=
+  .closedConstructors [.enqueue] (by intro x; cases x <;> simp)
+
+def fulfillmentArchitecture : ArchitecturalPartition where
+  partition := fulfillmentPartition
+  carrierProvenance := fulfillmentCarrierProvenance
+  selectedMembers := fun i => ⟨fun x => x = i, .formula "constructor equality"⟩
   hasMembers := by intro i x; rfl
 
 /-- Every decision has a provider response plan. -/

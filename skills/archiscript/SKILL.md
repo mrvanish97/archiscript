@@ -80,9 +80,26 @@ to make coverage tautological. A coverage proof shows that the classifier
 covers the carrier that was declared; it does not prove that the carrier is
 adequate for the intended external problem.
 
-For implementation handoff, package each selected partition in a
-`SemanticPartition` with independently stated `members` and a named
-`Partition.HasMembers` proof. Do not use `members i := P.member i`, `classify`,
+For implementation handoff, package each selected partition in an
+`ArchitecturalPartition`. Its `carrierProvenance` records an external root, an
+explicit external narrowing guarantee, a checked value-level derived contract,
+or exhaustive closed constructors. External entries need an identifiable source,
+scope, claim, and revision; they remain trusted premises. A derived contract
+proves that its *modeled* emitter only emits from the named upstream member and
+that every downstream carrier value is in that modeled image; it
+does not prove production code conforms. An operation's member mapping alone
+cannot establish narrowing. Derived origins also carry the upstream carrier's
+origin recursively; do not stop the chain at an ungrounded intermediate VDP.
+
+Give each `selectedMembers` entry an independently stated `meaning` predicate
+and a definition status. Use `.formula` when the predicate has a mathematical
+definition available for deduction; its description is review text, not proof.
+Use `.opaque` when the extension is declared but no defining formula is
+available. Supply a reason and surface an opaque warning in review. Opaque is
+valid, but weakens what the model can establish and prompts the author to
+consider a more precise formula or an external obligation. `HasMembers` still
+checks classifier correspondence; it cannot derive facts from an opaque meaning.
+Do not use `members i := P.member i`, `classify`,
 or a mechanical restatement of the classifier as the member definitions this
 proof is meant to validate. Classifier fibers may be useful as derived views,
 but they are not independent semantic evidence. Lean checks the correspondence;
@@ -184,7 +201,9 @@ Use the public vocabulary exactly:
 - `Domain`, `Domain.complement`, and `Domain.relativeComplement` for predicates
   and remainders within an explicit parent;
 - `Partition.HasMembers` for checked correspondence with selected region predicates;
-- `SemanticPartition` for a reviewable partition with member predicates and proof;
+- `SemanticPartition` for member predicates and correspondence proof;
+- `CarrierProvenance` and `ArchitecturalPartition` for reviewable carrier origins
+  and selected-member definition status;
 - `Operation` for partial member mappings, with scoped `Operation.id` and
   right-to-left `Operation.comp`;
 - `ParameterizedPartition` for specialization by finite parameter members.
@@ -343,8 +362,13 @@ presenting them as new guarantees about the system.
 - Run `lake build` and meaningful negative checks.
 - Check the chosen VDP members against their declared predicates. Do not impose
   partition obligations on every supporting subdomain or require a tree.
-- Treat `unjustified-generalization` as a review finding; the Lean core does not
-  yet infer parent-domain provenance or emit this diagnostic automatically.
+- Require carrier provenance in review/handoff objects. Treat
+  `unjustified-generalization` as a review finding; Lean records declared
+  provenance but cannot infer that an external claim is true or discover every
+  omitted upstream value. Do not treat a trusted premise as a proof.
+- Show every `.opaque` selected member or supporting subdomain with its reason
+  in review. It remains
+  valid but cannot support deduction from an unavailable formula.
 - Do not use `sorry`, `admit`, or invented axioms to silence obligations.
 - Report missing assumptions and unsupported checks honestly.
 - For nontrivial authoring, report boundary/carrier justification, semantic

@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `143a10dfecd6`
+Model revision: `12937bcad6f9`
 
 Review state: **draft**
 
@@ -64,6 +64,20 @@ Each partition's selected member IDs and `HasMembers` proof travel in the review
 - `PaymentWebhook.inputPartition` — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - `PaymentWebhook.decisionPartition` — `PaymentWebhook.decisionSemanticPartition.hasMembers`
 - `PaymentWebhook.ledgerCommandPartition` — `PaymentWebhook.ledgerCommandSemanticPartition.hasMembers`
+
+**Carrier provenance**
+
+| Partition | Origin | Declared basis |
+| --- | --- | --- |
+| `PaymentWebhook.inputPartition` | `trusted-external-root` | source=PaymentWebhook preclassified fixture, scope=Input eventId, status, and alreadyRecorded observation, claim=The fixture supplies every value considered at this boundary, revision=fixture-unversioned |
+| `PaymentWebhook.decisionPartition` | `closed-constructors` | finite constructors exhaust carrier |
+| `PaymentWebhook.ledgerCommandPartition` | `closed-constructors` | finite constructors exhaust carrier |
+
+External roots and guarantees are trusted premises; a checked derived contract does not prove production code conforms.
+
+**Opaque subdomains:** none.
+
+An opaque subdomain has a declared extension but no formula available for deduction. Review its meaning and consider specifying a formula.
 
 The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.
 

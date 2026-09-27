@@ -12,6 +12,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parent.parent
 MODEL_SOURCES = (
     "ArchiScript/Partition.lean",
+    "ArchiScript/Boundary.lean",
     "ArchiScript/Operation.lean",
     "ArchiScript/Operation/Declaration.lean",
     "ArchiScriptExamples/PaymentWebhook.lean",
@@ -55,6 +56,21 @@ def projection_from_lean():
     return json.loads(result.stdout)
 
 
+def validate_carrier_origin(origin, partition_id):
+    status = origin["status"]
+    if status in {"trusted-external-root", "trusted-external-narrowing"}:
+        if not all(origin.get(key) for key in ("source", "scope", "claim", "revision")):
+            raise ValueError(f"incomplete external carrier guarantee: {partition_id}")
+    elif status == "derived-contract":
+        if not origin.get("upstream") or not origin.get("sourceMember"):
+            raise ValueError(f"incomplete derived carrier contract: {partition_id}")
+        if "upstreamProvenance" not in origin:
+            raise ValueError(f"derived carrier has no upstream provenance: {partition_id}")
+        validate_carrier_origin(origin["upstreamProvenance"], origin["upstream"])
+    elif status != "closed-constructors":
+        raise ValueError(f"unrecognized carrier provenance: {partition_id}")
+
+
 def validate_review(projection, review):
     if review.get("model") != projection["model"]:
         raise ValueError("review metadata names a different model")
@@ -72,6 +88,28 @@ def validate_review(projection, review):
                     entry["id"].startswith(item["id"] + ".")}
         if not item["proof"] or len(item["members"]) != len(expected) or set(item["members"]) != expected:
             raise ValueError(f"incomplete semantic member evidence: {item['id']}")
+    architectural = projection.get("architecturalPartitions", [])
+    if (len(architectural) != len(partitions) or
+            {item["id"] for item in architectural} != partitions):
+        raise ValueError("every reviewed partition needs carrier provenance and member definitions")
+    for item in architectural:
+        validate_carrier_origin(item["carrierProvenance"], item["id"])
+        expected = {entry["id"] for entry in projection["objects"]
+                    if entry["kind"] == "member" and
+                    entry["id"].startswith(item["id"] + ".")}
+        definitions = item["members"]
+        if len(definitions) != len(expected) or {entry["id"] for entry in definitions} != expected:
+            raise ValueError(f"incomplete selected member definitions: {item['id']}")
+        for entry in [*definitions, *item.get("supportingSubdomains", [])]:
+            definition = entry["definition"]
+            if definition["status"] == "opaque":
+                if not definition.get("reason"):
+                    raise ValueError(f"opaque subdomain needs a reason: {entry['id']}")
+            elif definition["status"] == "formula":
+                if not definition.get("description"):
+                    raise ValueError(f"formula subdomain needs a review description: {entry['id']}")
+            else:
+                raise ValueError(f"unrecognized subdomain definition: {entry['id']}")
     coverage = projection["mappingCoverage"]
     operation_ids = {item["id"] for item in projection["topology"]}
     if (len(coverage) != len(operation_ids) or
@@ -128,6 +166,24 @@ def operation_owners(projection):
                                       if item["id"].startswith(operation["id"] + ".")
                                       for owner in item["responsibility"]}))
             for operation in projection["topology"]]
+
+
+def architecture_summary(projection):
+    rows = []
+    for item in projection["architecturalPartitions"]:
+        origin = item["carrierProvenance"]
+        detail = ", ".join(f"{key}={origin[key]}" for key in
+                           ("source", "scope", "claim", "revision", "upstream", "sourceMember")
+                           if key in origin)
+        rows.append((item["id"], origin["status"], detail or "finite constructors exhaust carrier"))
+    return rows
+
+
+def opaque_member_warnings(projection):
+    return [(member["id"], member["definition"]["reason"])
+            for item in projection["architecturalPartitions"]
+            for member in [*item["members"], *item.get("supportingSubdomains", [])]
+            if member["definition"]["status"] == "opaque"]
 
 
 def mermaid_topology(projection):
@@ -297,6 +353,14 @@ def markdown_pack(projection, review, revision, changes, allowed):
         "Each partition's selected member IDs and `HasMembers` proof travel in the review projection:", "",
         *[f"- `{item['id']}` — `{item['proof']}`"
           for item in projection["semanticPartitions"]], "",
+        "**Carrier provenance**", "",
+        "| Partition | Origin | Declared basis |", "| --- | --- | --- |",
+        *[f"| `{name}` | `{status}` | {detail} |"
+          for name, status, detail in architecture_summary(projection)], "",
+        "External roots and guarantees are trusted premises; a checked derived contract does not prove production code conforms.", "",
+        "**Opaque subdomains:** " + ("; ".join(f"`{name}` — {reason}"
+            for name, reason in opaque_member_warnings(projection)) or "none") + ".", "",
+        "An opaque subdomain has a declared extension but no formula available for deduction. Review its meaning and consider specifying a formula.", "",
         "The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.", "",
         "Coarsening: none represented in this scoped review projection.", "",
         "| Input member | Review meaning |", "| --- | --- |",
@@ -421,6 +485,13 @@ def latex_pack(projection, review, revision, changes, allowed):
     lines += [r"\item " + tex_identifier(item["id"]) + ": " + tex_identifier(item["proof"])
               for item in projection["semanticPartitions"]]
     lines.append(r"\end{itemize}")
+    lines.append(r"\textbf{Carrier provenance (external claims remain trusted):}")
+    lines.append(tex_table(("Partition", "Origin", "Declared basis"),
+                           architecture_summary(projection), (.27, .22, .39)))
+    opaque = opaque_member_warnings(projection)
+    lines.append(r"\textbf{Opaque subdomains:} " +
+                 t("; ".join(f"{name}: {reason}" for name, reason in opaque) or "none") +
+                 ". No formula is available for deduction; review the meaning and consider specifying one.")
     lines.append("Coarsening: none represented in this scoped review projection.")
     lines += [tex_table(("Input member", "Review meaning"),
                         [(item["name"], item["description"]) for item in projection["inputRegions"]],

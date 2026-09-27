@@ -40,6 +40,21 @@ def requestSemanticPartition : SemanticPartition where
     cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
       Domain.complement, positive]
 
+def requestArchitecture : ArchitecturalPartition where
+  partition := requestPartition
+  carrierProvenance := .externalRoot {
+    source := "request protocol"
+    scope := "count field after decoding"
+    claim := "the decoder emits Nat values at this boundary"
+    revision := "smoke-protocol-1"
+    identified := by decide
+  }
+  selectedMembers := fun i => {
+    meaning := requestMembers i
+    definition := .formula "zero or positive count"
+  }
+  hasMembers := requestSemanticPartition.hasMembers
+
 def accept : Operation requestPartition requestPartition where
   run
     | .zero => none

@@ -118,6 +118,43 @@ private def checkedClaims : List Json := Id.run do
 private def semanticPartitionJson (id proof : String) (members : List String) : Json :=
   Json.mkObj [("id", toJson id), ("members", toJson members), ("proof", toJson proof)]
 
+private def provenanceJson {α : Type} : CarrierProvenance α → Json
+  | .externalRoot boundary => Json.mkObj [
+      ("status", toJson "trusted-external-root"),
+      ("source", toJson boundary.source), ("scope", toJson boundary.scope),
+      ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
+  | .externalNarrowing boundary => Json.mkObj [
+      ("status", toJson "trusted-external-narrowing"),
+      ("source", toJson boundary.source), ("scope", toJson boundary.scope),
+      ("claim", toJson boundary.claim), ("revision", toJson boundary.revision)]
+  | .derived upstreamId sourceMemberId _ upstreamProvenance _ _ _ _ => Json.mkObj [
+      ("status", toJson "derived-contract"),
+      ("upstream", toJson upstreamId), ("sourceMember", toJson sourceMemberId),
+      ("upstreamProvenance", provenanceJson upstreamProvenance)]
+  | .closedConstructors _ _ => Json.mkObj [("status", toJson "closed-constructors")]
+
+private def architectureJson (id : String) (P : ArchitecturalPartition)
+    (memberName : P.partition.MemberIndex → String) : Json :=
+  Json.mkObj [
+    ("id", toJson id), ("carrierProvenance", provenanceJson P.carrierProvenance),
+    ("supportingSubdomains", toJson (P.supportingSubdomains.map fun s =>
+      Json.mkObj [
+        ("id", toJson s!"{id}.{s.name}"),
+        ("definition", match s.definition with
+          | .formula description => Json.mkObj [
+              ("status", toJson "formula"), ("description", toJson description)]
+          | .opaque reason => Json.mkObj [
+              ("status", toJson "opaque"), ("reason", toJson reason)])])),
+    ("members", toJson (P.partition.memberIndices.map fun i =>
+      Json.mkObj [
+        ("id", toJson s!"{id}.{memberName i}"),
+        ("definition", match (P.selectedMembers i).definition with
+          | .formula description => Json.mkObj [
+              ("status", toJson "formula"), ("description", toJson description)]
+          | .opaque reason => Json.mkObj [
+              ("status", toJson "opaque"), ("reason", toJson reason)])]))
+  ]
+
 private def projection : Json := Json.mkObj [
   ("model", toJson "PaymentWebhookNetwork"),
   ("topology", toJson ([
@@ -182,6 +219,22 @@ private def projection : Json := Json.mkObj [
       "PaymentWebhookNetwork.fulfillmentSemanticPartition.hasMembers"
       (fulfillmentSemanticPartition.partition.memberIndices.map
         (fun (m : FulfillmentRequest) => s!"PaymentWebhookNetwork.fulfillmentPartition.{shortName m}"))
+  ] : List Json)),
+  ("architecturalPartitions", toJson ([
+    architectureJson "PaymentWebhookNetwork.inputPartition" PaymentWebhook.inputArchitecture
+      (fun i => shortName (show PaymentWebhook.InputMember from i)),
+    architectureJson "PaymentWebhookNetwork.decisionPartition" PaymentWebhook.decisionArchitecture
+      (fun i => shortName (show PaymentWebhook.Decision from i)),
+    architectureJson "PaymentWebhookNetwork.ledgerCommandPartition" PaymentWebhook.ledgerCommandArchitecture
+      (fun i => shortName (show PaymentWebhook.LedgerCommand from i)),
+    architectureJson "PaymentWebhookNetwork.responsePartition" responseArchitecture
+      (fun i => shortName (show ProviderResponse from i)),
+    architectureJson "PaymentWebhookNetwork.auditPartition" auditArchitecture
+      (fun i => shortName (show AuditIntent from i)),
+    architectureJson "PaymentWebhookNetwork.notificationPartition" notificationArchitecture
+      (fun i => shortName (show NotificationIntent from i)),
+    architectureJson "PaymentWebhookNetwork.fulfillmentPartition" fulfillmentArchitecture
+      (fun i => shortName (show FulfillmentRequest from i))
   ] : List Json)),
   ("duplicatePath", duplicatePathJson),
   ("bindingRows", toJson ([

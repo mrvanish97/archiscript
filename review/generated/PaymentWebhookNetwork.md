@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `159b6b0202fb`
+Model revision: `fae01dc3e29d`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
@@ -131,6 +131,22 @@ Every selected VDP carries semantic member evidence:
 - `PaymentWebhookNetwork.auditPartition` — `PaymentWebhookNetwork.auditSemanticPartition.hasMembers`
 - `PaymentWebhookNetwork.notificationPartition` — `PaymentWebhookNetwork.notificationSemanticPartition.hasMembers`
 - `PaymentWebhookNetwork.fulfillmentPartition` — `PaymentWebhookNetwork.fulfillmentSemanticPartition.hasMembers`
+
+**Carrier provenance**
+
+| Partition | Origin | Declared source |
+| --- | --- | --- |
+| `PaymentWebhookNetwork.inputPartition` | `trusted-external-root` | PaymentWebhook preclassified fixture |
+| `PaymentWebhookNetwork.decisionPartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.ledgerCommandPartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.responsePartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.auditPartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.notificationPartition` | `closed-constructors` | finite constructors |
+| `PaymentWebhookNetwork.fulfillmentPartition` | `closed-constructors` | finite constructors |
+
+**Opaque subdomains:** none.
+
+Opaque means no defining formula is available for deduction. External roots are trusted claims, not Lean proofs of their source.
 
 The descriptions sit beside independent Lean predicates. Lean checks predicate/classifier correspondence, not the English wording or the adequacy of the chosen boundary.
 
