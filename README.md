@@ -18,13 +18,21 @@ flowchart LR
   D["status = pending"] -.->|"omitted"| Q
 ```
 
-**With ArchiScript: start with the carrier.** The modeled input allows *any*
-`eventId` and `status` string and either ledger observation. The input VDP must
-cover that whole declared carrier, including empty IDs and unsupported statuses.
+**With ArchiScript: start with the carrier.** Here the carrier is every possible
+`Input` record. One concrete value, shown in JSON form, is:
+
+```json
+{"eventId":"p1","status":"pending","alreadyRecorded":false}
+```
+
+`eventId` and `status` can be *any* strings; `alreadyRecorded` can be either
+Boolean value. The latter is a supplied ledger observation, not a webhook field.
+The input VDP must cover **all** such records, including this `pending` value,
+empty IDs, and duplicate successes.
 
 ```mermaid
 flowchart TB
-  subgraph CARRIER["Carrier: Input · eventId: String · status: String · alreadyRecorded: Bool"]
+  subgraph CARRIER["Carrier: every Input record · eventId: String · status: String · alreadyRecorded: Bool"]
     subgraph INPUT["inputPartition · selected members"]
       direction TB
       M["malformed · empty ID"]
