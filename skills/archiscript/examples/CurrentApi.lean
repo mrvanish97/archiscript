@@ -23,14 +23,22 @@ def requestPartition : Partition where
     | .zero => ⟨0, rfl⟩
     | .positive => ⟨1, rfl⟩
 
-def requestRegions : RequestIndex → Domain Nat
+def requestMembers : RequestIndex → Domain Nat
   | .zero => Domain.complement positive
   | .positive => positive
 
-example : requestPartition.Realizes requestRegions := by
+example : requestPartition.HasMembers requestMembers := by
   intro i n
-  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestRegions,
+  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
     Domain.complement, positive]
+
+def requestSemanticPartition : SemanticPartition where
+  partition := requestPartition
+  members := requestMembers
+  hasMembers := by
+    intro i n
+    cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
+      Domain.complement, positive]
 
 def accept : Operation requestPartition requestPartition where
   run

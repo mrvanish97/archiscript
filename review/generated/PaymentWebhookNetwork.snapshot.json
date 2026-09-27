@@ -1,5 +1,5 @@
 {
-  "modelRevision": "0a3bcdca6eaa",
+  "modelRevision": "159b6b0202fb",
   "projection": {
     "bindingRows": [
       {
@@ -53,8 +53,8 @@
     ],
     "checkedClaims": [
       {
-        "claim": "inputPartition realizes independently stated inputRegions",
-        "proof": "PaymentWebhook.inputPartition_realizes_regions"
+        "claim": "inputPartition has independently stated inputMembers",
+        "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
       },
       {
         "claim": "duplicateSuccess has an acknowledge response plan",
@@ -221,6 +221,72 @@
           "enqueue"
         ],
         "name": "fulfillmentPartition"
+      }
+    ],
+    "semanticPartitions": [
+      {
+        "id": "PaymentWebhookNetwork.inputPartition",
+        "members": [
+          "PaymentWebhookNetwork.inputPartition.malformed",
+          "PaymentWebhookNetwork.inputPartition.unsupported",
+          "PaymentWebhookNetwork.inputPartition.failed",
+          "PaymentWebhookNetwork.inputPartition.firstSuccess",
+          "PaymentWebhookNetwork.inputPartition.duplicateSuccess"
+        ],
+        "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.decisionPartition",
+        "members": [
+          "PaymentWebhookNetwork.decisionPartition.reject",
+          "PaymentWebhookNetwork.decisionPartition.ignore",
+          "PaymentWebhookNetwork.decisionPartition.recordFailure",
+          "PaymentWebhookNetwork.decisionPartition.fulfill",
+          "PaymentWebhookNetwork.decisionPartition.acknowledgeDuplicate"
+        ],
+        "proof": "PaymentWebhook.decisionSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.ledgerCommandPartition",
+        "members": [
+          "PaymentWebhookNetwork.ledgerCommandPartition.recordFailure",
+          "PaymentWebhookNetwork.ledgerCommandPartition.recordAndQueueFulfillment"
+        ],
+        "proof": "PaymentWebhook.ledgerCommandSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.responsePartition",
+        "members": [
+          "PaymentWebhookNetwork.responsePartition.rejectRequest",
+          "PaymentWebhookNetwork.responsePartition.acknowledge"
+        ],
+        "proof": "PaymentWebhookNetwork.responseSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.auditPartition",
+        "members": [
+          "PaymentWebhookNetwork.auditPartition.invalidDelivery",
+          "PaymentWebhookNetwork.auditPartition.unsupportedDelivery",
+          "PaymentWebhookNetwork.auditPartition.paymentFailed",
+          "PaymentWebhookNetwork.auditPartition.firstSuccess",
+          "PaymentWebhookNetwork.auditPartition.duplicateSuccess"
+        ],
+        "proof": "PaymentWebhookNetwork.auditSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.notificationPartition",
+        "members": [
+          "PaymentWebhookNetwork.notificationPartition.paymentFailure",
+          "PaymentWebhookNetwork.notificationPartition.successReceipt"
+        ],
+        "proof": "PaymentWebhookNetwork.notificationSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhookNetwork.fulfillmentPartition",
+        "members": [
+          "PaymentWebhookNetwork.fulfillmentPartition.enqueue"
+        ],
+        "proof": "PaymentWebhookNetwork.fulfillmentSemanticPartition.hasMembers"
       }
     ],
     "topology": [

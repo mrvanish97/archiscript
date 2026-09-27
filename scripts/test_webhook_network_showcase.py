@@ -26,13 +26,15 @@ class NetworkShowcaseTests(unittest.TestCase):
 
     def test_branch_view_changes_with_exported_mapping(self):
         before = "\n".join(showcase.mermaid_notification_map(self.projection))
-        self.assertIn('S4 -->|"planNotification"| T0', before)
+        self.assertIn('subgraph DECISION["decisionPartition"]', before)
+        self.assertIn('subgraph NOTIFICATION["notificationPartition"]', before)
+        self.assertIn('S4 -->|"planNotification"| U', before)
         altered = json.loads(json.dumps(self.projection))
         duplicate = next(item for item in altered["notificationMappings"]
                          if item["source"] == "acknowledgeDuplicate")
         duplicate["target"] = "successReceipt"
         after = "\n".join(showcase.mermaid_notification_map(altered))
-        self.assertIn('S4 -->|"planNotification"| T2', after)
+        self.assertIn('S4 -->|"planNotification"| T1', after)
         self.assertNotEqual(before, after)
 
     def test_missing_named_mapping_rejects_network_review(self):

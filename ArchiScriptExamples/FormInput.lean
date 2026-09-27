@@ -29,18 +29,23 @@ def fieldPartition : Partition where
     | (true, false) => ⟨("a@example.test", ""), rfl⟩
     | (true, true) => ⟨("a@example.test", "Ada"), rfl⟩
 
-def fieldRegions : fieldPartition.MemberIndex → Domain Input
+def fieldMembers : fieldPartition.MemberIndex → Domain Input
   | (true, true) => completeForm
   | (true, false) => Domain.relativeComplement emailProvided completeForm (fun _ h => h.1)
   | (false, true) => Domain.relativeComplement nameProvided completeForm (fun _ h => h.2)
   | (false, false) => fun x => ¬ emailProvided x ∧ ¬ nameProvided x
 
-theorem fieldPartition_realizes_regions : fieldPartition.Realizes fieldRegions := by
+theorem fieldPartition_has_members : fieldPartition.HasMembers fieldMembers := by
   intro ⟨e, n⟩ x
   by_cases he : emailProvided x <;> by_cases hn : nameProvided x <;>
     cases e <;> cases n <;>
-    simp [Partition.member, fieldPartition, fieldRegions, completeForm,
+    simp [Partition.member, fieldPartition, fieldMembers, completeForm,
       Domain.relativeComplement, he, hn]
+
+def fieldSemanticPartition : SemanticPartition where
+  partition := fieldPartition
+  members := fieldMembers
+  hasMembers := fieldPartition_has_members
 
 /-- Three incomplete regions become one member; the carrier stays unchanged. -/
 def formPartition : Partition where
@@ -55,15 +60,20 @@ def formPartition : Partition where
     | false => ⟨("", ""), rfl⟩
     | true => ⟨("a@example.test", "Ada"), rfl⟩
 
-def formRegions : formPartition.MemberIndex → Domain Input
+def formMembers : formPartition.MemberIndex → Domain Input
   | true => completeForm
   | false => Domain.complement completeForm
 
-theorem formPartition_realizes_regions : formPartition.Realizes formRegions := by
+theorem formPartition_has_members : formPartition.HasMembers formMembers := by
   intro i x
   cases i <;>
-    simp [Partition.member, formPartition, fieldPartition, formRegions,
+    simp [Partition.member, formPartition, fieldPartition, formMembers,
       completeForm, Domain.complement]
+
+def formSemanticPartition : SemanticPartition where
+  partition := formPartition
+  members := formMembers
+  hasMembers := formPartition_has_members
 
 /-- The member map forgets detail; it does not transform the input strings. -/
 def forgetFieldFailures : Operation fieldPartition formPartition where

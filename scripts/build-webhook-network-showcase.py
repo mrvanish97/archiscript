@@ -45,6 +45,15 @@ def validate(projection, review):
     partitions = {item["name"] for item in projection["partitions"]}
     if len(partitions) != len(projection["partitions"]) or len(partitions) > 8:
         raise ValueError("overview requires unique partitions within the eight-node budget")
+    semantic = projection["semanticPartitions"]
+    if len(semantic) != len(partitions) or {item["id"] for item in semantic} != {
+            item["id"] for item in projection["partitions"]}:
+        raise ValueError("every reviewed partition needs semantic member evidence")
+    for item in projection["partitions"]:
+        entry = next(row for row in semantic if row["id"] == item["id"])
+        expected = {f"{item['id']}.{member}" for member in item["members"]}
+        if not entry["proof"] or len(entry["members"]) != len(expected) or set(entry["members"]) != expected:
+            raise ValueError(f"incomplete semantic member evidence: {item['id']}")
     operations = projection["topology"]
     if len({item["id"] for item in operations}) != len(operations):
         raise ValueError("duplicate canonical operation identity")
@@ -90,25 +99,47 @@ def mermaid_topology(projection, selected=None):
 def mermaid_duplicate_path(projection):
     path = projection["duplicatePath"]
     ledger = "∅" if path["ledger"] == "none" else path["ledger"]
-    return [
+    lines = [
         "flowchart LR",
-        f'  A(["{path["source"]}"]) -->|"decide"| B(["{path["decision"]}"])',
-        f'  B -->|"requestLedgerCommand"| C(["{ledger}"])',
-        f'  B -->|"planResponse"| D(["{path["response"]}"])',
+        '  subgraph INPUT["inputPartition"]',
+        f'    A["{path["source"]}"]',
+        '  end',
+        '  subgraph DECISION["decisionPartition"]',
+        f'    B["{path["decision"]}"]',
+        '  end',
+        '  subgraph RESPONSE["responsePartition"]',
+        f'    D["{path["response"]}"]',
+        '  end',
     ]
+    if ledger == "∅":
+        lines.append('  C(["∅ · undefined"])')
+    else:
+        lines += ['  subgraph LEDGER["ledgerCommandPartition"]',
+                  f'    C["{ledger}"]', '  end']
+    lines += ['  A -->|"decide"| B',
+              '  B -->|"requestLedgerCommand"| C',
+              '  B -->|"planResponse"| D']
+    return lines
 
 
 def mermaid_notification_map(projection):
     mappings = projection["notificationMappings"]
-    targets = list(dict.fromkeys("∅" if item["target"] == "none" else item["target"]
-                                 for item in mappings))
+    sources = list(dict.fromkeys(item["source"] for item in mappings))
+    targets = list(dict.fromkeys(item["target"] for item in mappings
+                                 if item["target"] != "none"))
+    source_ids = {name: f"S{index}" for index, name in enumerate(sources)}
+    target_ids = {name: f"T{index}" for index, name in enumerate(targets)}
     lines = ["flowchart LR"]
-    lines += [f'  S{index}(["{item["source"]}"])' for index, item in enumerate(mappings)]
-    lines += [f'  T{index}(["{target}"])' for index, target in enumerate(targets)]
-    target_ids = {target: f"T{index}" for index, target in enumerate(targets)}
-    for index, item in enumerate(mappings):
-        target = "∅" if item["target"] == "none" else item["target"]
-        lines.append(f'  S{index} -->|"planNotification"| {target_ids[target]}')
+    lines += ['  subgraph DECISION["decisionPartition"]', '    direction TB']
+    lines += [f'    {source_ids[name]}["{name}"]' for name in sources]
+    lines += ['  end', '  subgraph NOTIFICATION["notificationPartition"]', '    direction TB']
+    lines += [f'    {target_ids[name]}["{name}"]' for name in targets]
+    lines += ['  end']
+    if any(item["target"] == "none" for item in mappings):
+        lines.append('  U(["∅ · undefined"])')
+    for item in mappings:
+        target = "U" if item["target"] == "none" else target_ids[item["target"]]
+        lines.append(f'  {source_ids[item["source"]]} -->|"planNotification"| {target}')
     return lines
 
 
@@ -156,6 +187,9 @@ def markdown(projection, review, model_revision):
               "| Selected member | Review description |", "| --- | --- |"]
     for item in projection["inputRegions"]:
         lines.append(f"| `{item['id']}` | {item['description']} |")
+    lines += ["", "Every selected VDP carries semantic member evidence:", ""]
+    lines += [f"- `{item['id']}` — `{item['proof']}`"
+              for item in projection["semanticPartitions"]]
     lines += ["", "The descriptions sit beside independent Lean predicates. Lean checks predicate/classifier correspondence, not the English wording or the adequacy of the chosen boundary.", "",
               "## Level 4 · Branch-to-code handoff", "",
               "| Canonical branch | Responsibility | Primary implementation |", "| --- | --- | --- |"]

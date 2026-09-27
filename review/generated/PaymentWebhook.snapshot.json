@@ -1,10 +1,10 @@
 {
-  "modelRevision": "3a05a3231100",
+  "modelRevision": "143a10dfecd6",
   "projection": {
     "checkedClaims": [
       {
-        "claim": "inputPartition realizes inputRegions",
-        "proof": "PaymentWebhook.inputPartition_realizes_regions"
+        "claim": "inputPartition has independently stated inputMembers",
+        "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
       },
       {
         "claim": "requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment",
@@ -484,6 +484,38 @@
       {
         "id": "PaymentWebhook.requestLedgerCommand.fulfill.implementation",
         "kind": "implementationBinding"
+      }
+    ],
+    "semanticPartitions": [
+      {
+        "id": "PaymentWebhook.inputPartition",
+        "members": [
+          "PaymentWebhook.inputPartition.malformed",
+          "PaymentWebhook.inputPartition.unsupported",
+          "PaymentWebhook.inputPartition.failed",
+          "PaymentWebhook.inputPartition.firstSuccess",
+          "PaymentWebhook.inputPartition.duplicateSuccess"
+        ],
+        "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhook.decisionPartition",
+        "members": [
+          "PaymentWebhook.decisionPartition.reject",
+          "PaymentWebhook.decisionPartition.ignore",
+          "PaymentWebhook.decisionPartition.recordFailure",
+          "PaymentWebhook.decisionPartition.fulfill",
+          "PaymentWebhook.decisionPartition.acknowledgeDuplicate"
+        ],
+        "proof": "PaymentWebhook.decisionSemanticPartition.hasMembers"
+      },
+      {
+        "id": "PaymentWebhook.ledgerCommandPartition",
+        "members": [
+          "PaymentWebhook.ledgerCommandPartition.recordFailure",
+          "PaymentWebhook.ledgerCommandPartition.recordAndQueueFulfillment"
+        ],
+        "proof": "PaymentWebhook.ledgerCommandSemanticPartition.hasMembers"
       }
     ],
     "topology": [

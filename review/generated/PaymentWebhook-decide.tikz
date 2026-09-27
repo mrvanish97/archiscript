@@ -1,0 +1,23 @@
+\begin{center}
+\begin{tikzpicture}[>=stealth, font=\small]
+\draw[rounded corners] (-0.2,0.5) rectangle (3.1,-3.55);
+\draw[rounded corners] (5.0,0.5) rectangle (9.5,-3.55);
+\node[font=\bfseries] at (1.45,0.20) {inputPartition};
+\node[font=\bfseries] at (7.25,0.20) {decisionPartition};
+\node[draw, rounded corners, minimum width=2.65cm] (S0) at (1.45,-0.36) {malformed};
+\node[draw, rounded corners, minimum width=3.95cm] (T0) at (7.25,-0.36) {reject};
+\draw[->] (S0.east) -- (T0.west);
+\node[draw, rounded corners, minimum width=2.65cm] (S1) at (1.45,-1.04) {unsupported};
+\node[draw, rounded corners, minimum width=3.95cm] (T1) at (7.25,-1.04) {ignore};
+\draw[->] (S1.east) -- (T1.west);
+\node[draw, rounded corners, minimum width=2.65cm] (S2) at (1.45,-1.72) {failed};
+\node[draw, rounded corners, minimum width=3.95cm] (T2) at (7.25,-1.72) {recordFailure};
+\draw[->] (S2.east) -- (T2.west);
+\node[draw, rounded corners, minimum width=2.65cm] (S3) at (1.45,-2.40) {firstSuccess};
+\node[draw, rounded corners, minimum width=3.95cm] (T3) at (7.25,-2.40) {fulfill};
+\draw[->] (S3.east) -- (T3.west);
+\node[draw, rounded corners, minimum width=2.65cm] (S4) at (1.45,-3.08) {duplicateSuccess};
+\node[draw, rounded corners, minimum width=3.95cm] (T4) at (7.25,-3.08) {acknowledgeDuplicate};
+\draw[->] (S4.east) -- (T4.west);
+\end{tikzpicture}
+\end{center}

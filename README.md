@@ -11,6 +11,7 @@ approved canonical branches.
 
 **Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
 · [generated Mermaid views](review/generated/PaymentWebhook.md)
+· [TikZ branch diagram](review/generated/PaymentWebhook-decide.tikz)
 · [seven-VDP showcase](review/generated/PaymentWebhookNetwork.md)
 · [Lean model](ArchiScriptExamples/PaymentWebhook.lean)
 · [bound implementation](examples/payment-webhook.mjs)
@@ -97,19 +98,35 @@ yield this path table:
 
 ```mermaid
 flowchart LR
-  S0(["malformed"]) -->|"decide"| T0(["reject"])
-  S1(["unsupported"]) -->|"decide"| T1(["ignore"])
-  S2(["failed"]) -->|"decide"| T2(["recordFailure"])
-  S3(["firstSuccess"]) -->|"decide"| T3(["fulfill"])
-  S4(["duplicateSuccess"]) -->|"decide"| T4(["acknowledgeDuplicate"])
+  subgraph INPUT["inputPartition"]
+    S0["malformed"]
+    S1["unsupported"]
+    S2["failed"]
+    S3["firstSuccess"]
+    S4["duplicateSuccess"]
+  end
+  subgraph DECISION["decisionPartition"]
+    T0["reject"]
+    T1["ignore"]
+    T2["recordFailure"]
+    T3["fulfill"]
+    T4["acknowledgeDuplicate"]
+  end
+  S0 -->|"decide"| T0
+  S1 -->|"decide"| T1
+  S2 -->|"decide"| T2
+  S3 -->|"decide"| T3
+  S4 -->|"decide"| T4
 ```
 
 **Level 2 · `decide` branch map.** The review builder derives every arrow from
 the canonical branch registry. The table above adds the partial downstream
 ledger mapping; `none` means that operation is undefined for the member.
 
-`Partition.Realizes` checks that every carrier value is classified into the
-member whose independently stated predicate it satisfies. Composition proofs
+`Partition.HasMembers` checks that every carrier value is classified into the
+member whose independently stated predicate it satisfies. `SemanticPartition`
+keeps those predicates and the proof with the partition for review and handoff.
+Composition proofs
 check the first-success and duplicate-success paths. A change that maps
 `duplicateSuccess` to `fulfill` breaks the duplicate path theorem.
 
@@ -117,8 +134,8 @@ check the first-success and duplicate-success paths. A change that maps
 import ArchiScriptExamples.PaymentWebhook
 open ArchiScriptExamples.PaymentWebhook
 
-example : inputPartition.Realizes inputRegions :=
-  inputPartition_realizes_regions
+example : inputPartition.HasMembers inputMembers :=
+  inputSemanticPartition.hasMembers
 
 example : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
   duplicate_requests_no_ledger_command
@@ -246,7 +263,7 @@ claim without opening a `.lean` file.
 
 | Layer | What this example establishes |
 | --- | --- |
-| Architecture | **PROVED:** the input classifier realizes its declared regions; the two named composition paths have the stated results. |
+| Architecture | **PROVED:** the input classifier has the independently stated members; the two named composition paths have the stated results. |
 | Carrier adequacy | **REVIEW FINDING:** ledger-observation consistency and scope need engineering judgment. |
 | Implementation binding | **RESOLVED:** defined branches point to symbols in the companion code. |
 | Code conformance | **PARTIAL EVIDENCE:** named tests cover selected behavior; no general conformance proof. |
@@ -274,10 +291,9 @@ The [negative examples](Test/Negative) show failed correspondence for missing
 and overlapping selected regions.
 
 Lean's `Partition` represents a VDP with finite member indices and a
-classifier. `Partition.Realizes` checks its classifier fibers against separately
-defined semantic predicates. This correspondence is part of the normal
-authoring and review path, although the current API stores it as a theorem
-rather than inside a `CheckedPartition` structure. A `Domain α` is a predicate;
+classifier. `Partition.HasMembers` checks its classifier fibers against separately
+defined semantic predicates. A `SemanticPartition` carries those predicates and
+the proof as a normal review and handoff object. A `Domain α` is a predicate;
 `Domain.relativeComplement` defines a remainder within an explicit parent.
 
 An `Operation X Y` is a partial function between the **member sets** of VDPs

@@ -67,14 +67,18 @@ private def ledgerBranchJson (name : LedgerBranch) : Json := Id.run do
   ]
 
 private def checkedClaims : List Json := Id.run do
-  have _ : inputPartition.Realizes inputRegions := inputPartition_realizes_regions
+  have _ : inputPartition.HasMembers inputMembers := inputSemanticPartition.hasMembers
+  have _ : decisionPartition.HasMembers decisionSemanticPartition.members :=
+    decisionSemanticPartition.hasMembers
+  have _ : ledgerCommandPartition.HasMembers ledgerCommandSemanticPartition.members :=
+    ledgerCommandSemanticPartition.hasMembers
   have _ : (requestLedgerCommand.comp decide) .firstSuccess =
       some .recordAndQueueFulfillment := first_success_requests_fulfillment
   have _ : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
     duplicate_requests_no_ledger_command
   return [
-    Json.mkObj [("proof", toJson "PaymentWebhook.inputPartition_realizes_regions"),
-                ("claim", toJson "inputPartition realizes inputRegions")],
+    Json.mkObj [("proof", toJson "PaymentWebhook.inputSemanticPartition.hasMembers"),
+                ("claim", toJson "inputPartition has independently stated inputMembers")],
     Json.mkObj [("proof", toJson "PaymentWebhook.first_success_requests_fulfillment"),
                 ("claim", toJson "requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment")],
     Json.mkObj [("proof", toJson "PaymentWebhook.duplicate_requests_no_ledger_command"),
@@ -83,6 +87,9 @@ private def checkedClaims : List Json := Id.run do
 
 private def objectJson (kind id : String) : Json :=
   Json.mkObj [("id", toJson id), ("kind", toJson kind)]
+
+private def semanticPartitionJson (id proof : String) (members : List String) : Json :=
+  Json.mkObj [("id", toJson id), ("members", toJson members), ("proof", toJson proof)]
 
 private def inputRegionJson (name : InputMember) : Json :=
   Json.mkObj [
@@ -121,8 +128,22 @@ private def projection : Json := Json.mkObj [
      objectJson "implementationBinding"
        s!"PaymentWebhook.requestLedgerCommand.{shortName name}.implementation"]))),
   ("inputMembers", toJson (inputPartition.memberIndices.map (fun (m : InputMember) => shortName m))),
-  ("inputRegions", toJson (inputPartition.memberIndices.map
+  ("inputRegions", toJson (inputSemanticPartition.partition.memberIndices.map
     (fun (m : InputMember) => inputRegionJson m))),
+  ("semanticPartitions", toJson ([
+    semanticPartitionJson "PaymentWebhook.inputPartition"
+      "PaymentWebhook.inputSemanticPartition.hasMembers"
+      (inputSemanticPartition.partition.memberIndices.map
+        (fun (m : InputMember) => s!"PaymentWebhook.inputPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhook.decisionPartition"
+      "PaymentWebhook.decisionSemanticPartition.hasMembers"
+      (decisionSemanticPartition.partition.memberIndices.map
+        (fun (m : Decision) => s!"PaymentWebhook.decisionPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhook.ledgerCommandPartition"
+      "PaymentWebhook.ledgerCommandSemanticPartition.hasMembers"
+      (ledgerCommandSemanticPartition.partition.memberIndices.map
+        (fun (m : LedgerCommand) => s!"PaymentWebhook.ledgerCommandPartition.{shortName m}"))
+  ] : List Json)),
   ("decisionMembers", toJson (decisionPartition.memberIndices.map (fun (m : Decision) => shortName m))),
   ("ledgerMembers", toJson (ledgerCommandPartition.memberIndices.map (fun (m : LedgerCommand) => shortName m))),
   ("topology", toJson ([

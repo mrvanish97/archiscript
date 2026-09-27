@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `3a05a3231100`
+Model revision: `143a10dfecd6`
 
 Review state: **draft**
 
@@ -18,7 +18,7 @@ Webhook input classification, decision mapping, and ledger-command mapping in th
 
 ### 2. Changes since previous review
 
-- Added projection.mappingCoverage: [{'id': 'PaymentWebhook.decide', 'missingDefinedMappings': 0}, {'id': 'PaymentWebhook.requestLedgerCommand', 'missingDefinedMappings': 0}]
+- First generated snapshot; no earlier projection supplied.
 
 ### 3. Boundary to challenge
 
@@ -59,6 +59,12 @@ The arrows are semantic member mappings, not runtime calls.
 - `PaymentWebhook.decisionPartition`: `reject`, `ignore`, `recordFailure`, `fulfill`, `acknowledgeDuplicate`
 - `PaymentWebhook.ledgerCommandPartition`: `recordFailure`, `recordAndQueueFulfillment`
 
+Each partition's selected member IDs and `HasMembers` proof travel in the review projection:
+
+- `PaymentWebhook.inputPartition` — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- `PaymentWebhook.decisionPartition` — `PaymentWebhook.decisionSemanticPartition.hasMembers`
+- `PaymentWebhook.ledgerCommandPartition` — `PaymentWebhook.ledgerCommandSemanticPartition.hasMembers`
+
 The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.
 
 Coarsening: none represented in this scoped review projection.
@@ -79,11 +85,27 @@ View: Level 2 — one operation. Focus: every declared `decide` branch. Hidden: 
 
 ```mermaid
 flowchart LR
-  S0(["malformed"]) -->|"decide"| T0(["reject"])
-  S1(["unsupported"]) -->|"decide"| T1(["ignore"])
-  S2(["failed"]) -->|"decide"| T2(["recordFailure"])
-  S3(["firstSuccess"]) -->|"decide"| T3(["fulfill"])
-  S4(["duplicateSuccess"]) -->|"decide"| T4(["acknowledgeDuplicate"])
+  subgraph INPUT["inputPartition"]
+    direction TB
+    S0["malformed"]
+    S1["unsupported"]
+    S2["failed"]
+    S3["firstSuccess"]
+    S4["duplicateSuccess"]
+  end
+  subgraph DECISION["decisionPartition"]
+    direction TB
+    T0["reject"]
+    T1["ignore"]
+    T2["recordFailure"]
+    T3["fulfill"]
+    T4["acknowledgeDuplicate"]
+  end
+  S0 -->|"decide"| T0
+  S1 -->|"decide"| T1
+  S2 -->|"decide"| T2
+  S3 -->|"decide"| T3
+  S4 -->|"decide"| T4
 ```
 
 | Canonical branch | Source | Target | Responsibility | Primary implementation |
@@ -125,7 +147,7 @@ flowchart LR
 
 ### 11. Machine-checked claims
 
-- inputPartition realizes inputRegions — `PaymentWebhook.inputPartition_realizes_regions`
+- inputPartition has independently stated inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment — `PaymentWebhook.first_success_requests_fulfillment`
 - requestLedgerCommand.comp decide maps duplicateSuccess to none — `PaymentWebhook.duplicate_requests_no_ledger_command`
 

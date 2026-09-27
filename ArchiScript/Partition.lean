@@ -49,12 +49,13 @@ def member (P : Partition) (i : P.MemberIndex) : Domain P.Carrier :=
   fun x => P.classify x = i
 
 /--
-The selected semantic regions agree with the classifier's actual members.
-Supporting subdomains may overlap or be grouped into one selected region.
-This proposition is separate from the partition's data and identity.
+The selected semantic members agree with the classifier's actual fibers.
+Supporting subdomains may overlap or be grouped into one selected member.
+The member predicates must be stated independently for this to provide
+semantic evidence; Lean cannot enforce that authoring discipline.
 -/
-def Realizes (P : Partition) (regions : P.MemberIndex → Domain P.Carrier) : Prop :=
-  ∀ i x, P.member i x ↔ regions i x
+def HasMembers (P : Partition) (members : P.MemberIndex → Domain P.Carrier) : Prop :=
+  ∀ i x, P.member i x ↔ members i x
 
 theorem self_member (P : Partition) (i : P.MemberIndex) (x : P.Carrier) :
     P.member i x ↔ P.classify x = i := Iff.rfl
@@ -133,4 +134,12 @@ theorem relabeling_preserves_member {P Q : Partition} (r : Relabeling P Q)
   · exact fun h => r.memberIndex.injective h
 
 end Partition
+
+/-- A partition accompanied by its stated semantic members and correspondence proof.
+This review and handoff object does not change the identity of its partition. -/
+structure SemanticPartition where
+  partition : Partition
+  members : partition.MemberIndex → Domain partition.Carrier
+  hasMembers : partition.HasMembers members
+
 end ArchiScript

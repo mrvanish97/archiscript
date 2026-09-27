@@ -21,9 +21,12 @@ one screen. Prefer at most eight major nodes; split above twelve. A Level 2 map
 normally covers one operation. A Level 4 view normally covers one path or a
 comparison of two paths.
 
-Mermaid conventions: rectangles for VDPs, rounded nodes for members, a distinct
-boundary shape for external appearances, and labeled arrows for semantic
-operations. Put long source locations and evidence outside the graph. Labels,
+Mermaid and TikZ conventions: draw each VDP as a labeled container box and
+its selected members as boxes inside it. Connect member boxes with arrows for
+semantic operation mappings. Draw `∅` outside every VDP, since it is not a
+member. At Level 1, a VDP may appear as one collapsed box because individual
+members are intentionally hidden. Use a distinct boundary shape for external
+appearances. Put long source locations and evidence outside the graph. Labels,
 not colors, carry meaning. Display canonical names, optionally after a human
 label such as `Duplicate successful delivery [duplicateSuccess]`. If several
 members are collapsed, label the aggregate `[display group: ...]` and list its
@@ -52,8 +55,15 @@ For example, the checked `PaymentWebhook` composition can be projected as:
 
 ```mermaid
 flowchart LR
-    A(["duplicateSuccess"]) -->|"decide"| B(["acknowledgeDuplicate"])
-    B -->|"requestLedgerCommand"| C(["∅"])
+    subgraph INPUT["inputPartition"]
+        A["duplicateSuccess"]
+    end
+    subgraph DECISION["decisionPartition"]
+        B["acknowledgeDuplicate"]
+    end
+    C(["∅ · undefined"])
+    A -->|"decide"| B
+    B -->|"requestLedgerCommand"| C
 ```
 
 View: focused composition. Focus: whether a duplicate success requests a

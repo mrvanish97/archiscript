@@ -43,17 +43,25 @@ not invent the carrier from two selected examples. `MemberIndex` contains
 labels, while `requestPartition.member .positive` is the semantic predicate.
 The finite enumeration is not the carrier.
 
-To check that the classifier realizes separately named semantic regions:
+To check that the classifier has the separately defined semantic members:
 
 ```lean
-def requestRegions : RequestIndex → Domain Nat
+def requestMembers : RequestIndex → Domain Nat
   | .zero => Domain.complement positive
   | .positive => positive
 
-example : requestPartition.Realizes requestRegions := by
+example : requestPartition.HasMembers requestMembers := by
   intro i n
-  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestRegions,
+  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
     Domain.complement, positive]
+
+def requestSemanticPartition : SemanticPartition where
+  partition := requestPartition
+  members := requestMembers
+  hasMembers := by
+    intro i n
+    cases i <;> cases n <;> simp [Partition.member, requestPartition,
+      requestMembers, Domain.complement, positive]
 ```
 
 This correspondence constrains the model: the selected regions must equal the
@@ -77,7 +85,8 @@ A VDP groups regions at the resolution its consumers need. The library's
 `ArchiScriptExamples.FormInput` demonstrates two arbitrary string fields:
 `emailProvided` and `nameProvided` overlap, their intersection is `completeForm`,
 and the remaining three combinations can be either separate members or one
-incomplete member. Both VDPs have checked `Realizes` evidence. The
+incomplete member. Both VDPs have checked `HasMembers` evidence and
+`SemanticPartition` review objects. The
 `forgetFieldFailures` operation coarsens the four members to two, with a proof
 that the member mapping agrees with classification of the same input value.
 These predicates model presence, not full email or name validation.
@@ -245,7 +254,7 @@ Current checks are Lean type/proof obligations:
 | --- | --- | --- |
 | Flat declaration with valid partition evidence | Accepted | Presentation does not determine semantic validity |
 | Overlapping or incomplete supporting subdomains | Accepted | Supporting regions are not necessarily VDP members |
-| Selected regions disagree with classifier fibers | `Partition.Realizes` cannot be proved | Declared semantics must match actual members |
+| Selected regions disagree with classifier fibers | `Partition.HasMembers` cannot be proved | Declared semantics must match actual members |
 | Missing inhabitance or enumeration evidence | Lean proof/type error | Every declared member must exist and be enumerated |
 | Conflicting branch or route source | Lean proof/type error | Witnesses must match the canonical declaration |
 

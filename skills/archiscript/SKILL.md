@@ -69,7 +69,7 @@ Use this order:
    fixed snapshot or context assumed during classification.
 4. Choose the VDP's resolution: group semantic regions into finite nonempty,
    exhaustive, disjoint members. Give them `MemberIndex` labels and connect
-   separately defined predicates to the classifier using `Partition.Realizes`.
+   separately defined predicates to the classifier using `Partition.HasMembers`.
 5. Supply the required enumeration and inhabitance evidence. Reuse
    `Partition.coverage` and `Partition.disjoint`; do not reprove them per model.
 6. Only narrow the carrier when an explicit upstream guarantee or requirement
@@ -80,12 +80,16 @@ to make coverage tautological. A coverage proof shows that the classifier
 covers the carrier that was declared; it does not prove that the carrier is
 adequate for the intended external problem.
 
-For implementation handoff, supply a named `Partition.Realizes` proof for each
-selected partition. Do not use `regions i := P.member i`, `classify`, or a
-mechanical restatement of the classifier as the independent semantic regions
-that this proof is meant to validate. Classifier fibers may be useful as
-derived views, but they are not independent semantic evidence. The current API
-stores correspondence as a theorem, so check that it is present during review.
+For implementation handoff, package each selected partition in a
+`SemanticPartition` with independently stated `members` and a named
+`Partition.HasMembers` proof. Do not use `members i := P.member i`, `classify`,
+or a mechanical restatement of the classifier as the member definitions this
+proof is meant to validate. Classifier fibers may be useful as derived views,
+but they are not independent semantic evidence. Lean checks the correspondence;
+reviewers must assess the independence and adequacy of the predicates.
+For a justified closed enum carrier whose constructors are the semantic cases,
+constructor equality may define its members; a simple `id` classifier and
+`rfl` proof are legitimate. State why that enum is the actual boundary.
 
 Respect independently specified closed protocol domains. Unions are not
 intrinsically wrong; assess what the carrier means instead of warning on a
@@ -179,7 +183,8 @@ Use the public vocabulary exactly:
   `Partition.member`;
 - `Domain`, `Domain.complement`, and `Domain.relativeComplement` for predicates
   and remainders within an explicit parent;
-- `Partition.Realizes` for checked correspondence with selected region predicates;
+- `Partition.HasMembers` for checked correspondence with selected region predicates;
+- `SemanticPartition` for a reviewable partition with member predicates and proof;
 - `Operation` for partial member mappings, with scoped `Operation.id` and
   right-to-left `Operation.comp`;
 - `ParameterizedPartition` for specialization by finite parameter members.
@@ -265,7 +270,7 @@ unknown obligations rather than promoting them to proved claims.
 For a nontrivial model, check that every selected member has an independently
 stated predicate; relevant containment and complement parents are explicit;
 environment-dependent predicates name their context; selected members are
-inhabited, exhaustive, and disjoint; and `Partition.Realizes` connects the
+inhabited, exhaustive, and disjoint; and `Partition.HasMembers` connects the
 predicates to the classifier. Apply these checks to selected VDP members,
 without demanding that all supporting subdomains form a partition.
 

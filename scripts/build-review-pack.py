@@ -61,6 +61,17 @@ def validate_review(projection, review):
     objects = {entry["id"] for entry in projection["objects"]}
     if len(objects) != len(projection["objects"]):
         raise ValueError("projection contains duplicate canonical IDs")
+    partitions = {item["id"] for item in projection["objects"]
+                  if item["kind"] == "partition"}
+    semantic = projection["semanticPartitions"]
+    if len(semantic) != len(partitions) or {item["id"] for item in semantic} != partitions:
+        raise ValueError("every reviewed partition needs semantic member evidence")
+    for item in semantic:
+        expected = {entry["id"] for entry in projection["objects"]
+                    if entry["kind"] == "member" and
+                    entry["id"].startswith(item["id"] + ".")}
+        if not item["proof"] or len(item["members"]) != len(expected) or set(item["members"]) != expected:
+            raise ValueError(f"incomplete semantic member evidence: {item['id']}")
     coverage = projection["mappingCoverage"]
     operation_ids = {item["id"] for item in projection["topology"]}
     if (len(coverage) != len(operation_ids) or
@@ -130,6 +141,22 @@ def mermaid_topology(projection):
             for operation in projection["topology"]]
 
 
+def mermaid_decide_branches(projection):
+    branches = projection["decideBranches"]
+    sources = list(dict.fromkeys(item["source"] for item in branches))
+    targets = list(dict.fromkeys(item["target"] for item in branches))
+    source_ids = {name: f"S{index}" for index, name in enumerate(sources)}
+    target_ids = {name: f"T{index}" for index, name in enumerate(targets)}
+    lines = ['  subgraph INPUT["inputPartition"]', '    direction TB']
+    lines += [f'    {source_ids[name]}["{name}"]' for name in sources]
+    lines += ['  end', '  subgraph DECISION["decisionPartition"]', '    direction TB']
+    lines += [f'    {target_ids[name]}["{name}"]' for name in targets]
+    lines += ['  end']
+    lines += [f'  {source_ids[item["source"]]} -->|"decide"| {target_ids[item["target"]]}'
+              for item in branches]
+    return lines
+
+
 def latex_topology(projection):
     operations = projection["topology"]
     if not operations:
@@ -140,6 +167,42 @@ def latex_topology(projection):
                      + r"}}{\longrightarrow}$\quad " +
                      r"\fbox{" + tex_escape(operation["target"]) + "}")
     return r"\begin{center}" + "".join(parts) + r"\end{center}"
+
+
+def tikz_decide_branches(projection):
+    branches = projection["decideBranches"]
+    count = len(branches)
+    bottom = -0.68 * count - 0.15
+    lines = [r"\begin{center}", r"\begin{tikzpicture}[>=stealth, font=\small]",
+             rf"\draw[rounded corners] (-0.2,0.5) rectangle (3.1,{bottom:.2f});",
+             rf"\draw[rounded corners] (5.0,0.5) rectangle (9.5,{bottom:.2f});",
+             r"\node[font=\bfseries] at (1.45,0.20) {inputPartition};",
+             r"\node[font=\bfseries] at (7.25,0.20) {decisionPartition};"]
+    for index, item in enumerate(branches):
+        y = -0.36 - 0.68 * index
+        lines += [rf"\node[draw, rounded corners, minimum width=2.65cm] (S{index}) at (1.45,{y:.2f}) {{{tex_escape(item['source'])}}};",
+                  rf"\node[draw, rounded corners, minimum width=3.95cm] (T{index}) at (7.25,{y:.2f}) {{{tex_escape(item['target'])}}};",
+                  rf"\draw[->] (S{index}.east) -- (T{index}.west);"]
+    lines += [r"\end{tikzpicture}", r"\end{center}"]
+    return "\n".join(lines)
+
+
+def latex_decide_branches(projection):
+    branches = projection["decideBranches"]
+    height = 8 * len(branches) + 9
+    lines = [r"\begin{center}\setlength{\unitlength}{1mm}",
+             rf"\begin{{picture}}(150,{height})",
+             rf"\put(0,0){{\framebox(63,{height}){{}}}}",
+             rf"\put(85,0){{\framebox(65,{height}){{}}}}",
+             rf"\put(3,{height - 5}){{\textbf{{inputPartition}}}}",
+             rf"\put(88,{height - 5}){{\textbf{{decisionPartition}}}}"]
+    for index, item in enumerate(branches):
+        y = height - 13 - 8 * index
+        lines += [rf"\put(3,{y}){{\framebox(57,6){{\texttt{{{tex_escape(item['source'])}}}}}}}",
+                  rf"\put(88,{y}){{\framebox(59,6){{\texttt{{{tex_escape(item['target'])}}}}}}}",
+                  rf"\put(63,{y + 3}){{\makebox(22,0){{$\longrightarrow$}}}}"]
+    lines += [r"\end{picture}\end{center}"]
+    return "\n".join(lines)
 
 
 def semantic_changes(current, previous, current_review=None, previous_review=None):
@@ -231,6 +294,9 @@ def markdown_pack(projection, review, revision, changes, allowed):
         f"- `PaymentWebhook.inputPartition`: {', '.join(f'`{x}`' for x in projection['inputMembers'])}",
         f"- `PaymentWebhook.decisionPartition`: {', '.join(f'`{x}`' for x in projection['decisionMembers'])}",
         f"- `PaymentWebhook.ledgerCommandPartition`: {', '.join(f'`{x}`' for x in projection['ledgerMembers'])}", "",
+        "Each partition's selected member IDs and `HasMembers` proof travel in the review projection:", "",
+        *[f"- `{item['id']}` — `{item['proof']}`"
+          for item in projection["semanticPartitions"]], "",
         "The input carrier includes `alreadyRecorded`; the model does not establish how that observation was acquired.", "",
         "Coarsening: none represented in this scoped review projection.", "",
         "| Input member | Review meaning |", "| --- | --- |",
@@ -240,8 +306,7 @@ def markdown_pack(projection, review, revision, changes, allowed):
         "View: Level 2 — one operation. Focus: every declared `decide` branch. Hidden: predicate formulas and runtime effects.", "",
         "```mermaid", "flowchart LR",
     ]
-    for index, item in enumerate(projection["decideBranches"]):
-        lines.append(f'  S{index}(["{item["source"]}"]) -->|"decide"| T{index}(["{item["target"]}"])')
+    lines += mermaid_decide_branches(projection)
     lines += ["```", "", "| Canonical branch | Source | Target | Responsibility | Primary implementation |", "| --- | --- | --- | --- | --- |"]
     for item in projection["decideBranches"]:
         lines.append(f"| `{item['id']}` | `{item['source']}` | `{item['target']}` | {', '.join(item['responsibility']) or 'unassigned'} | `{primary_label(item['implementation'])}` ({item['implementation']['status']}) |")
@@ -352,6 +417,10 @@ def latex_pack(projection, review, revision, changes, allowed):
     for key, name in (("inputMembers", "inputPartition"), ("decisionMembers", "decisionPartition"),
                       ("ledgerMembers", "ledgerCommandPartition")):
         lines.append(r"\textbf{" + t(name) + "}: " + t(", ".join(projection[key])) + r"\\")
+    lines += [r"\textbf{Semantic correspondence evidence:}", r"\begin{itemize}"]
+    lines += [r"\item " + tex_identifier(item["id"]) + ": " + tex_identifier(item["proof"])
+              for item in projection["semanticPartitions"]]
+    lines.append(r"\end{itemize}")
     lines.append("Coarsening: none represented in this scoped review projection.")
     lines += [tex_table(("Input member", "Review meaning"),
                         [(item["name"], item["description"]) for item in projection["inputRegions"]],
@@ -359,6 +428,7 @@ def latex_pack(projection, review, revision, changes, allowed):
               "The descriptions sit beside the Lean predicates. The proof checks predicates against the classifier, not the English wording."]
     lines += [r"\subsection*{decide branch map -- Level 2}",
               "Focus: all declared decide branches. Hidden: predicate formulas and runtime effects.",
+              latex_decide_branches(projection),
               tex_table(("Canonical branch", "Source", "Target"),
                         [(item["id"], item["source"], item["target"])
                          for item in projection["decideBranches"]], (.47, .20, .20)),
@@ -412,6 +482,8 @@ def main():
     (OUTPUT / "PaymentWebhook.snapshot.json").write_text(json.dumps(snapshot, indent=2) + "\n")
     (OUTPUT / "PaymentWebhook.md").write_text(
         markdown_pack(projection, review, revision, changes, allowed))
+    (OUTPUT / "PaymentWebhook-decide.tikz").write_text(
+        tikz_decide_branches(projection) + "\n")
     with tempfile.TemporaryDirectory(prefix="archiscript-review-") as temporary:
         tex_file = Path(temporary) / "PaymentWebhook.tex"
         tex_file.write_text(latex_pack(projection, review, revision, changes, allowed))

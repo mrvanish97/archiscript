@@ -8,6 +8,6 @@ def incompleteRegions : formPartition.MemberIndex → Domain Input
   | true => completeForm
   | false => fun x => ¬ emailProvided x ∧ ¬ nameProvided x
 
-example : formPartition.Realizes incompleteRegions := by
+example : formPartition.HasMembers incompleteRegions := by
   intro i x
   rfl

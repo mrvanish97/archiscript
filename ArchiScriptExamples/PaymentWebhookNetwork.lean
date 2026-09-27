@@ -18,6 +18,11 @@ def responsePartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
+def responseSemanticPartition : SemanticPartition where
+  partition := responsePartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
 /-- Audit categories are intent to record, not evidence that a record exists. -/
 inductive AuditIntent where
   | invalidDelivery | unsupportedDelivery | paymentFailed
@@ -35,6 +40,11 @@ def auditPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
+def auditSemanticPartition : SemanticPartition where
+  partition := auditPartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
 /-- A possible customer notification, not proof that a message was sent. -/
 inductive NotificationIntent where
   | paymentFailure | successReceipt
@@ -50,6 +60,11 @@ def notificationPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
+def notificationSemanticPartition : SemanticPartition where
+  partition := notificationPartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
+
 /-- The fulfillment boundary has one request kind in this scoped example. -/
 inductive FulfillmentRequest where
   | enqueue
@@ -64,6 +79,11 @@ def fulfillmentPartition : Partition where
   memberIndices_complete := by intro i; cases i <;> simp
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
+
+def fulfillmentSemanticPartition : SemanticPartition where
+  partition := fulfillmentPartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
 
 /-- Every decision has a provider response plan. -/
 def planResponse : Operation PaymentWebhook.decisionPartition responsePartition where

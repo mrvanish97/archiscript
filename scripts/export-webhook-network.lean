@@ -76,8 +76,22 @@ private def duplicatePathJson : Json := Id.run do
   ]
 
 private def checkedClaims : List Json := Id.run do
-  have _ : PaymentWebhook.inputPartition.Realizes PaymentWebhook.inputRegions :=
-    PaymentWebhook.inputPartition_realizes_regions
+  have _ : PaymentWebhook.inputPartition.HasMembers PaymentWebhook.inputMembers :=
+    PaymentWebhook.inputSemanticPartition.hasMembers
+  have _ : PaymentWebhook.decisionPartition.HasMembers
+      PaymentWebhook.decisionSemanticPartition.members :=
+    PaymentWebhook.decisionSemanticPartition.hasMembers
+  have _ : PaymentWebhook.ledgerCommandPartition.HasMembers
+      PaymentWebhook.ledgerCommandSemanticPartition.members :=
+    PaymentWebhook.ledgerCommandSemanticPartition.hasMembers
+  have _ : responsePartition.HasMembers responseSemanticPartition.members :=
+    responseSemanticPartition.hasMembers
+  have _ : auditPartition.HasMembers auditSemanticPartition.members :=
+    auditSemanticPartition.hasMembers
+  have _ : notificationPartition.HasMembers notificationSemanticPartition.members :=
+    notificationSemanticPartition.hasMembers
+  have _ : fulfillmentPartition.HasMembers fulfillmentSemanticPartition.members :=
+    fulfillmentSemanticPartition.hasMembers
   have _ : (planResponse.comp PaymentWebhook.decide) .duplicateSuccess =
       some .acknowledge := duplicate_acknowledged
   have _ : (planNotification.comp PaymentWebhook.decide) .duplicateSuccess = none :=
@@ -89,8 +103,8 @@ private def checkedClaims : List Json := Id.run do
       (PaymentWebhook.requestLedgerCommand.comp PaymentWebhook.decide))
       .firstSuccess = some .enqueue := first_success_requests_fulfillment
   return [
-    Json.mkObj [("proof", toJson "PaymentWebhook.inputPartition_realizes_regions"),
-                ("claim", toJson "inputPartition realizes independently stated inputRegions")],
+    Json.mkObj [("proof", toJson "PaymentWebhook.inputSemanticPartition.hasMembers"),
+                ("claim", toJson "inputPartition has independently stated inputMembers")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_acknowledged"),
                 ("claim", toJson "duplicateSuccess has an acknowledge response plan")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_has_no_notification_intent"),
@@ -100,6 +114,9 @@ private def checkedClaims : List Json := Id.run do
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.first_success_requests_fulfillment"),
                 ("claim", toJson "firstSuccess maps to an enqueue request")]
   ]
+
+private def semanticPartitionJson (id proof : String) (members : List String) : Json :=
+  Json.mkObj [("id", toJson id), ("members", toJson members), ("proof", toJson proof)]
 
 private def projection : Json := Json.mkObj [
   ("model", toJson "PaymentWebhookNetwork"),
@@ -130,12 +147,42 @@ private def projection : Json := Json.mkObj [
   ] : List Json)),
   ("notificationMappings", toJson (PaymentWebhook.decisionPartition.memberIndices.map
     (fun (m : PaymentWebhook.Decision) => notificationJson m))),
-  ("inputRegions", toJson (PaymentWebhook.inputPartition.memberIndices.map
+  ("inputRegions", toJson (PaymentWebhook.inputSemanticPartition.partition.memberIndices.map
     (fun (m : PaymentWebhook.InputMember) => Json.mkObj [
       ("id", toJson s!"PaymentWebhookNetwork.inputPartition.{shortName m}"),
       ("name", toJson (shortName m)),
       ("description", toJson (PaymentWebhook.inputRegion m).description)
     ]))),
+  ("semanticPartitions", toJson ([
+    semanticPartitionJson "PaymentWebhookNetwork.inputPartition"
+      "PaymentWebhook.inputSemanticPartition.hasMembers"
+      (PaymentWebhook.inputSemanticPartition.partition.memberIndices.map
+        (fun (m : PaymentWebhook.InputMember) => s!"PaymentWebhookNetwork.inputPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.decisionPartition"
+      "PaymentWebhook.decisionSemanticPartition.hasMembers"
+      (PaymentWebhook.decisionSemanticPartition.partition.memberIndices.map
+        (fun (m : PaymentWebhook.Decision) => s!"PaymentWebhookNetwork.decisionPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.ledgerCommandPartition"
+      "PaymentWebhook.ledgerCommandSemanticPartition.hasMembers"
+      (PaymentWebhook.ledgerCommandSemanticPartition.partition.memberIndices.map
+        (fun (m : PaymentWebhook.LedgerCommand) => s!"PaymentWebhookNetwork.ledgerCommandPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.responsePartition"
+      "PaymentWebhookNetwork.responseSemanticPartition.hasMembers"
+      (responseSemanticPartition.partition.memberIndices.map
+        (fun (m : ProviderResponse) => s!"PaymentWebhookNetwork.responsePartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.auditPartition"
+      "PaymentWebhookNetwork.auditSemanticPartition.hasMembers"
+      (auditSemanticPartition.partition.memberIndices.map
+        (fun (m : AuditIntent) => s!"PaymentWebhookNetwork.auditPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.notificationPartition"
+      "PaymentWebhookNetwork.notificationSemanticPartition.hasMembers"
+      (notificationSemanticPartition.partition.memberIndices.map
+        (fun (m : NotificationIntent) => s!"PaymentWebhookNetwork.notificationPartition.{shortName m}")),
+    semanticPartitionJson "PaymentWebhookNetwork.fulfillmentPartition"
+      "PaymentWebhookNetwork.fulfillmentSemanticPartition.hasMembers"
+      (fulfillmentSemanticPartition.partition.memberIndices.map
+        (fun (m : FulfillmentRequest) => s!"PaymentWebhookNetwork.fulfillmentPartition.{shortName m}"))
+  ] : List Json)),
   ("duplicatePath", duplicatePathJson),
   ("bindingRows", toJson ([
     bindingJson "PaymentWebhookNetwork.decide.duplicateSuccess"

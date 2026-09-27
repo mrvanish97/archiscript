@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `0a3bcdca6eaa`
+Model revision: `159b6b0202fb`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
@@ -58,9 +58,19 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  A(["duplicateSuccess"]) -->|"decide"| B(["acknowledgeDuplicate"])
-  B -->|"requestLedgerCommand"| C(["∅"])
-  B -->|"planResponse"| D(["acknowledge"])
+  subgraph INPUT["inputPartition"]
+    A["duplicateSuccess"]
+  end
+  subgraph DECISION["decisionPartition"]
+    B["acknowledgeDuplicate"]
+  end
+  subgraph RESPONSE["responsePartition"]
+    D["acknowledge"]
+  end
+  C(["∅ · undefined"])
+  A -->|"decide"| B
+  B -->|"requestLedgerCommand"| C
+  B -->|"planResponse"| D
 ```
 
 `∅` means `requestLedgerCommand` is undefined for `acknowledgeDuplicate`. It does not prove absence of other runtime effects.
@@ -71,19 +81,25 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-  S0(["reject"])
-  S1(["ignore"])
-  S2(["recordFailure"])
-  S3(["fulfill"])
-  S4(["acknowledgeDuplicate"])
-  T0(["∅"])
-  T1(["paymentFailure"])
-  T2(["successReceipt"])
-  S0 -->|"planNotification"| T0
-  S1 -->|"planNotification"| T0
-  S2 -->|"planNotification"| T1
-  S3 -->|"planNotification"| T2
-  S4 -->|"planNotification"| T0
+  subgraph DECISION["decisionPartition"]
+    direction TB
+    S0["reject"]
+    S1["ignore"]
+    S2["recordFailure"]
+    S3["fulfill"]
+    S4["acknowledgeDuplicate"]
+  end
+  subgraph NOTIFICATION["notificationPartition"]
+    direction TB
+    T0["paymentFailure"]
+    T1["successReceipt"]
+  end
+  U(["∅ · undefined"])
+  S0 -->|"planNotification"| U
+  S1 -->|"planNotification"| U
+  S2 -->|"planNotification"| T0
+  S3 -->|"planNotification"| T1
+  S4 -->|"planNotification"| U
 ```
 
 | Decision member | Notification intent |
@@ -106,6 +122,16 @@ The carrier is the same event-plus-ledger-observation boundary as the base Payme
 | `PaymentWebhookNetwork.inputPartition.firstSuccess` | eventId is present; status is success; ledger observation is false |
 | `PaymentWebhookNetwork.inputPartition.duplicateSuccess` | eventId is present; status is success; ledger observation is true |
 
+Every selected VDP carries semantic member evidence:
+
+- `PaymentWebhookNetwork.inputPartition` — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.decisionPartition` — `PaymentWebhook.decisionSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.ledgerCommandPartition` — `PaymentWebhook.ledgerCommandSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.responsePartition` — `PaymentWebhookNetwork.responseSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.auditPartition` — `PaymentWebhookNetwork.auditSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.notificationPartition` — `PaymentWebhookNetwork.notificationSemanticPartition.hasMembers`
+- `PaymentWebhookNetwork.fulfillmentPartition` — `PaymentWebhookNetwork.fulfillmentSemanticPartition.hasMembers`
+
 The descriptions sit beside independent Lean predicates. Lean checks predicate/classifier correspondence, not the English wording or the adequacy of the chosen boundary.
 
 ## Level 4 · Branch-to-code handoff
@@ -123,7 +149,7 @@ The base `decide` binding is resolved in companion code. New output-plan binding
 
 **PROVED over the declared model**
 
-- inputPartition realizes independently stated inputRegions — `PaymentWebhook.inputPartition_realizes_regions`
+- inputPartition has independently stated inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - duplicateSuccess has an acknowledge response plan — `PaymentWebhookNetwork.duplicate_acknowledged`
 - duplicateSuccess has no notification mapping — `PaymentWebhookNetwork.duplicate_has_no_notification_intent`
 - duplicateSuccess has no fulfillment-request mapping — `PaymentWebhookNetwork.duplicate_requests_no_fulfillment`

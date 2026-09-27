@@ -22,18 +22,18 @@ example : Domain.relativeComplement emailProvided completeForm (fun _ h => h.1)
   unfold Domain.relativeComplement completeForm
   decide
 
-example : fieldPartition.Realizes fieldRegions := fieldPartition_realizes_regions
-example : formPartition.Realizes formRegions := formPartition_realizes_regions
+example : fieldPartition.HasMembers fieldMembers := fieldPartition_has_members
+example : formPartition.HasMembers formMembers := formPartition_has_members
 
 -- Concrete counterexamples rule out treating the supporting domains as members.
-example : ¬ formPartition.Realizes (fun | true => emailProvided | false => nameProvided) := by
+example : ¬ formPartition.HasMembers (fun | true => emailProvided | false => nameProvided) := by
   intro h
   have bad := (h false ("a@example.test", "Ada")).mpr (by decide)
   change true = false at bad
   cases bad
 
 -- The incomplete member must include mixed cases, not just both-empty inputs.
-example : ¬ formPartition.Realizes
+example : ¬ formPartition.HasMembers
     (fun | true => completeForm | false => fun x => ¬ emailProvided x ∧ ¬ nameProvided x) := by
   intro h
   have bad := (h false ("a@example.test", "")).mp rfl

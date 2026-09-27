@@ -76,7 +76,7 @@ modeling decision and exposes missing assumptions.
      this is a review finding, not a current automatic Lean diagnostic.
 
 12. **Circular semantic correspondence**
-    - Prompt: “I set `regions i := P.member i`; `P.Realizes regions` proves the
+    - Prompt: “I set `members i := P.member i`; `P.HasMembers members` proves the
       classifier has the right meaning. Can I hand this off?”
     - Expected: reject it as independent semantic justification. Ask for
       membership predicates motivated by the boundary and stated separately

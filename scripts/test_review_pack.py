@@ -101,7 +101,7 @@ class ReviewPackTests(unittest.TestCase):
 
     def test_findings_must_reference_model_objects(self):
         projection = {"model": "M", "objects": [{"id": "M.Input", "kind": "carrier"}],
-                      "topology": [], "mappingCoverage": []}
+                      "semanticPartitions": [], "topology": [], "mappingCoverage": []}
         review = {
             "model": "M", "state": "draft", "boundary": {"subject": "M.Input"},
             "assumptions": [], "effectNotes": [], "questions": [],
@@ -124,6 +124,19 @@ class ReviewPackTests(unittest.TestCase):
         projection["mappingCoverage"][0]["missingDefinedMappings"] = missing_count
         with self.assertRaisesRegex(ValueError, "defined mappings lack named branches"):
             review_pack.validate_review(projection, review)
+
+    def test_review_requires_semantic_evidence_for_each_partition(self):
+        projection = review_pack.projection_from_lean()
+        review = json.loads(review_pack.REVIEW_SOURCE.read_text())
+        review_pack.validate_review(projection, review)
+        self.assertIn('subgraph INPUT["inputPartition"]',
+                      "\n".join(review_pack.mermaid_decide_branches(projection)))
+        self.assertIn(r"\begin{tikzpicture}",
+                      review_pack.tikz_decide_branches(projection))
+        altered = copy.deepcopy(projection)
+        altered["semanticPartitions"].pop()
+        with self.assertRaisesRegex(ValueError, "semantic member evidence"):
+            review_pack.validate_review(altered, review)
 
     def test_semantic_diff_reports_changed_branch_target(self):
         branch = {

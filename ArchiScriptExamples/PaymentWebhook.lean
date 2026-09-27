@@ -51,9 +51,9 @@ def inputRegion : InputMember → InputRegion
   | .duplicateSuccess => ⟨fun x => x.eventId ≠ "" ∧ x.status = "success" ∧ x.alreadyRecorded = true,
       "eventId is present; status is success; ledger observation is true"⟩
 
-def inputRegions (member : InputMember) : Domain Input := (inputRegion member).predicate
+def inputMembers (member : InputMember) : Domain Input := (inputRegion member).predicate
 
-theorem inputPartition_realizes_regions : inputPartition.Realizes inputRegions := by
+theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := by
   intro i x
   cases i <;> cases x with
   | mk eventId status alreadyRecorded =>
@@ -61,8 +61,14 @@ theorem inputPartition_realizes_regions : inputPartition.Realizes inputRegions :
     by_cases hSuccess : status = "success" <;>
     by_cases hFailed : status = "failed" <;>
     cases alreadyRecorded <;>
-    simp [Partition.member, inputPartition, inputRegions, inputRegion,
+    simp [Partition.member, inputPartition, inputMembers, inputRegion,
       hId, hSuccess, hFailed] at *
+
+/-- Review and handoff carry the semantic member correspondence with the VDP. -/
+def inputSemanticPartition : SemanticPartition where
+  partition := inputPartition
+  members := inputMembers
+  hasMembers := inputPartition_has_members
 
 inductive Decision where
   | reject | ignore | recordFailure | fulfill | acknowledgeDuplicate
@@ -77,6 +83,12 @@ def decisionPartition : Partition where
   memberIndices_complete := by intro i; cases i <;> simp
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
+
+/-- Constructor equality states the members of this closed decision domain. -/
+def decisionSemanticPartition : SemanticPartition where
+  partition := decisionPartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
 
 /-- A member-level decision, not a value-level handler or a database write. -/
 def decide : Operation inputPartition decisionPartition where
@@ -100,6 +112,12 @@ def ledgerCommandPartition : Partition where
   memberIndices_complete := by intro i; cases i <;> simp
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
+
+/-- Constructor equality states the members of this closed command domain. -/
+def ledgerCommandSemanticPartition : SemanticPartition where
+  partition := ledgerCommandPartition
+  members := fun i x => x = i
+  hasMembers := by intro i x; rfl
 
 /-- `none` means there is no ledger-command mapping for this decision. -/
 def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition where

@@ -8,6 +8,6 @@ def overlappingRegions : formPartition.MemberIndex → Domain Input
   | true => emailProvided
   | false => nameProvided
 
-example : formPartition.Realizes overlappingRegions := by
+example : formPartition.HasMembers overlappingRegions := by
   intro i x
   rfl
