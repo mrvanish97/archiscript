@@ -477,6 +477,15 @@ consequence question from one materialized source context without inventing
 the source of one family, a target of another, and an intermediate VDP in a
 third.
 
+Build that single source structurally. Simultaneously required independent facts
+belong in tensor coordinates; design-time closed alternative entry channels
+belong in coproduct summands. Do not introduce a multi-source family. Likewise,
+do not split one consequence question into separate families merely because its
+source is a coproduct: branch-specific consequences can remain partial
+expressions from the common coproduct source. Use separate families when the
+analysis question or materialization boundary is genuinely different, not as a
+replacement for tensor/coproduct structure.
+
 Architecture may contain cycles. Each selected expression remains finite.
 Never define a family as an enumeration of every finite traversal of a cycle,
 and never infer a runtime loop, retry schedule, or temporal recurrence merely
