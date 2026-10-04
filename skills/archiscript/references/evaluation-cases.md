@@ -230,5 +230,14 @@ modeling decision and exposes missing assumptions.
       effects; keep the stronger concurrency claim UNKNOWN without such
       semantics.
 
+32. **Fan-out incorrectly encoded with tensor**
+    - Prompt: “One ReservationMutation should persist a write and publish an
+      outbox message, so model it as
+      `persistMutation.tensor publishMutation`.”
+    - Expected: reject that encoding. `Operation.tensor` consumes two
+      independent source slots. One semantic mutation with two downstream
+      contracts is ordinary graph fan-out: two operations with the same source
+      VDP.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
