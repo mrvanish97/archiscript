@@ -7,7 +7,7 @@ architecture precise before implementation. AI agents propose the model; Lean
 checks the formal obligations of that model; engineers review whether it
 actually describes the system.
 
-Current release: **0.3.0**.
+Current release: **0.3.1**.
 
 ## The idea
 
@@ -172,7 +172,7 @@ database, network, or queue effects.
 
 ## Concurrency review shapes
 
-ArchiScript 0.3.0 does not prove races, but its topology can expose places that
+ArchiScript 0.3.1 does not prove races, but its topology can expose places that
 deserve a concurrency review. The checked
 [ConcurrencyQuestions example](ArchiScriptExamples/ConcurrencyQuestions.lean)
 contains both independent fan-in and a retry cycle:
@@ -499,7 +499,7 @@ would be the wrong model for this fan-out: it would require two independent
 `ReservationMutation` slots. Two ordinary arrows from the same mutation VDP
 express the architecture correctly.
 
-## 0.3.0 monoidal API
+## 0.3.1 monoidal API
 
 For VDPs `P` and `Q`, `Partition.tensor P Q` has carrier
 `P.Carrier × Q.Carrier` and every pair of members. Even `P.tensor P` has two
@@ -580,7 +580,7 @@ A compiling model is therefore not automatically an approved architecture.
 
 ## What ArchiScript does not claim
 
-ArchiScript 0.3.0 does not:
+ArchiScript 0.3.1 does not:
 
 - discover requirements omitted from the carrier;
 - prove that an external system enforces a declared boundary guarantee;
