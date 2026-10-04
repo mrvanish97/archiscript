@@ -33,7 +33,7 @@ ArchiScript gives those choices explicit mathematical objects:
 
 The core workflow is:
 
-$
+$$
 \text{requirements}
 \rightarrow
 \text{AI architecture proposal}
@@ -43,7 +43,7 @@ $
 \text{human review}
 \rightarrow
 \text{implementation}
-$
+$$
 
 Lean is **not** an architecture search engine and not a general model checker.
 It is the executable implementation of necessary correctness criteria for the
@@ -69,9 +69,9 @@ ledger state:
 
 The architectural input is therefore not just the payload. It is a product:
 
-$
+$$
 \text{WebhookPayload}\times\text{LedgerObservation}.
-$
+$$
 
 Two values with the same payload can legitimately belong to different semantic
 members:
@@ -194,23 +194,23 @@ composition.
 
 For two partitions $P$ and $Q$,
 
-$
+$$
 P\otimes Q
-$
+$$
 
 has carrier
 
-$
+$$
 C_P\times C_Q
-$
+$$
 
 and **every** member pair
 
-$
+$$
 M\times N
 \qquad
 (M\in\mathcal M_P,\;N\in\mathcal M_Q).
-$
+$$
 
 There is no compatibility pruning inside tensor. If both factors are valid VDPs,
 every product member is inhabited automatically.
@@ -257,18 +257,18 @@ f.tensor g    independent aggregation of member maps
 
 For independent maps
 
-$
+$$
 f:P\to P'
 \qquad\text{and}\qquad
 g:Q\to Q',
-$
+$$
 
 the tensor map is
 
-$
+$$
 f\otimes g:
 P\otimes Q\to P'\otimes Q'.
-$
+$$
 
 It is defined exactly where both partial maps are defined.
 
@@ -352,40 +352,40 @@ $$
 
 Each factor has its own local architectural map:
 
-$
+$$
 planPayment : PaymentInput \to PaymentPlan
-$
+$$
 
-$
+$$
 planInventory : InventoryObservation \to InventoryPlan.
-$
+$$
 
 Their tensor gives one joint operation without manually enumerating a new
 four-branch implementation:
 
-$
+$$
 planPayment \otimes planInventory :
 PaymentInput \otimes InventoryObservation
 \to
 PaymentPlan \otimes InventoryPlan.
-$
+$$
 
 An ordinary sequential operation then consumes that joint plan:
 
-$
+$$
 chooseCheckoutAction :
 PaymentPlan \otimes InventoryPlan
 \to
 CheckoutAction.
-$
+$$
 
 So the complete architectural path is:
 
-$
+$$
 chooseCheckoutAction
 \circ
 (planPayment \otimes planInventory).
-$
+$$
 
 ```mermaid
 flowchart TB
@@ -496,9 +496,9 @@ nonempty, exhaustive, and disjoint.
 
 `Operation X Y` is a partial function
 
-$
+$$
 \mathcal M_X\rightharpoonup\mathcal M_Y.
-$
+$$
 
 It is not a database transaction, network request, scheduler, or handler
 execution. If runtime effects matter, record them as explicit contracts,
