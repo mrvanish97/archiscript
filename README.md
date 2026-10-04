@@ -33,69 +33,70 @@ conforms.
 ## Example: checkout
 
 The checked
-[checkout example](ArchiScriptExamples/Checkout.lean) uses several VDPs,
-ordinary operations, tensor composition, and a final sequential decision.
+[checkout example](ArchiScriptExamples/Checkout.lean) is intentionally more than
+an enum-to-enum toy. Its two input carriers exist independently of the semantic
+cases we later select:
 
-We start with **two separate VDPs**:
+```text
+PaymentRequest        = { amountCents : Nat, paymentToken : String }
+InventoryObservation  = { requestedUnits : Nat, availableUnits : Nat }
+```
 
-- `PaymentInput`: `invalid | eligible`
-- `InventoryObservation`: `unavailable | available`
-
-Tensor constructs a new VDP from those two existing objects.
+They induce two separate VDPs:
 
 ```mermaid
 flowchart LR
-  P["PaymentInput VDP<br/>invalid · eligible"]
-  I["InventoryObservation VDP<br/>unavailable · available"]
+  P["PaymentInput VDP<br/>invalidAmount · missingToken · eligible"]
+  I["InventoryObservation VDP<br/>invalidDemand · shortfall · sufficient"]
   T{{"⊗"}}
-  J["PaymentInput ⊗ InventoryObservation<br/>4 semantic members"]
+  J["PaymentInput ⊗ InventoryObservation<br/>9 semantic members"]
 
   P --- T
   I --- T
   T --- J
 ```
 
-Those lines show **object construction**, not runtime calls and not
-`Operation` values. The result contains the full Cartesian member product:
+The undirected lines above mean **VDP construction**, not execution. Tensor keeps
+the full product: no pair disappears because it looks inconvenient.
 
-```text
-invalid  × unavailable
-invalid  × available
-eligible × unavailable
-eligible × available
-```
-
-Each factor also has its own operation:
-
-```text
-planPayment   : PaymentInput         → PaymentPlan
-planInventory : InventoryObservation → InventoryPlan
-```
-
-Their tensor is an operation between the product VDPs, and an ordinary
-sequential operation consumes the joint result:
+The individual members are then related by ordinary operations:
 
 ```mermaid
-flowchart TB
-  P["PaymentInput VDP"] -->|"planPayment"| PP["PaymentPlan VDP"]
-  I["InventoryObservation VDP"] -->|"planInventory"| IP["InventoryPlan VDP"]
+flowchart LR
+  subgraph PIN["PaymentInput"]
+    P0["invalidAmount"]
+    P1["missingToken"]
+    P2["eligible"]
+  end
 
-  JI["PaymentInput ⊗ InventoryObservation"]
-  JP["PaymentPlan ⊗ InventoryPlan"]
-  A["CheckoutAction VDP<br/>rejectPayment · waitForStock · placeOrder"]
+  subgraph POUT["PaymentPlan"]
+    Q0["rejectAmount"]
+    Q1["rejectToken"]
+    Q2["authorize"]
+  end
 
-  JI -->|"planPayment ⊗ planInventory"| JP
-  JP -->|"chooseCheckoutAction"| A
+  subgraph IIN["InventoryObservation"]
+    I0["invalidDemand"]
+    I1["shortfall"]
+    I2["sufficient"]
+  end
+
+  subgraph IOUT["InventoryPlan"]
+    J0["rejectDemand"]
+    J1["backorder"]
+    J2["reserve"]
+  end
+
+  P0 -->|"planPayment"| Q0
+  P1 -->|"planPayment"| Q1
+  P2 -->|"planPayment"| Q2
+
+  I0 -->|"planInventory"| J0
+  I1 -->|"planInventory"| J1
+  I2 -->|"planInventory"| J2
 ```
 
-So the architecture contains both forms of composition:
-
-```text
-planPayment ⊗ planInventory   independent composition
-chooseCheckoutAction.comp …   sequential composition
-```
-
-The corresponding Lean is small:
+Those two member maps tensor into one operation between the product VDPs:
 
 ```lean
 def planCheckoutFactors :
@@ -103,7 +104,61 @@ def planCheckoutFactors :
       (paymentInputPartition.tensor inventoryObservationPartition)
       (paymentPlanPartition.tensor inventoryPlanPartition) :=
   planPayment.tensor planInventory
+```
 
+The next operation is deliberately **not** factorized. It makes a joint checkout
+decision from the nine product members:
+
+```mermaid
+flowchart LR
+  subgraph PLAN["PaymentPlan ⊗ InventoryPlan"]
+    A0["rejectAmount × rejectDemand"]
+    A1["rejectAmount × backorder"]
+    A2["rejectAmount × reserve"]
+    B0["rejectToken × rejectDemand"]
+    B1["rejectToken × backorder"]
+    B2["rejectToken × reserve"]
+    C0["authorize × rejectDemand"]
+    C1["authorize × backorder"]
+    C2["authorize × reserve"]
+  end
+
+  subgraph ACTION["CheckoutAction"]
+    R["rejectPayment"]
+    V["rejectInventoryRequest"]
+    W["waitForStock"]
+    O["placeOrder"]
+  end
+
+  F["FulfillmentCommand<br/>submitOrder"]
+  N(["∅ · undefined"])
+
+  A0 -->|"chooseCheckoutAction"| R
+  A1 -->|"chooseCheckoutAction"| R
+  A2 -->|"chooseCheckoutAction"| R
+  B0 -->|"chooseCheckoutAction"| R
+  B1 -->|"chooseCheckoutAction"| R
+  B2 -->|"chooseCheckoutAction"| R
+  C0 -->|"chooseCheckoutAction"| V
+  C1 -->|"chooseCheckoutAction"| W
+  C2 -->|"chooseCheckoutAction"| O
+
+  R -.->|"requestFulfillment"| N
+  V -.->|"requestFulfillment"| N
+  W -.->|"requestFulfillment"| N
+  O -->|"requestFulfillment"| F
+```
+
+This one picture shows the three core ArchiScript ideas:
+
+- **VDP members carry semantic distinctions**;
+- **Operation arrows map those members explicitly**;
+- **tensor preserves independent combinations**, while later operations may
+  intentionally coarsen them.
+
+The complete path is ordinary sequential composition after the tensor operation:
+
+```lean
 def decideCheckout :
     Operation
       (paymentInputPartition.tensor inventoryObservationPartition)
@@ -111,8 +166,9 @@ def decideCheckout :
   chooseCheckoutAction.comp planCheckoutFactors
 ```
 
-The downstream operation may map several joint members to the same action. That
-coarsening is explicit in the operation; tensor itself never prunes combinations.
+`requestFulfillment` is partial: only `placeOrder` maps to
+`submitOrder`. The undefined members say nothing by themselves about runtime
+database, network, or queue effects.
 
 ## 0.3.0 monoidal API
 
