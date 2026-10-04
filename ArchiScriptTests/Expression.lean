@@ -40,4 +40,17 @@ example :
       (Expression.identity (Partition.unit.tensor Partition.unit)) :=
   Expression.Rewrite.tensor_identity _ _
 
+def unitTargetTransport :
+    Expression.Transport unitId
+      (Expression.comp
+        (Expression.iso (Partition.PartitionIso.refl Partition.unit))
+        unitId) :=
+  Expression.Transport.target unitId
+    (Partition.PartitionIso.refl Partition.unit)
+
+example :
+    Expression.Rewrite unitId
+      (Expression.comp (Expression.identity Partition.unit) unitId) :=
+  (Expression.Rewrite.id_left unitId).symm
+
 end ArchiScriptTests.Expression
