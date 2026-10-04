@@ -7,7 +7,7 @@ architecture precise before implementation. AI agents propose the model; Lean
 checks the formal obligations of that model; engineers review whether it
 actually describes the system.
 
-Current release: **0.3.1**.
+Current release: **0.4.0**.
 
 ## The idea
 
@@ -20,6 +20,10 @@ ArchiScript models software architecture with a small calculus:
 - an **Operation** is a partial map between VDP member sets;
 - `comp` is sequential composition;
 - `tensor` combines independent VDPs and independent member maps;
+- `coproduct` losslessly groups design-time closed alternative VDPs;
+- refinement/coarsening relates different semantic resolutions of the same
+  carrier, and factorization checks whether a consumer can safely use the
+  coarser view;
 - provenance, responsibility, bindings, evidence, findings, and approval live
   in the review/handoff layer.
 
@@ -29,6 +33,59 @@ declared model**. A green proof means the stated obligations hold for the
 carrier, predicates, mappings, and assumptions that were supplied. It does not
 prove that the author chose the right requirements or that production code
 conforms.
+
+## 0.4.0: structural OR and semantic resolution
+
+0.4.0 adds two conservative extensions without introducing a software-domain
+ontology.
+
+`Partition.coproduct P Q` is categorical coproduct: a lossless structural OR
+with carrier `Sum P.Carrier Q.Carrier`. It preserves the summand tag and member
+identity. Canonical injections and `Operation.copair` satisfy the coproduct
+universal property.
+
+ArchiScript applies a stricter authoring rule than the bare mathematics:
+**use coproduct only when the alternatives are closed by architecture at design
+time**. For example, if a program exposes exactly a browser entry channel and a
+CLI entry channel, their independently justified VDPs may be grouped as:
+
+```text
+BrowserInput ⊕ CliInput
+```
+
+This is not a way to enumerate cases discovered from runtime data. If CLI input
+is materialized at runtime, its own carrier must still include every value that
+can reach that boundary, and its VDP must cover invalid, unsupported, empty, and
+other relevant inputs. Likewise, seeing two known message shapes does not
+justify `PaymentMessage ⊕ RefundMessage` as the complete external universe.
+
+The invariant is:
+
+```text
+P ⊕ Q is exhaustive over Carrier(P) + Carrier(Q),
+not evidence that the sum carrier exhausts an external boundary.
+```
+
+Refinement/coarsening addresses a different problem. For two VDPs on the same
+carrier, `P ≼ Q` requires every fine member of `P` to be wholly contained in
+one coarse member of `Q`. The induced coarsening map is an ordinary total
+`Operation`. Consumer factorization then checks whether:
+
+```text
+f = g ∘ q
+```
+
+so a diagram may safely show the coarser VDP for that consumer. A failed check
+returns concrete fine members that the consumer still distinguishes.
+
+The diagram meanings are intentionally different:
+
+```text
+tensor       = lossless structural AND
+coproduct    = lossless structural OR
+coarsening   = intentional loss of semantic resolution
+factorization = proof that the loss is safe for a selected consumer
+```
 
 ## Example: checkout
 

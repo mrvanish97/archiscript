@@ -4,6 +4,8 @@ import ArchiScriptExamples.PaymentWebhook
 import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptTests.Domains
 import ArchiScriptTests.Monoidal
+import ArchiScriptTests.Coproduct
+import ArchiScriptTests.Resolution
 
 namespace ArchiScriptTests
 open ArchiScript

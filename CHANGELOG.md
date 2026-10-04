@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.4.0
+
+- Added categorical coproducts of VDPs over tagged sum carriers, with canonical
+  injections, copairing, uniqueness of the mediating operation, functorial
+  mapping, and semantic-partition lifting.
+- Restricted coproduct authoring to design-time closed architectural
+  alternatives. Coproduct is exhaustive only relative to its sum carrier and
+  must not be used to turn runtime-discovered cases into a falsely complete
+  external boundary.
+- Added checked refinement/coarsening for VDPs on the same carrier using whole
+  fine-member containment. The canonical coarsening member map is unique and
+  surjective and induces an ordinary total `Operation`.
+- Added consumer factorization analysis: consumers constant on coarsening fibers
+  factor uniquely through the coarse VDP; failures expose concrete conflicting
+  fine members. This supplies machine-checked justification for semantic zoom
+  in diagrams and review views.
+- Upgraded `FormInput` to a checked refinement/coarsening example and added a
+  Browser/CLI coproduct example whose alternatives come from design-time entry
+  topology rather than runtime case enumeration.
+- Updated the README, AI authoring skill, Lean API reference, smoke checks, and
+  regression suite for the 0.4.0 semantics.
+
 ## 0.3.1
 
 - Added checked concurrency-review and stateful stress examples covering

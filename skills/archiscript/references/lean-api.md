@@ -132,6 +132,71 @@ possible explanatory view. Opaque-domain reasoning can take explicit predicate
 parameters and assumptions; the core has no symbolic provenance registry or
 automatic inference of those assumptions.
 
+## Coproduct for design-time alternatives
+
+`Partition.coproduct P Q` forms a tagged sum carrier and tagged sum member
+family. It is lossless: neither summand nor member identity is forgotten.
+
+```lean
+#check Partition.coproduct
+#check SemanticPartition.coproduct
+#check Operation.coproductInl
+#check Operation.coproductInr
+#check Operation.copair
+#check Operation.copair_unique
+#check Operation.coproductMap
+```
+
+The categorical law is the usual one: for `f : Operation P R` and
+`g : Operation Q R`, `Operation.copair f g` is the unique operation from
+`P.coproduct Q` whose composites with the two injections are `f` and `g`.
+
+The mathematical constructor is general, but the ArchiScript authoring rule is
+narrow: use coproduct only when the alternatives are fixed by architecture
+before runtime data is materialized. A browser entry VDP and a CLI entry VDP may
+be grouped when the software exposes exactly those two entry channels. Do not
+parse one runtime input, notice several known cases, and manufacture a
+coproduct carrier from those cases. That recreates the unjustified-generalization
+failure: coverage becomes true only because omitted cases were excluded from the
+carrier.
+
+Each summand still needs a complete VDP for its own runtime boundary. Coproduct
+proves exhaustiveness relative to `Sum P.Carrier Q.Carrier`; it never proves
+that this sum is the complete external universe.
+
+See `ArchiScriptExamples.Coproduct` for the Browser/CLI example.
+
+## Refinement, coarsening, and consumer factorization
+
+For VDPs on the same carrier, `P.RefinesVia Q q` means every semantic member
+of `P` is wholly contained in the coarse member selected by the total map
+`q`. This is stronger than `q` merely being total and surjective.
+
+```lean
+#check Partition.RefinesVia
+#check Partition.Refines
+#check Partition.coarseningOperation
+#check Partition.coarseningMap_unique
+#check Partition.coarseningMap_surjective
+
+#check Operation.ConstantOnFibers
+#check Operation.FactorsThrough
+#check Operation.firstFiberConflict
+#check Operation.factorizedThrough
+#check Operation.factorization_exists_and_unique
+#check Operation.analyzeFactorization
+```
+
+A proved refinement canonically induces an ordinary total `Operation P Q`.
+For `f : Operation P Y`, factorization through that coarsening exists exactly
+when `f` is constant on every coarsening fiber. The positive result gives the
+unique coarse consumer `g` with `g.comp q = f`; the executable negative path
+returns a proof-carrying `FiberConflict`.
+
+`ArchiScriptExamples.FormInput` is the reference example: four field-presence
+members refine a two-member complete/incomplete VDP without changing the input
+carrier.
+
 ## Independent tensor and the unit VDP
 
 `Partition.tensor P Q` has carrier `P.Carrier × Q.Carrier`, index type

@@ -56,6 +56,11 @@ location proves code conformance.
   `P.Carrier × Q.Carrier` and every pair of selected members. `f.tensor g`
   combines partial member maps componentwise and is undefined if either side
   is undefined. Tensor does not mean runtime parallel execution.
+- **Coproduct** is lossless structural alternative aggregation.
+  `P.coproduct Q` has carrier `Sum P.Carrier Q.Carrier` and preserves the
+  summand tag and original member identity. Use it only when the alternatives
+  are closed by architecture at design time, never to enumerate cases that are
+  discovered by inspecting runtime data.
 
 The mathematical VDP comes first: $P:C_P\twoheadrightarrow\mathcal M_P$,
 where $\mathcal M_P$ is a finite family of nonempty semantic subdomains of
@@ -255,6 +260,21 @@ the exposed distinctions, not the carrier values. A flat member list is a valid
 declaration when its semantic regions have the required partition properties.
 Trees may illustrate a derivation but are not additional semantic objects.
 
+In 0.4.0, make such resolution changes explicit with semantic containment.
+For VDPs `P` and `Q` on the same carrier, a map
+`q : P.MemberIndex → Q.MemberIndex` witnesses `P.RefinesVia Q q` only when
+every fine member is wholly contained in its mapped coarse member. Totality and
+surjectivity of labels alone are insufficient: a coarse partition may cut
+through a fine semantic region. A proved refinement induces the ordinary total
+`Partition.coarseningOperation q`.
+
+For a consumer `f : Operation P Y`, use `Operation.ConstantOnFibers q f` and
+the factorization API to ask whether `f` can be expressed through the coarse
+view. A successful factorization gives the unique coarse consumer; a failed
+finite analysis yields a concrete pair of fine members that the consumer still
+distinguishes. Treat this as the checked basis for semantic zoom in diagrams,
+not as a new arrow kind.
+
 ## Deduction and unjustified generalization
 
 Prefer general domains and laws from which narrower membership follows.
@@ -320,6 +340,53 @@ force a deterministic member map.
 
 “Quantum superposition” is at most a bounded teaching analogy for unresolved
 observer knowledge. It is not implemented ArchiScript semantics.
+
+## Use coproduct only for design-time closed alternatives
+
+`Partition.coproduct P Q` is the categorical coproduct of two VDPs. It is a
+lossless structural OR: the carrier is `Sum P.Carrier Q.Carrier`, the member
+family is the tagged sum of the factor members, and the source tag remains
+available. `Operation.coproductInl`, `Operation.coproductInr`, and
+`Operation.copair` implement the standard coproduct universal property.
+
+The authoring discipline is intentionally stricter than the bare mathematical
+construction. **Use coproduct only when the set of summands is already fixed by
+the architecture before runtime values are materialized.**
+
+GOOD — the software has exactly two independently defined entry channels:
+
+```text
+BrowserInput ⊕ CliInput
+```
+
+The program topology itself supplies the alternatives: a browser entry point and
+a CLI entry point. Each summand must still have its own complete carrier and VDP.
+
+BAD — inspect an external runtime value, recognize two currently known shapes,
+then declare:
+
+```text
+ExternalInput := PaymentMessage ⊕ RefundMessage
+```
+
+This is an inductive completeness backdoor unless an independent design-time
+boundary contract already states that the external universe is exactly that
+tagged sum. Runtime parsing, validation, protocol decoding, filesystem
+inspection, database lookup, or other materialization must not manufacture
+coproduct summands after the fact. Start from the full runtime carrier and
+deductively define a complete VDP, including invalid, unsupported, malformed,
+unknown, and other relevant cases.
+
+Always remember:
+
+```text
+P ⊕ Q is exhaustive over Carrier(P) + Carrier(Q).
+It does not prove that this sum exhausts an external boundary.
+```
+
+A collapsed coproduct node in a diagram hides presentation detail only. It does
+not coarsen semantic members. Use coarsening, not coproduct, when distinctions
+are intentionally forgotten.
 
 ## Compose independent factors with tensor
 
@@ -415,6 +482,12 @@ Use the public vocabulary exactly:
 - `Partition.tensor`, `Partition.unit`, `SemanticPartition.tensor`, and
   `Operation.tensor` for independent product composition, plus canonical
   associator, unitors, and symmetry in `ArchiScript.Monoidal`;
+- `Partition.coproduct`, `SemanticPartition.coproduct`,
+  `Operation.coproductInl`, `Operation.coproductInr`, `Operation.copair`,
+  and `Operation.coproductMap` for design-time closed tagged alternatives;
+- `Partition.RefinesVia`, `Partition.Refines`,
+  `Partition.coarseningOperation`, and the `Operation` factorization helpers
+  for checked semantic resolution changes;
 - `ParameterizedPartition` for specialization by finite parameter members.
 
 Version 0.3.1 exposes concrete monoidal constructions and checked laws in the
