@@ -224,6 +224,94 @@ about ordering, atomicity, idempotency, or commutativity. Those runtime claims
 remain `UNKNOWN` until resource/effect semantics or external evidence justify
 them.
 
+## Stateful stress example
+
+The checked
+[ReservationController example](ArchiScriptExamples/ReservationController.lean)
+puts most of the calculus in one small system. A user request, payment webhook,
+and expiry timer are independently available triggers. They all observe the
+same logical reservation state; the user path additionally observes inventory.
+
+```mermaid
+flowchart LR
+  subgraph TRIGGERS["Independent trigger VDPs"]
+    U["UserTrigger<br/>malformed · reserve · cancel"]
+    P["PaymentTrigger<br/>authorized · failed"]
+    E["ExpiryTrigger<br/>fired"]
+    I["InventoryObservation<br/>unavailable · available"]
+  end
+
+  subgraph RESOURCE["Same logical reservation resource"]
+    S["ReservationState VDP<br/>empty · held · paid · cancelled · expired"]
+    W["ReservationWrite VDP<br/>setHeld · setPaid · setCancelled · setExpired"]
+  end
+
+  UC0["(UserTrigger ⊗ InventoryObservation)<br/>⊗ ReservationState<br/>30 members"]
+  UC1["(UserIntent ⊗ InventoryPlan)<br/>⊗ ReservationState"]
+  PC["PaymentTrigger ⊗ ReservationState"]
+  EC["ExpiryTrigger ⊗ ReservationState"]
+
+  M["ReservationMutation VDP<br/>hold · markPaid · cancel · expire"]
+  O["OutboxMessage VDP<br/>requestPayment · paid · cancelled · expired"]
+  IC["InventoryCommand VDP<br/>reserveUnits · releaseUnits"]
+
+  U --- UC0
+  I --- UC0
+  S --- UC0
+
+  UC0 -->|"prepareUserContext = (parseUser ⊗ planInventory) ⊗ id"| UC1
+  UC1 -->|"decideUserMutation"| M
+
+  P --- PC
+  S --- PC
+  PC -->|"planPaymentMutation"| M
+
+  E --- EC
+  S --- EC
+  EC -->|"planExpiryMutation"| M
+
+  M -->|"nextReservationState"| S
+  M -->|"persistMutation"| W
+  M -->|"publishMutation"| O
+  M -.->|"inventoryEffect · partial"| IC
+```
+
+Undirected lines mean tensor-factor construction; directed lines are
+`Operation` values. The visible cycle through `ReservationState` is the
+semantic state-machine loop. It does not mean that `ReservationWrite`
+automatically changes the observed state: there is deliberately **no**
+`ReservationWrite -> ReservationState` arrow.
+
+The interesting review hotspot is concrete:
+
+```text
+PaymentTrigger.authorized × ReservationState.held
+    -> markPaid -> setPaid
+
+ExpiryTrigger.fired × ReservationState.held
+    -> expire -> setExpired
+```
+
+Both independently sourced paths can observe `held` and request incompatible
+writes to the same logical record. ArchiScript exposes that topology and the
+member mappings, but 0.3.0 still cannot prove whether the runtime serializes
+them, whether the writes commute, or whether one observation is stale.
+
+The effect requests are not privileged primitives. Persistence, publication,
+and inventory work are ordinary operations:
+
+```lean
+persistMutation : ReservationMutation -> ReservationWrite
+publishMutation : ReservationMutation -> OutboxMessage
+inventoryEffect : ReservationMutation -> InventoryCommand
+```
+
+This is also why fan-out is not modeled with
+`persistMutation.tensor publishMutation`: tensor would require **two
+independent mutation slots**. One mutation VDP with several outgoing arrows is
+the correct architecture when one semantic decision has several downstream
+contracts.
+
 ## 0.3.0 monoidal API
 
 For VDPs `P` and `Q`, `Partition.tensor P Q` has carrier
@@ -329,6 +417,7 @@ behavior beyond this calculus.
 - [Asphalt](ArchiScriptExamples/Asphalt.lean) — adversarial boundary/assumption stress test
 - [Monoidal](ArchiScriptExamples/Monoidal.lean) — compact tensor/coherence example
 - [ConcurrencyQuestions](ArchiScriptExamples/ConcurrencyQuestions.lean) — independent fan-in and retry-cycle review shapes
+- [ReservationController](ArchiScriptExamples/ReservationController.lean) — tensor, shared state, independent triggers, partial effects, and same-resource update review
 
 ## Build
 
