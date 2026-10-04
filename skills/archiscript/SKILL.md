@@ -413,6 +413,13 @@ has both a persistence contract and an outbox contract, model two arrows from
 the same source VDP. `persist.tensor publish` would require two independent
 mutation slots and therefore says something different.
 
+Fan-out does not encode an execution order. Several arrows from one source VDP
+are therefore potentially parallel at runtime, but ArchiScript does not assert
+that they actually run concurrently. Sequential behavior must be represented by
+a path through an intermediate VDP, for example `A -> B -> C`, so the output
+classification of the first operation is the source classification of the
+second.
+
 Treat rebracketing and factor order as representation choices governed by the
 canonical associator and symmetry. A finding that concerns only the set of
 tensor factors should not appear or disappear merely because the author wrote
@@ -661,7 +668,12 @@ Use one visual grammar consistently:
   nodes and label it as an operation-algebra view so those nodes cannot be
   mistaken for VDPs or members;
 - ordinary fan-out from one VDP is several arrows with the same source, not
-  `Operation.tensor`.
+  `Operation.tensor`. Such arrows have no modeled order and may correspond to
+  potentially parallel runtime work; do not claim actual parallel execution
+  without runtime evidence;
+- sequential operations must form a path through an intermediate VDP. Do not
+  describe two sibling outgoing arrows as sequential merely because an
+  implementation happens to call them in some order;
 - show coproduct as structural aggregation of already-established design-time
   alternative VDPs. Keep the summands visible or explicitly named; a collapsed
   coproduct node must not look like evidence that runtime cases were exhaustively
