@@ -4,49 +4,37 @@ import ArchiScriptExamples.FormInput
 namespace ArchiScriptTests.Resolution
 open ArchiScript ArchiScriptExamples.FormInput
 
-private def forgetMap : fieldPartition.MemberIndex → formPartition.MemberIndex :=
-  fun i => i.1 && i.2
+example : fieldPartition.RefinesVia formPartition forgetFieldFailuresMap :=
+  fieldPartition_refines_formPartition
 
-example : fieldPartition.RefinesVia formPartition forgetMap := by
-  refine ⟨rfl, ?_⟩
-  intro i x hx
-  change fieldPartition.classify x = i at hx
-  change formPartition.classify x = forgetMap i
-  cases hx
-  rfl
+example : Function.Surjective forgetFieldFailuresMap :=
+  Partition.coarseningMap_surjective fieldPartition_refines_formPartition
 
-example : Function.Surjective forgetMap :=
-  Partition.coarseningMap_surjective (by
-    refine ⟨rfl, ?_⟩
-    intro i x hx
-    change fieldPartition.classify x = i at hx
-    change formPartition.classify x = forgetMap i
-    cases hx
-    rfl)
+example : forgetFieldFailures =
+    Partition.coarseningOperation forgetFieldFailuresMap := rfl
 
-private def coarseOp : Operation fieldPartition formPartition :=
-  Partition.coarseningOperation forgetMap
+example : Operation.IsTotal forgetFieldFailures :=
+  Operation.coarseningOperation_total forgetFieldFailuresMap
 
-example : coarseOp = forgetFieldFailures := by
-  apply Operation.ext
-  intro i
-  rfl
+example : Operation.IsSurjective forgetFieldFailures :=
+  Operation.coarseningOperation_surjective fieldPartition_refines_formPartition
 
-example : Operation.ConstantOnFibers coarseOp forgetFieldFailures := by
+example : Operation.ConstantOnFibers forgetFieldFailures forgetFieldFailures := by
   intro a b hab
-  simpa [coarseOp, Partition.coarseningOperation, forgetFieldFailures] using hab
+  exact hab
 
-example : Operation.FactorsThrough coarseOp forgetFieldFailures := by
-  exact ⟨Operation.id formPartition, by simp [coarseOp]⟩
+example : Operation.FactorsThrough forgetFieldFailures forgetFieldFailures := by
+  exact ⟨Operation.id formPartition, by simp⟩
 
 private def identityFine : Operation fieldPartition fieldPartition :=
   Operation.id fieldPartition
 
-#guard (Operation.firstFiberConflict coarseOp identityFine).isSome
+#guard (Operation.firstFiberConflict forgetFieldFailures identityFine).isSome
 
-example : ¬ Operation.ConstantOnFibers coarseOp identityFine := by
+example : ¬ Operation.ConstantOnFibers forgetFieldFailures identityFine := by
   intro h
   have bad := h (false, false) (false, true) rfl
-  simp [coarseOp, Partition.coarseningOperation, identityFine, Operation.id] at bad
+  simp [forgetFieldFailures, Partition.coarseningOperation, forgetFieldFailuresMap,
+    identityFine, Operation.id] at bad
 
 end ArchiScriptTests.Resolution
