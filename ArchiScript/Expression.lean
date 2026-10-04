@@ -139,14 +139,14 @@ end Transport
 
 namespace Rewrite
 
-def refl {X Y : Partition.{u, v}} (e : Expression X Y) : Rewrite e e :=
+theorem refl {X Y : Partition.{u, v}} (e : Expression X Y) : Rewrite e e :=
   ⟨rfl⟩
 
-def symm {X Y : Partition.{u, v}} {a b : Expression X Y}
+theorem symm {X Y : Partition.{u, v}} {a b : Expression X Y}
     (ab : Rewrite a b) : Rewrite b a :=
   ⟨ab.sound.symm⟩
 
-def trans {X Y : Partition.{u, v}} {a b c : Expression X Y}
+theorem trans {X Y : Partition.{u, v}} {a b c : Expression X Y}
     (ab : Rewrite a b) (bc : Rewrite b c) : Rewrite a c :=
   ⟨ab.sound.trans bc.sound⟩
 
