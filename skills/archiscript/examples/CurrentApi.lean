@@ -84,6 +84,9 @@ def accept : Operation requestPartition requestPartition where
 #check Expression.Transport.target
 #check Partition.PartitionIso.refl
 #check Partition.PartitionIso.symm
+#check Partition.PartitionIso.trans
+#check Partition.PartitionIso.tensor
+#check Partition.PartitionIso.coproduct
 
 def acceptExpression : Expression requestPartition requestPartition :=
   .atom accept
