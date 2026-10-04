@@ -24,6 +24,13 @@ example :
   userPaymentFactoringCertificate.commutes
 
 example :
+    controllerFactoringCertificate.targetIso.toOperation.comp
+        (Expression.denote controllerPlanExpression) =
+      (Expression.denote controllerFactoredPlanExpression).comp
+        controllerFactoringCertificate.sourceIso.toOperation :=
+  controllerFactoringCertificate.commutes
+
+example :
     projectedControllerStateOperation =
       nextReservationState.comp planControllerMutation := rfl
 
