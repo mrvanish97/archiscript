@@ -179,6 +179,7 @@ def symm {P Q : Partition} (e : PartitionIso P Q) : PartitionIso Q P where
       e.memberIndex.toFun (P.classify (e.carrier.invFun y)) =
         e.memberIndex.toFun (e.memberIndex.invFun (Q.classify y))
     rw [← e.classify_commutes (e.carrier.invFun y)]
+    rw [e.carrier.right_inv y, e.memberIndex.right_inv (Q.classify y)]
 
 end PartitionIso
 
