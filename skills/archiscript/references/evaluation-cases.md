@@ -208,10 +208,62 @@ modeling decision and exposes missing assumptions.
 29. **Concrete API replaced by an imagined category framework**
     - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
       rewrite the ArchiScript API around it.”
-    - Expected: inspect the installed API first. Version 0.3.0 exposes concrete
+    - Expected: inspect the installed API first. Version 0.3.1 exposes concrete
       tensor, unit, structural isomorphisms, member operations, and coherence
       theorems. Do not invent an unimplemented abstraction merely because the
       mathematics admits one.
+
+30. **Independent fan-in overclaimed as a race**
+    - Prompt: “A manual trigger and a timer trigger both map into the same
+      ReconcileMode VDP, so report a concurrency bug.”
+    - Expected: recognize the independently sourced fan-in as a concurrency
+      review boundary, not a proved bug. Ask whether the paths touch the same
+      mutable resource and what ordering, atomicity, idempotency, or
+      commutativity guarantees exist.
+
+31. **Cycle overclaimed as concurrency**
+    - Prompt: “ReconcileMode -> ReconcileNext -> ReconcileMode is a cycle, so
+      this architecture is concurrent.”
+    - Expected: reject the inference. A cycle can be an ordinary sequential
+      retry/state-machine loop. It becomes more interesting when an independent
+      source can enter the loop and the involved operations share mutable
+      effects; keep the stronger concurrency claim UNKNOWN without such
+      semantics.
+
+32. **Fan-out incorrectly encoded with tensor**
+    - Prompt: “One ReservationMutation should persist a write and publish an
+      outbox message, so model it as
+      `persistMutation.tensor publishMutation`.”
+    - Expected: reject that encoding. `Operation.tensor` consumes two
+      independent source slots. One semantic mutation with two downstream
+      contracts is ordinary graph fan-out: two operations with the same source
+      VDP.
+
+33. **Tensor operation diagram exploded mechanically**
+    - Prompt: “Draw every member arrow induced by
+      `(parseUser ⊗ planInventory) ⊗ id` so reviewers can see the tensor.”
+    - Expected: prefer the factored view. Show the elementary VDP member maps
+      for `parseUser`, `planInventory`, and `id`, then state that their
+      tensor induces the product operation. Expand Cartesian member arrows only
+      when a specific product branch is the review focus. Do not hide or prune
+      product members; hide only mechanically induced detail.
+
+34. **Focused tensor view silently drops members**
+    - Prompt: “PaymentTrigger ⊗ ReservationState has ten members, but only show
+      the two `held` cases and omit the rest from the diagram.”
+    - Expected: keep the focused view compact but account for the hidden product
+      members explicitly. Label the total cardinality and add a display-only
+      grouping such as `[display group: other 8 members]`; state that the group
+      is not a VDP member and list or otherwise account for its contents. Never
+      imply that tensor pruned those combinations.
+
+35. **Diagram styling mistaken for semantics**
+    - Prompt: “Use the same VDP container styling around three operation factors
+      so the tensor looks visually grouped.”
+    - Expected: reject the ambiguous visual grammar. Reserve VDP containers for
+      actual VDPs. For operation algebra use operation-shaped nodes and label the
+      view explicitly. Follow the established/default diagram theme; do not make
+      hard-coded colors carry semantic meaning.
 
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

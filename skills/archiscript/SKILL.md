@@ -323,7 +323,7 @@ observer knowledge. It is not implemented ArchiScript semantics.
 
 ## Compose independent factors with tensor
 
-Use `Partition.tensor P Q` only with its actual 0.3.0 meaning: independent
+Use `Partition.tensor P Q` only with its actual 0.3.1 meaning: independent
 aggregation. The result always has carrier `P.Carrier × Q.Carrier` and the full
 member product. Never prune a pair because it looks semantically inconvenient,
 never collapse `P.tensor P` to one carrier value, and never reinterpret tensor
@@ -341,6 +341,11 @@ than asking the author to restate them. Use `Operation.tensor` to combine
 independent partial member maps. This is algebraic independence of slots and
 mappings, not a runtime scheduling claim.
 
+Do not use tensor to model fan-out from one semantic decision. If one mutation
+has both a persistence contract and an outbox contract, model two arrows from
+the same source VDP. `persist.tensor publish` would require two independent
+mutation slots and therefore says something different.
+
 Treat rebracketing and factor order as representation choices governed by the
 canonical associator and symmetry. A finding that concerns only the set of
 tensor factors should not appear or disappear merely because the author wrote
@@ -355,11 +360,39 @@ not evidence of concurrent work.
 
 Distinct operation declarations with independently available sources can raise
 a concurrency question, especially when they later concern one mutable
-resource. A common target, graph fan-in, or cycle alone does not prove a race,
-deadlock, or commutativity result. Record ordering, atomicity, and repeated
-effect safety as `UNKNOWN` or review findings until an explicit resource/effect
-model or external analyzer supports a stronger claim. Tensor expresses
-independent semantic slots and member maps, not scheduling.
+resource. Treat two independent source VDPs converging on one target as a
+candidate review boundary, not as proof of a race. Treat a cycle as an ordinary
+sequential feedback/retry path unless independent source provenance and shared
+mutable effects make interference possible.
+
+Use the following as **concurrency-review signals**, not automatic diagnostics:
+
+- two or more independently available source VDPs can reach operations that
+  concern the same logical mutable resource;
+- two paths can observe the same state member and request different or
+  potentially noncommuting next states or write commands;
+- a state/retry cycle can be entered from an independent source while work on
+  the same resource may still be in progress;
+- repeated delivery, retries, or duplicate triggers can re-enter an effectful
+  path and idempotency is not established;
+- ordering, serialization, compare-and-swap/version checks, atomicity,
+  commutativity, or transaction boundaries are absent or explicitly unknown.
+
+The strongest useful review pattern is:
+
+```text
+independent source provenance
++ shared mutable resource
++ potentially noncommuting effects
++ no serialization evidence
+=> concurrency hazard to review
+```
+
+A common target, graph fan-in, or cycle alone does not prove a race, deadlock,
+or commutativity result. Record ordering, atomicity, idempotency, commutativity,
+and repeated-effect safety as `UNKNOWN` or review findings until an explicit
+resource/effect model or external analyzer supports a stronger claim. Tensor
+expresses independent semantic slots and member maps, not scheduling.
 
 ## Use the current Lean API
 
@@ -384,7 +417,7 @@ Use the public vocabulary exactly:
   associator, unitors, and symmetry in `ArchiScript.Monoidal`;
 - `ParameterizedPartition` for specialization by finite parameter members.
 
-Version 0.3.0 exposes concrete monoidal constructions and checked laws in the
+Version 0.3.1 exposes concrete monoidal constructions and checked laws in the
 public library. Do not assume a separate Mathlib `MonoidalCategory` instance or
 invent abstractions that are not present in the installed API; use the concrete
 `Partition.tensor`, `Operation.tensor`, structural isomorphisms, and theorems
@@ -522,14 +555,45 @@ contract, or implementation binding ID. Store review state and findings outside
 the generated PDF; treat the PDF as a versioned reading snapshot.
 
 Identify the review question and produce a focused diagram from the Lean model.
-Do not independently author semantic
-facts in Mermaid. Preserve canonical operation, branch, and member names; mark
-display-only groupings. Distinguish member mappings from runtime calls, render
-relevant `none` outcomes explicitly, and put assumptions, proved claims, and
-unknowns beneath the graph. State the diagram level, focus, and omissions.
-Keep a diagram to about eight major nodes, split it above twelve, and normally
-expand only one operation or one focused path. When the question does not imply
-a level, start with Level 1 and one focused Level 2 branch map.
+Do not independently author semantic facts in Mermaid. Preserve canonical
+operation, branch, and member names; mark display-only groupings. Distinguish
+member mappings from runtime calls, render relevant `none` outcomes explicitly,
+and put assumptions, proved claims, and unknowns beneath the graph. State the
+diagram level, focus, and omissions.
+
+Use one visual grammar consistently:
+
+- define elementary VDPs before showing products built from them;
+- a VDP is a labeled container and its actual members are nodes inside it;
+- reserve VDP containers for actual VDPs only; do not use the same container
+  grammar for "factor groups", stages, or collections of operations;
+- use the repository's established/default diagram theme. Do not assign
+  semantic meaning to hard-coded colors; containment, node shape, labels, and
+  arrow direction carry the meaning;
+- `∅` is outside every VDP and denotes one operation being undefined for a
+  source member;
+- a tensor VDP still contains the full Cartesian member product. A focused view
+  may replace omitted tuples with a box such as
+  `[display group: other 8 members]`, but the caption must say that it is not
+  a model member and enumerate or otherwise account for the hidden members;
+- when only some members are shown, state both the total VDP cardinality and
+  how many are expanded/collapsed;
+- never draw a VDP-container-to-`∅` edge. Partiality belongs to member
+  mappings, not to the container as a whole;
+- show tensor operations factored by default. First show the elementary maps
+  `f : P → P′` and `g : Q → Q′`, then state/show the induced compact arrow
+  `f ⊗ g : P ⊗ Q → P′ ⊗ Q′`. Do not expand the mechanically induced
+  Cartesian family unless those product branches are the review question;
+- if a dedicated operation-algebra picture is useful, use operation-shaped
+  nodes and label it as an operation-algebra view so those nodes cannot be
+  mistaken for VDPs or members;
+- ordinary fan-out from one VDP is several arrows with the same source, not
+  `Operation.tensor`.
+
+Keep a diagram to about eight major nodes when possible and split broad reviews
+into complementary views rather than exploding mechanically induced detail.
+When the question does not imply a level, start with Level 1 and one focused
+Level 2 branch map.
 
 Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.

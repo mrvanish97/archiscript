@@ -25,12 +25,18 @@ Mermaid and TikZ conventions: draw each VDP as a labeled container box and
 its selected members as boxes inside it. Connect member boxes with arrows for
 semantic operation mappings. Draw `∅` outside every VDP, since it is not a
 member. At Level 1, a VDP may appear as one collapsed box because individual
-members are intentionally hidden. Use a distinct boundary shape for external
-appearances. Put long source locations and evidence outside the graph. Labels,
-not colors, carry meaning. Display canonical names, optionally after a human
-label such as `Duplicate successful delivery [duplicateSuccess]`. If several
-members are collapsed, label the aggregate `[display group: ...]` and list its
-members in the caption; never treat the group as a new model member.
+members are intentionally hidden. Reserve VDP containers/subgraphs for actual
+VDPs; do not reuse that container grammar merely to group operations or tensor
+factors. For an operation-algebra view, use operation-shaped nodes and label the
+view explicitly so those nodes cannot be mistaken for VDPs or members. Use a
+distinct boundary shape for external appearances. Put long source locations and
+evidence outside the graph. Follow the repository's established/default diagram
+theme rather than hard-coding semantic colors: labels, containment, shapes, and
+arrow direction carry meaning. Display canonical names, optionally after a
+human label such as `Duplicate successful delivery [duplicateSuccess]`. If
+several members are collapsed, label the aggregate
+`[display group: ...]` and list its members in the caption; never treat the
+group as a new model member.
 
 At Level 3, show supporting subdomains beside the VDP, with their base,
 containment relationship, and defining formula when available. Label an opaque
@@ -47,15 +53,28 @@ Neither arrow is a runtime call. If code or call
 information is necessary, use a separate **Implementation binding** section.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
-unrelated runtime effects.` Do not infer a side-effect guarantee from `none`.
+unrelated runtime effects.` Connect `∅` only from a member whose mapping is
+being shown; never draw a VDP-container-to-`∅` edge. Do not infer a side-effect
+guarantee from `none`.
 
-For a tensor view, show two factor VDP containers and a product VDP whose
-members are all factor-member pairs. Label the factor-to-product links as
-construction or membership, never as `Operation` arrows. `P ⊗ P` still shows
-two slots. A focused view may hide product pairs only when it states the omitted
-pairs in the caption; it must never suggest the tensor prunes them. A product
-operation `f ⊗ g` may be displayed as two independent member arrows with their
-induced product mapping. It does not claim runtime parallel execution.
+For a tensor view, show the elementary factor VDPs first. A product VDP has all
+factor-member tuples; a focused view may hide product tuples only when it states
+the omitted detail and never suggests pruning. If a product VDP has `n` members
+but only `k` are expanded, label the VDP with its total cardinality and account
+for the remaining `n-k` explicitly, for example
+`[display group: other 8 members]`. Such a display group is never a model
+member; list the collapsed members in the caption or nearby text. Label
+factor-to-product links as construction or membership, never as `Operation`
+arrows. `P ⊗ P` still has two slots.
+
+For a tensor **operation**, prefer the factored presentation. In a VDP view,
+show the elementary factor operations independently and state that they induce
+`f ⊗ g : P ⊗ Q → P′ ⊗ Q′`. In a dedicated operation-algebra view, represent
+`f`, `g`, and `f ⊗ g` as operation-shaped nodes rather than placing them
+inside VDP-like subgraphs. Do not expand the induced Cartesian family of member
+arrows unless that exact branch-level mapping is the review question. The
+compact factored view carries the same componentwise rule and scales much
+better. It does not claim runtime parallel execution.
 
 Normalize factor-only review questions across associator, unitors, and
 symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use

@@ -1,5 +1,29 @@
 # Changelog
 
+## 0.3.1
+
+- Added checked concurrency-review and stateful stress examples covering
+  independently sourced fan-in, retry/state cycles, shared state observations,
+  same-resource write requests, partial operations, and downstream effect
+  contracts represented as ordinary `Operation` values.
+- Added `ReservationController`, including a three-factor tensor context and a
+  concrete review hotspot where payment authorization and expiry can both
+  observe `held` and request incompatible reservation updates. The example
+  exposes the topology without claiming that a runtime race has been proved.
+- Refined the review-diagram conventions: define elementary VDPs before tensor
+  products, reserve VDP containers for actual VDPs, keep members as nodes inside
+  those containers, and use separate operation-shaped nodes for operation
+  algebra views.
+- Tensor operations are now shown factored by default instead of mechanically
+  expanding every induced Cartesian member arrow. Product members remain full
+  and unpruned; focused views may collapse omitted members into an explicitly
+  labeled display group with the hidden members documented nearby.
+- Updated the AI skill and evaluation cases to teach the refined visualization
+  grammar and explicit concurrency-review signals: independent source
+  provenance, shared mutable resources, potentially noncommuting updates, and
+  missing ordering/atomicity evidence. Fan-in or cycles alone remain review
+  signals, not automatic race or deadlock proofs.
+
 ## 0.3.0
 
 - Added the full independent tensor of VDP carriers and semantic members,
