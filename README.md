@@ -232,32 +232,53 @@ puts most of the calculus in one small system. A user request, payment webhook,
 and expiry timer are independently available triggers. They all observe the
 same logical reservation state; the user path additionally observes inventory.
 
+The diagram uses one visual rule consistently:
+
+- every **primitive VDP** shows its complete member set;
+- every **tensor VDP** shows its factors and cardinality instead of expanding
+  the Cartesian product inline.
+
+That distinction is structural, not an arbitrary omission.
+
 ```mermaid
 flowchart LR
-  subgraph TRIGGERS["Independent trigger VDPs"]
-    U["UserTrigger<br/>malformed · reserve · cancel"]
-    P["PaymentTrigger<br/>authorized · failed"]
-    E["ExpiryTrigger<br/>fired"]
-    I["InventoryObservation<br/>unavailable · available"]
+  subgraph INPUTS["Primitive input / observation VDPs"]
+    U["UserTrigger VDP<br/>malformed · reserve · cancel"]
+    I["InventoryObservation VDP<br/>unavailable · available"]
+    P["PaymentTrigger VDP<br/>authorized · failed"]
+    E["ExpiryTrigger VDP<br/>fired"]
   end
 
-  subgraph RESOURCE["Same logical reservation resource"]
+  subgraph LOCAL["Primitive normalized VDPs"]
+    UI["UserIntent VDP<br/>reserve · cancel"]
+    IP["InventoryPlan VDP<br/>blocked · canHold"]
+  end
+
+  subgraph RESOURCE["Primitive resource / decision VDPs"]
     S["ReservationState VDP<br/>empty · held · paid · cancelled · expired"]
+    M["ReservationMutation VDP<br/>hold · markPaid · cancel · expire"]
     W["ReservationWrite VDP<br/>setHeld · setPaid · setCancelled · setExpired"]
+    O["OutboxMessage VDP<br/>requestPayment · reservationPaid · reservationCancelled · reservationExpired"]
+    IC["InventoryCommand VDP<br/>reserveUnits · releaseUnits"]
   end
 
-  UC0["(UserTrigger ⊗ InventoryObservation)<br/>⊗ ReservationState<br/>30 members"]
-  UC1["(UserIntent ⊗ InventoryPlan)<br/>⊗ ReservationState"]
-  PC["PaymentTrigger ⊗ ReservationState"]
-  EC["ExpiryTrigger ⊗ ReservationState"]
+  subgraph PRODUCTS["Derived tensor VDPs · full Cartesian products"]
+    UC0(["Tensor VDP<br/>(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState<br/>30 = 3 × 2 × 5 members"])
+    UC1(["Tensor VDP<br/>(UserIntent ⊗ InventoryPlan) ⊗ ReservationState<br/>20 = 2 × 2 × 5 members"])
+    PC(["Tensor VDP<br/>PaymentTrigger ⊗ ReservationState<br/>10 = 2 × 5 members"])
+    EC(["Tensor VDP<br/>ExpiryTrigger ⊗ ReservationState<br/>5 = 1 × 5 members"])
+  end
 
-  M["ReservationMutation VDP<br/>hold · markPaid · cancel · expire"]
-  O["OutboxMessage VDP<br/>requestPayment · paid · cancelled · expired"]
-  IC["InventoryCommand VDP<br/>reserveUnits · releaseUnits"]
+  U -->|"parseUser · partial"| UI
+  I -->|"planInventory"| IP
 
   U --- UC0
   I --- UC0
   S --- UC0
+
+  UI --- UC1
+  IP --- UC1
+  S --- UC1
 
   UC0 -->|"prepareUserContext = (parseUser ⊗ planInventory) ⊗ id"| UC1
   UC1 -->|"decideUserMutation"| M
@@ -276,10 +297,14 @@ flowchart LR
   M -.->|"inventoryEffect · partial"| IC
 ```
 
-Undirected lines mean tensor-factor construction; directed lines are
-`Operation` values. The visible cycle through `ReservationState` is the
-semantic state-machine loop. It does not mean that `ReservationWrite`
-automatically changes the observed state: there is deliberately **no**
+Undirected lines mean **tensor-object construction**; directed lines are
+`Operation` values. Thus `UC0`, `UC1`, `PC`, and `EC` are not VDPs whose
+members were accidentally hidden: they are explicitly marked product VDPs, and
+their labels state the complete cardinality implied by the factors.
+
+The visible cycle through `ReservationState` is the semantic state-machine
+loop. It does not mean that `ReservationWrite` automatically changes the
+observed state: there is deliberately **no**
 `ReservationWrite -> ReservationState` arrow.
 
 The interesting review hotspot is concrete:
