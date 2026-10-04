@@ -96,6 +96,30 @@ structure Transport {X Y X' Y' : Partition.{u, v}}
     targetIso.toOperation.comp (denote before) =
       (denote after).comp sourceIso.toOperation
 
+namespace Transport
+
+/--
+Re-present an expression against an isomorphic source by precomposing with the
+inverse structural isomorphism. This is a normalization certificate, not a
+claim that either nominal source VDP disappeared from the architecture.
+-/
+def source {X X' Y : Partition.{u, v}}
+    (before : Expression X Y)
+    (sourceIso : Partition.PartitionIso X X') :
+    Transport before
+      (.comp before (.iso sourceIso.symm)) where
+  sourceIso := sourceIso
+  targetIso := Partition.PartitionIso.refl Y
+  commutes := by
+    apply Operation.ext
+    intro i
+    cases h : denote before i <;>
+      simp [denote, Partition.PartitionIso.toOperation,
+        Partition.PartitionIso.symm, Partition.PartitionIso.refl,
+        Operation.comp, h, sourceIso.memberIndex.left_inv]
+
+end Transport
+
 namespace Rewrite
 
 def refl {X Y : Partition.{u, v}} (e : Expression X Y) : Rewrite e e :=
