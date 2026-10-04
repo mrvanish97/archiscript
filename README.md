@@ -93,6 +93,25 @@ g.comp f : A ⇀ C
 
 Undefinedness propagates as ordinary partial-map composition.
 
+Sequentiality is represented structurally by an intermediate VDP:
+
+```text
+A ──f──▶ B ──g──▶ C
+```
+
+By contrast, several operations leaving the same VDP:
+
+```text
+       ┌──f──▶ B
+A ─────┤
+       └──g──▶ C
+```
+
+do **not** establish an order between `f` and `g`. Such fan-out is therefore
+compatible with sequential, parallel, or otherwise coordinated runtime
+implementations. ArchiScript records the absence of an ordering edge; it does
+not infer a scheduler or prove concurrency.
+
 ### Tensor: independent coordinates
 
 ```text
@@ -372,7 +391,11 @@ confused:
 - the first note records a successful factorization theorem;
 - the second note records a failed factorization: the inventory view may merge
   `cancel` and `expire`, but the outbox consumer may not;
-- `∅` is undefinedness, not a VDP member.
+- `∅` is undefinedness, not a VDP member;
+- multiple outgoing operations from `ReservationMutation` are fan-out. No
+  order is encoded between persistence, publication, state selection, and
+  inventory intent; a runtime implementation may execute such effects
+  sequentially or in parallel unless additional semantics constrain it.
 
 The same model also exposes a concurrency review boundary:
 
