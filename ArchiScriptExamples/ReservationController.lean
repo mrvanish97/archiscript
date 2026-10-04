@@ -560,13 +560,15 @@ transaction, cache entry, or runtime object for ReservationState.
 def userPaymentInputPartition : Partition :=
   userContextPartition.coproduct paymentContextPartition
 
-def userPaymentFactoredInputPartition : Partition :=
-  ((userTriggerPartition.tensor inventoryObservationPartition).coproduct
-      paymentTriggerPartition).tensor reservationStatePartition
-
+/--
+The factored source is intentionally left as a structural expression rather
+than introduced as another named VDP declaration. The original nominal source
+remains present; this witness only supplies an isomorphic presentation.
+-/
 def userPaymentSourceIso :
     Partition.PartitionIso userPaymentInputPartition
-      userPaymentFactoredInputPartition :=
+      (((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+          paymentTriggerPartition).tensor reservationStatePartition) :=
   Partition.tensorCoproductRightDistributivity
     (userTriggerPartition.tensor inventoryObservationPartition)
     paymentTriggerPartition
@@ -579,7 +581,10 @@ def userPaymentPlanExpression :
     planPaymentMutationExpression
 
 def userPaymentFactoredPlanExpression :
-    Expression userPaymentFactoredInputPartition reservationMutationPartition :=
+    Expression
+      (((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+          paymentTriggerPartition).tensor reservationStatePartition)
+      reservationMutationPartition :=
   .comp userPaymentPlanExpression (.iso userPaymentSourceIso.symm)
 
 /-- The factored source presentation commutes with the original planner. -/
