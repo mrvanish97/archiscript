@@ -159,9 +159,19 @@ theorem coproductMap_comp
   intro ij
   cases ij with
   | inl i =>
-    cases h₁ : f₁ i <;> simp [coproductMap, comp, h₁]
+    cases h₁ : f₁ i with
+    | none =>
+      simp [coproductMap, comp, h₁, Option.map, Option.bind]
+    | some i' =>
+      cases h₂ : f₂ i' <;>
+        simp [coproductMap, comp, h₁, h₂, Option.map, Option.bind]
   | inr j =>
-    cases h₁ : g₁ j <;> simp [coproductMap, comp, h₁]
+    cases h₁ : g₁ j with
+    | none =>
+      simp [coproductMap, comp, h₁, Option.map, Option.bind]
+    | some j' =>
+      cases h₂ : g₂ j' <;>
+        simp [coproductMap, comp, h₁, h₂, Option.map, Option.bind]
 
 end Operation
 
