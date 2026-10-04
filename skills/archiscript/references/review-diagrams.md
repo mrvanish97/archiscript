@@ -63,15 +63,25 @@ unrelated runtime effects.` Connect `∅` only from a member whose mapping is
 being shown; never draw a VDP-container-to-`∅` edge. Do not infer a side-effect
 guarantee from `none`.
 
-For a tensor view, show the elementary factor VDPs first. A product VDP has all
-factor-member tuples; a focused view may hide product tuples only when it states
-the omitted detail and never suggests pruning. If a product VDP has `n` members
-but only `k` are expanded, label the VDP with its total cardinality and account
-for the remaining `n-k` explicitly, for example
-`[display group: other 8 members]`. Such a display group is never a model
-member; list the collapsed members in the caption or nearby text. Label
-factor-to-product links as construction or membership, never as `Operation`
-arrows. `P ⊗ P` still has two slots.
+For a tensor view, show the elementary factor VDPs first. Use unoriented lines
+from the factors into a `⊗` constructor node and a directed edge from that node
+to the constructed product:
+
+```text
+P ---┐
+     ⊗ --▶ P ⊗ Q
+Q ---┘
+```
+
+The arrowhead is a visual reading aid for **object construction**, not a
+morphism. Do not draw arrows `P -> P ⊗ Q` or `Q -> P ⊗ Q`: tensor has no
+canonical injections. A product VDP has all factor-member tuples; a focused view
+may hide product tuples only when it states the omitted detail and never suggests
+pruning. If a product VDP has `n` members but only `k` are expanded, label the
+VDP with its total cardinality and account for the remaining `n-k` explicitly,
+for example `[display group: other 8 members]`. Such a display group is never a
+model member; list the collapsed members in the caption or nearby text.
+`P ⊗ P` still has two slots.
 
 For a tensor **operation**, prefer the factored presentation. In a VDP view,
 show the elementary factor operations independently and state that they induce
@@ -82,11 +92,29 @@ arrows unless that exact branch-level mapping is the review question. The
 compact factored view carries the same componentwise rule and scales much
 better. It does not claim runtime parallel execution.
 
-For a **coproduct view**, show the already-established summand VDPs and the
-tagged aggregate separately. Label the links as coproduct injections or
-structural aggregation. Coproduct is appropriate only when those alternatives
-are closed by architecture at design time; do not use the diagram to imply that
-runtime-discovered cases form an exhaustive external boundary.
+For a **coproduct construction view**, use the same structural grammar:
+
+```text
+P ---┐
+     ⊕ --▶ P ⊕ Q
+Q ---┘
+```
+
+The incoming summand lines are structural and have no arrowheads. The outgoing
+arrowhead marks the direction in which the object is constructed; it is not an
+`Operation`.
+
+Do not call those structural lines coproduct injections. When the categorical
+injections themselves are relevant, draw the actual Operations separately:
+
+```text
+P ──ι₁──▶ P ⊕ Q
+Q ──ι₂──▶ P ⊕ Q
+```
+
+Coproduct is appropriate only when those alternatives are closed by architecture
+at design time; do not use the diagram to imply that runtime-discovered cases
+form an exhaustive external boundary.
 
 For a **resolution view**, show the fine VDP and coarse VDP as distinct VDPs on
 the same carrier, with the coarsening map `q` labeled explicitly. If a consumer
