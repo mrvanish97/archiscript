@@ -437,6 +437,21 @@ composition, tensor, coproduct, and their laws. `Expression X Y` records one
 finite well-typed presentation of a morphism and
 `Expression.denote : Expression X Y → Operation X Y` gives its semantics.
 
+Keep nominal architecture identity out of the mathematical `Partition` value.
+A Lean declaration symbol can identify an architectural VDP even when another
+declaration denotes an extensionally equal partition. Do not add a `name :
+String` field to `Partition` merely to serve presentation or normalization,
+and do not infer architectural identity from equal carriers or classifiers.
+Which named operation declarations are primitive architectural generators versus
+derived aliases remains presentation-level policy and is intentionally
+non-blocking in 0.5.0.
+
+When structural normalization needs a VDP isomorphism, use
+`Partition.PartitionIso`: it carries a carrier equivalence, a member-index
+equivalence, and classifier commutation. An invertible member-level `Operation`
+alone is too weak because it cannot distinguish unrelated carriers with
+isomorphic finite member sets.
+
 Every expression has **exactly one source and exactly one target**:
 
 ```text
