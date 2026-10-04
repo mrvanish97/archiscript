@@ -360,13 +360,15 @@ undefined on them.
 
 ```mermaid
 flowchart LR
-  subgraph PC["PaymentTrigger ⊗ ReservationState VDP · 10 members"]
+  subgraph PC["PaymentTrigger ⊗ ReservationState VDP · 10 members total"]
     P0["authorized × held"]
     P1["failed × held"]
+    POTHER["[display group: other 8 members]"]
   end
 
-  subgraph EC["ExpiryTrigger ⊗ ReservationState VDP · 5 members"]
+  subgraph EC["ExpiryTrigger ⊗ ReservationState VDP · 5 members total"]
     E0["fired × held"]
+    EOTHER["[display group: other 4 members]"]
   end
 
   subgraph RM["ReservationMutation VDP"]
@@ -381,10 +383,21 @@ flowchart LR
   E0 -->|"planExpiryMutation"| M3
 ```
 
-The omitted product members are still present in the tensor VDPs; both
-operations are undefined on those omitted members. No edge is drawn from a VDP
-container to `∅`, because an operation is defined on members, not on the
-container itself.
+The display-group boxes are **not new model members**; they only collapse
+members that are present but uninteresting for this focused review. Concretely:
+
+- `PaymentTrigger ⊗ ReservationState`: the other 8 members are
+  `authorized × empty`, `authorized × paid`,
+  `authorized × cancelled`, `authorized × expired`,
+  `failed × empty`, `failed × paid`, `failed × cancelled`, and
+  `failed × expired`;
+- `ExpiryTrigger ⊗ ReservationState`: the other 4 members are
+  `fired × empty`, `fired × paid`, `fired × cancelled`, and
+  `fired × expired`.
+
+The corresponding operations are undefined on every member in those display
+groups. No edge is drawn from a VDP container to `∅`, because an operation is
+defined on members, not on the container itself.
 
 The concurrency review hotspot is now easy to read:
 
