@@ -52,7 +52,7 @@ def cliPartition : Partition where
   memberIndexDecidableEq := inferInstance
   memberIndices := [.empty, .nonempty]
   memberIndices_complete := by intro i; cases i <;> simp
-  classify invocation := if invocation.args.isEmpty then .empty else .nonempty
+  classify invocation := if invocation.args = [] then .empty else .nonempty
   member_inhabited
     | .empty => ⟨⟨[]⟩, by simp⟩
     | .nonempty => ⟨⟨["status"]⟩, by simp⟩
