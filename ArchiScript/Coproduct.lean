@@ -21,17 +21,23 @@ def coproduct (P Q : Partition) : Partition where
   memberIndices_complete := by
     intro i
     cases i with
-    | inl i => simp [P.memberIndices_complete i]
-    | inr j => simp [Q.memberIndices_complete j]
+    | inl i =>
+      simp only [List.mem_append, List.mem_map]
+      exact Or.inl ⟨i, P.memberIndices_complete i, rfl⟩
+    | inr j =>
+      simp only [List.mem_append, List.mem_map]
+      exact Or.inr ⟨j, Q.memberIndices_complete j, rfl⟩
   classify
     | .inl x => .inl (P.classify x)
     | .inr y => .inr (Q.classify y)
-  member_inhabited
-    | .inl i =>
-      obtain ⟨x, hx⟩ := P.member_inhabited i
+  member_inhabited := by
+    intro ij
+    cases ij with
+    | inl i =>
+      rcases P.member_inhabited i with ⟨x, hx⟩
       exact ⟨.inl x, congrArg Sum.inl hx⟩
-    | .inr j =>
-      obtain ⟨y, hy⟩ := Q.member_inhabited j
+    | inr j =>
+      rcases Q.member_inhabited j with ⟨y, hy⟩
       exact ⟨.inr y, congrArg Sum.inr hy⟩
 
 @[simp] theorem coproduct_classify_inl (P Q : Partition) (x : P.Carrier) :
@@ -117,7 +123,8 @@ theorem copair_unique {P Q R : Partition}
     (left : h.comp (coproductInl P Q) = f)
     (right : h.comp (coproductInr P Q) = g) :
     h = copair f g := by
-  ext ij
+  apply Operation.ext
+  intro ij
   cases ij with
   | inl i =>
     have hi := congrArg (fun op : Operation P R => op i) left
@@ -146,7 +153,8 @@ theorem coproductMap_comp
     (g₁ : Operation Q Q') (g₂ : Operation Q' Q'') :
     coproductMap (f₂.comp f₁) (g₂.comp g₁) =
       (coproductMap f₂ g₂).comp (coproductMap f₁ g₁) := by
-  ext ij
+  apply Operation.ext
+  intro ij
   cases ij with
   | inl i =>
     cases h₁ : f₁ i <;> simp [coproductMap, comp, h₁, Option.bind]
