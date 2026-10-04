@@ -115,7 +115,7 @@ def acceptedBranchWitness := registry.resolveBranch acceptedBranch
 #guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
 #guard registry.branchesWithoutImplementation.length == 0
 
-/-- The smoke file also covers the structural monoidal API, not only tensor construction. -/
+-- The smoke file also covers the structural monoidal API, not only tensor construction.
 #guard Partition.unit.memberIndices.length == 1
 
 example :
