@@ -210,6 +210,47 @@ def checkoutActionSemantic : SemanticPartition where
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
+inductive FulfillmentView where
+  | noCommand
+  | submit
+  deriving DecidableEq, Repr
+
+/--
+A coarser view of the same CheckoutAction carrier for consumers that only care
+whether a fulfillment command exists.
+-/
+def fulfillmentViewPartition : Partition where
+  Carrier := CheckoutAction
+  MemberIndex := FulfillmentView
+  carrierNonempty := ⟨.rejectPayment⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := [.noCommand, .submit]
+  memberIndices_complete := by intro i; cases i <;> simp
+  classify
+    | .placeOrder => .submit
+    | .rejectPayment | .rejectInventoryRequest | .waitForStock => .noCommand
+  member_inhabited
+    | .noCommand => ⟨.rejectPayment, rfl⟩
+    | .submit => ⟨.placeOrder, rfl⟩
+
+def checkoutActionToFulfillmentView :
+    checkoutActionPartition.MemberIndex → fulfillmentViewPartition.MemberIndex
+  | .placeOrder => .submit
+  | .rejectPayment | .rejectInventoryRequest | .waitForStock => .noCommand
+
+theorem checkoutAction_refines_fulfillmentView :
+    checkoutActionPartition.RefinesVia
+      fulfillmentViewPartition checkoutActionToFulfillmentView := by
+  refine ⟨rfl, ?_⟩
+  intro i action hx
+  change checkoutActionPartition.classify action = i at hx
+  cases hx
+  cases action <;> rfl
+
+def forgetCheckoutActionDetail :
+    Operation checkoutActionPartition fulfillmentViewPartition :=
+  Partition.coarseningOperation checkoutActionToFulfillmentView
+
 /-- Cross-factor policy is explicit here, after the independent tensor product. -/
 def chooseCheckoutAction :
     Operation (paymentPlanPartition.tensor inventoryPlanPartition) checkoutActionPartition where
@@ -247,6 +288,23 @@ def requestFulfillment :
     | .placeOrder => some .submitOrder
     | .rejectPayment | .rejectInventoryRequest | .waitForStock => none
 
+def requestFulfillmentAtCoarseResolution :
+    Operation fulfillmentViewPartition fulfillmentCommandPartition where
+  run
+    | .noCommand => none
+    | .submit => some .submitOrder
+
+theorem requestFulfillment_factorizes :
+    requestFulfillmentAtCoarseResolution.comp forgetCheckoutActionDetail =
+      requestFulfillment := by
+  apply Operation.ext
+  intro action
+  cases action <;> rfl
+
+theorem requestFulfillment_factorsThrough :
+    Operation.FactorsThrough forgetCheckoutActionDetail requestFulfillment :=
+  ⟨requestFulfillmentAtCoarseResolution, requestFulfillment_factorizes⟩
+
 def checkoutToFulfillment :
     Operation
       (paymentInputPartition.tensor inventoryObservationPartition)
@@ -275,6 +333,9 @@ def checkoutPlanSemantic : SemanticPartition :=
 
 #guard checkoutToFulfillment (.eligible, .sufficient) == some .submitOrder
 #guard checkoutToFulfillment (.eligible, .shortfall) == none
+#guard forgetCheckoutActionDetail .rejectPayment == some .noCommand
+#guard forgetCheckoutActionDetail .waitForStock == some .noCommand
+#guard forgetCheckoutActionDetail .placeOrder == some .submit
 
 example :
     decideCheckout =
