@@ -280,7 +280,16 @@ injection/copairing:
 #check Expression.Rewrite.copair_inl
 #check Expression.Rewrite.copair_inr
 #check Expression.Rewrite.tensor_identity
+#check Expression.Rewrite.comp
+#check Expression.Rewrite.tensor
+#check Expression.Rewrite.copair
 ```
+
+The congruence helpers `Expression.Rewrite.comp`,
+`.tensor`, and `.copair` lift already-certified local rewrites through a
+larger expression context. This is the intended 0.5.0 pattern for local
+normalization: prove a small law once, then transport that equality through the
+surrounding syntax instead of reproving the whole end-to-end Operation.
 
 When endpoint representatives change through a structural isomorphism, use
 `Expression.Transport`. `Expression.Transport.source` precomposes with the
