@@ -519,7 +519,7 @@ A branch-relative coproduct simplification. The unused payment branch disappears
 from this selected expression by the coproduct law; the payment VDP and planner
 remain in the architecture and may be used by other expressions.
 -/
-def userSelectedCoproductNormalization :
+theorem userSelectedCoproductNormalization :
     Expression.Rewrite
       (.comp
         (.copair
@@ -531,7 +531,7 @@ def userSelectedCoproductNormalization :
     planUserMutationExpression
     planPaymentMutationExpression
 
-def paymentSelectedCoproductNormalization :
+theorem paymentSelectedCoproductNormalization :
     Expression.Rewrite
       (.comp
         (.copair
