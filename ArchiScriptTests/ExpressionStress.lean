@@ -17,6 +17,18 @@ example :
       persistMutation.comp planControllerMutation := rfl
 
 example :
+    Expression.Rewrite
+      (.comp
+        (.atom nextReservationState)
+        (.comp
+          (.copair
+            planUserMutationExpression
+            planPaymentMutationExpression)
+          (.coproductInl userContextPartition paymentContextPartition)))
+      (.comp (.atom nextReservationState) planUserMutationExpression) :=
+  userSelectedStateNormalization
+
+example :
     userPaymentFactoringCertificate.targetIso.toOperation.comp
         (Expression.denote userPaymentPlanExpression) =
       (Expression.denote userPaymentFactoredPlanExpression).comp
