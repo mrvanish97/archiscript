@@ -436,9 +436,43 @@ Every expression has one source and one target; the family groups several
 consequences of one controller source without tensoring the outputs together.
 -/
 
+def prepareUserContextExpression :
+    Expression userContextPartition userDecisionContextPartition :=
+  .tensor
+    (.tensor (.atom parseUser) (.atom planInventory))
+    (.identity reservationStatePartition)
+
+def planUserMutationExpression :
+    Expression userContextPartition reservationMutationPartition :=
+  .comp (.atom decideUserMutation) prepareUserContextExpression
+
+def planPaymentMutationExpression :
+    Expression paymentContextPartition reservationMutationPartition :=
+  .atom planPaymentMutation
+
+def planExpiryMutationExpression :
+    Expression expiryContextPartition reservationMutationPartition :=
+  .atom planExpiryMutation
+
+/--
+The controller expression keeps the actual tensor/composition/coproduct
+presentation instead of wrapping the already-composed semantic Operation as one
+opaque atom.
+-/
 def controllerPlanExpression :
     Expression controllerInputPartition reservationMutationPartition :=
-  .atom planControllerMutation
+  .copair
+    (.copair planUserMutationExpression planPaymentMutationExpression)
+    planExpiryMutationExpression
+
+example :
+    Expression.denote prepareUserContextExpression = prepareUserContext := rfl
+
+example :
+    Expression.denote planUserMutationExpression = planUserMutation := rfl
+
+example :
+    Expression.denote controllerPlanExpression = planControllerMutation := rfl
 
 def controllerStateExpression :
     Expression controllerInputPartition reservationStatePartition :=
@@ -489,13 +523,13 @@ def userSelectedCoproductNormalization :
     Expression.Rewrite
       (.comp
         (.copair
-          (.atom planUserMutation)
-          (.atom planPaymentMutation))
+          planUserMutationExpression
+          planPaymentMutationExpression)
         (.coproductInl userContextPartition paymentContextPartition))
-      (.atom planUserMutation) :=
+      planUserMutationExpression :=
   Expression.Rewrite.copair_inl
-    (.atom planUserMutation)
-    (.atom planPaymentMutation)
+    planUserMutationExpression
+    planPaymentMutationExpression
 
 /--
 The first two controller channels expose the shared ReservationState coordinate:
@@ -529,8 +563,8 @@ def userPaymentSourceIso :
 def userPaymentPlanExpression :
     Expression userPaymentInputPartition reservationMutationPartition :=
   .copair
-    (.atom planUserMutation)
-    (.atom planPaymentMutation)
+    planUserMutationExpression
+    planPaymentMutationExpression
 
 def userPaymentFactoredPlanExpression :
     Expression userPaymentFactoredInputPartition reservationMutationPartition :=
