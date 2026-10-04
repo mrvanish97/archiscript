@@ -76,6 +76,27 @@ arrows unless that exact branch-level mapping is the review question. The
 compact factored view carries the same componentwise rule and scales much
 better. It does not claim runtime parallel execution.
 
+For a **coproduct view**, show the already-established summand VDPs and the
+tagged aggregate separately. Label the links as coproduct injections or
+structural aggregation. Coproduct is appropriate only when those alternatives
+are closed by architecture at design time; do not use the diagram to imply that
+runtime-discovered cases form an exhaustive external boundary.
+
+For a **resolution view**, show the fine VDP and coarse VDP as distinct VDPs on
+the same carrier, with the coarsening map `q` labeled explicitly. If a consumer
+is drawn from the coarse VDP, the model must contain a factorization proof
+`f = g ∘ q`. If factorization fails, do not draw `g` as though it existed;
+show the fine consumer and annotate the concrete fiber conflict instead. This
+distinguishes checked semantic zoom from a display-only grouping.
+
+For a comprehensive stress-test projection, it is acceptable to exceed the
+ordinary eight-node preference when one diagram is specifically intended to
+show how the calculus composes. Keep mechanically induced product members
+collapsed, but include the distinct algebraic structures that matter:
+sequential composition, tensor, coproduct, partiality, coarsening, and both
+successful and rejected factorization when the model supplies them. The
+repository's canonical example is `ArchiScriptExamples/ReservationController.lean`.
+
 Normalize factor-only review questions across associator, unitors, and
 symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use
 findings merely because of parentheses. Swapped factors should preserve a
