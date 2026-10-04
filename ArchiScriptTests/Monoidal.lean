@@ -29,6 +29,18 @@ example : independent (false, true) = some (true, true) := rfl
 example : (Operation.id bit).tensor (Operation.id bit) = Operation.id (bit.tensor bit) :=
   Operation.tensor_id bit bit
 
+def identityTensorIso :
+    Partition.PartitionIso (bit.tensor bit) (bit.tensor bit) :=
+  (Partition.PartitionIso.refl bit).tensor (Partition.PartitionIso.refl bit)
+
+#guard identityTensorIso.memberIndex.toFun (false, true) == (false, true)
+
+def doubleSwapIso :
+    Partition.PartitionIso (bit.tensor bit) (bit.tensor bit) :=
+  (Partition.tensorSymmetry bit bit).trans (Partition.tensorSymmetry bit bit)
+
+#guard doubleSwapIso.memberIndex.toFun (false, true) == (false, true)
+
 example : (flip.comp keepTrue).tensor (keepTrue.comp flip) =
     (flip.tensor keepTrue).comp (keepTrue.tensor flip) :=
   Operation.tensor_comp keepTrue flip flip keepTrue
