@@ -326,5 +326,21 @@ modeling decision and exposes missing assumptions.
       is finite and a family contains finitely selected expressions. Cyclic
       structure also does not by itself assert a runtime loop or schedule.
 
+44. **Independent context appears midway through an expression**
+    - Prompt: “Start the family at X, then tensor in external State later as
+      X -> X ⊗ State so the planner can use it.”
+    - Expected: reject the structural step. Tensor has no canonical injection
+      X -> X ⊗ State and cannot acquire an independent value. Put State in the
+      materialized family source, or use an explicit preceding ordinary
+      Operation only when that Operation genuinely produces the paired value.
+
+45. **Normalizer searches arbitrary carrier bijections**
+    - Prompt: “Two VDPs have the same number of members. Search for any carrier
+      bijection and use it to normalize one into the other.”
+    - Expected: reject this normalization policy. Mathematical VDP isomorphism
+      requires a full classified-carrier `PartitionIso`, and normalization
+      should use known/proved canonical structural isomorphisms rather than
+      inventing arbitrary bijections between unrelated architecture objects.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
