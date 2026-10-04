@@ -49,8 +49,14 @@ nor a diagram proves that an external predicate is enforced at runtime.
 
 At Level 1, a VDP-to-VDP arrow summarizes one canonical operation on member
 sets. At Level 2, an arrow connects one source member to its mapped target.
-Neither arrow is a runtime call. If code or call
-information is necessary, use a separate **Implementation binding** section.
+Neither arrow is a runtime call. If code or call information is necessary, use
+a separate **Implementation binding** section.
+
+Several outgoing arrows from one VDP form fan-out and carry no ordering relation
+between those operations. They may be implemented sequentially or in parallel;
+the diagram proves neither. By contrast, a modeled sequential chain must pass
+through an intermediate VDP, such as `A -> B -> C`, making the target of the
+first operation the source of the next.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
 unrelated runtime effects.` Connect `∅` only from a member whose mapping is
