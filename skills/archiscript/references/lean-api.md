@@ -261,8 +261,8 @@ def twoAlternativeAccept :
   .copair (.atom accept) (.atom accept)
 ```
 
-`Expression.Family` stores a finite nonempty list of dependent entries. All
-entries share `family.source`; each entry carries its own target and typed
+`Expression.Family` stores a finite nonempty list of `Expression.Entry` values.
+All entries share `family.source`; each entry carries its own target and typed
 expression. The declaration naming the family is presentation identity. No name
 field is added to `Partition` or `Operation`.
 
@@ -282,7 +282,8 @@ injection/copairing:
 
 When endpoint representatives change through a structural isomorphism, use
 `Expression.Transport`. `Expression.Transport.source` precomposes with the
-inverse source isomorphism and returns the commuting-square certificate.
+inverse source isomorphism, while `Expression.Transport.target` postcomposes
+with a target isomorphism. Both return the commuting-square certificate.
 
 Binary tensor/coproduct distributivity is concrete, not definitional equality:
 
