@@ -16,7 +16,9 @@
   `PartitionIso` representatives with a commuting square.
 - Added canonical left and right distributivity isomorphisms between tensor and
   binary coproduct, induced Operations and inverse laws, and naturality
-  theorems. Distributive factoring is structural only and carries no runtime
+  theorems, plus compositional `PartitionIso.trans`, `.tensor`, and
+  `.coproduct` helpers so larger structural witnesses reuse proved pieces.
+  Distributive factoring is structural only and carries no runtime
   read, caching, transaction, object-identity, or scheduling claim.
 - Distinguished normalization from architecture projection. Composition creates
   composite morphisms without deleting intermediate VDP objects; a derived view
