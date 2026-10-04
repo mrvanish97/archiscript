@@ -56,6 +56,76 @@ def coproduct (P Q : Partition) : Partition where
     (P.coproduct Q).member (.inr j) (.inr y) ↔ Q.member j y := by
   simp [member, coproduct]
 
+/-- Coproduct two VDP isomorphisms componentwise. -/
+def PartitionIso.coproduct {P P' Q Q' : Partition}
+    (e : PartitionIso P P') (f : PartitionIso Q Q') :
+    PartitionIso (P.coproduct Q) (P'.coproduct Q') where
+  carrier := {
+    toFun := fun
+      | .inl x => .inl (e.carrier.toFun x)
+      | .inr y => .inr (f.carrier.toFun y)
+    invFun := fun
+      | .inl x => .inl (e.carrier.invFun x)
+      | .inr y => .inr (f.carrier.invFun y)
+    left_inv := by
+      intro xy
+      cases xy with
+      | inl x =>
+          change Sum.inl (e.carrier.invFun (e.carrier.toFun x)) = Sum.inl x
+          rw [e.carrier.left_inv]
+      | inr y =>
+          change Sum.inr (f.carrier.invFun (f.carrier.toFun y)) = Sum.inr y
+          rw [f.carrier.left_inv]
+    right_inv := by
+      intro xy
+      cases xy with
+      | inl x =>
+          change Sum.inl (e.carrier.toFun (e.carrier.invFun x)) = Sum.inl x
+          rw [e.carrier.right_inv]
+      | inr y =>
+          change Sum.inr (f.carrier.toFun (f.carrier.invFun y)) = Sum.inr y
+          rw [f.carrier.right_inv]
+  }
+  memberIndex := {
+    toFun := fun
+      | .inl i => .inl (e.memberIndex.toFun i)
+      | .inr j => .inr (f.memberIndex.toFun j)
+    invFun := fun
+      | .inl i => .inl (e.memberIndex.invFun i)
+      | .inr j => .inr (f.memberIndex.invFun j)
+    left_inv := by
+      intro ij
+      cases ij with
+      | inl i =>
+          change Sum.inl (e.memberIndex.invFun (e.memberIndex.toFun i)) = Sum.inl i
+          rw [e.memberIndex.left_inv]
+      | inr j =>
+          change Sum.inr (f.memberIndex.invFun (f.memberIndex.toFun j)) = Sum.inr j
+          rw [f.memberIndex.left_inv]
+    right_inv := by
+      intro ij
+      cases ij with
+      | inl i =>
+          change Sum.inl (e.memberIndex.toFun (e.memberIndex.invFun i)) = Sum.inl i
+          rw [e.memberIndex.right_inv]
+      | inr j =>
+          change Sum.inr (f.memberIndex.toFun (f.memberIndex.invFun j)) = Sum.inr j
+          rw [f.memberIndex.right_inv]
+  }
+  classify_commutes := by
+    intro xy
+    cases xy with
+    | inl x =>
+        change
+          Sum.inl (P'.classify (e.carrier.toFun x)) =
+            Sum.inl (e.memberIndex.toFun (P.classify x))
+        rw [e.classify_commutes]
+    | inr y =>
+        change
+          Sum.inr (Q'.classify (f.carrier.toFun y)) =
+            Sum.inr (f.memberIndex.toFun (Q.classify y))
+        rw [f.classify_commutes]
+
 end Partition
 
 namespace SemanticPartition
