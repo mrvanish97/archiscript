@@ -25,14 +25,18 @@ Mermaid and TikZ conventions: draw each VDP as a labeled container box and
 its selected members as boxes inside it. Connect member boxes with arrows for
 semantic operation mappings. Draw `∅` outside every VDP, since it is not a
 member. At Level 1, a VDP may appear as one collapsed box because individual
-members are intentionally hidden. Use a distinct boundary shape for external
-appearances. Put long source locations and evidence outside the graph. Follow
-the repository's established/default diagram theme rather than hard-coding
-semantic colors: labels, containment, shapes, and arrow direction carry
-meaning. Display canonical names, optionally after a human label such as
-`Duplicate successful delivery [duplicateSuccess]`. If several members are
-collapsed, label the aggregate `[display group: ...]` and list its members in
-the caption; never treat the group as a new model member.
+members are intentionally hidden. Reserve VDP containers/subgraphs for actual
+VDPs; do not reuse that container grammar merely to group operations or tensor
+factors. For an operation-algebra view, use operation-shaped nodes and label the
+view explicitly so those nodes cannot be mistaken for VDPs or members. Use a
+distinct boundary shape for external appearances. Put long source locations and
+evidence outside the graph. Follow the repository's established/default diagram
+theme rather than hard-coding semantic colors: labels, containment, shapes, and
+arrow direction carry meaning. Display canonical names, optionally after a
+human label such as `Duplicate successful delivery [duplicateSuccess]`. If
+several members are collapsed, label the aggregate
+`[display group: ...]` and list its members in the caption; never treat the
+group as a new model member.
 
 At Level 3, show supporting subdomains beside the VDP, with their base,
 containment relationship, and defining formula when available. Label an opaque
@@ -57,11 +61,13 @@ the omitted detail and never suggests pruning. Label factor-to-product links as
 construction or membership, never as `Operation` arrows. `P ⊗ P` still has
 two slots.
 
-For a tensor **operation**, prefer the factored presentation: show `f : P → P′`
-and `g : Q → Q′` as independent arrows and state that they induce
-`f ⊗ g : P ⊗ Q → P′ ⊗ Q′`. Do not expand the induced Cartesian family of
-member arrows unless that exact branch-level mapping is the review question.
-The compact factored view carries the same componentwise rule and scales much
+For a tensor **operation**, prefer the factored presentation. In a VDP view,
+show the elementary factor operations independently and state that they induce
+`f ⊗ g : P ⊗ Q → P′ ⊗ Q′`. In a dedicated operation-algebra view, represent
+`f`, `g`, and `f ⊗ g` as operation-shaped nodes rather than placing them
+inside VDP-like subgraphs. Do not expand the induced Cartesian family of member
+arrows unless that exact branch-level mapping is the review question. The
+compact factored view carries the same componentwise rule and scales much
 better. It does not claim runtime parallel execution.
 
 Normalize factor-only review questions across associator, unitors, and
