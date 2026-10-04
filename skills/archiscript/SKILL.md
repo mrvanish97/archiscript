@@ -662,11 +662,35 @@ Use one visual grammar consistently:
   mistaken for VDPs or members;
 - ordinary fan-out from one VDP is several arrows with the same source, not
   `Operation.tensor`.
+- show coproduct as structural aggregation of already-established design-time
+  alternative VDPs. Keep the summands visible or explicitly named; a collapsed
+  coproduct node must not look like evidence that runtime cases were exhaustively
+  discovered;
+- show coarsening as a resolution-change arrow between VDPs on the same carrier,
+  distinct from tensor/coproduct construction;
+- collapse a fine VDP to a coarse VDP for a consumer only when factorization is
+  proved. When factorization fails, show the conflicting fine members or state
+  the conflict directly instead of drawing an invalid coarse consumer.
 
 Keep a diagram to about eight major nodes when possible and split broad reviews
 into complementary views rather than exploding mechanically induced detail.
 When the question does not imply a level, start with Level 1 and one focused
 Level 2 branch map.
+
+For a repository-level or release-level **stress example**, do the opposite of
+feature-island documentation: exercise the current calculus compositionally in
+one realistic model. Prefer an existing model that already has meaningful
+independent factors, alternative entry channels, partial operations, and
+multiple consumers. Add new algebraic structure only where its mathematical
+meaning is genuinely present.
+
+The canonical repository stress test is
+`ArchiScriptExamples/ReservationController.lean`. Its review projection should
+make the interactions between sequential composition, tensor, design-time
+coproduct, refinement/coarsening, successful factorization, failed
+factorization, partiality, and independent-source review questions visible in
+one coherent model. New calculus features should be integrated into this stress
+test when they naturally apply, not demonstrated only in isolated toy files.
 
 Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.
