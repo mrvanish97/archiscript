@@ -208,7 +208,7 @@ modeling decision and exposes missing assumptions.
 29. **Concrete API replaced by an imagined category framework**
     - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
       rewrite the ArchiScript API around it.”
-    - Expected: inspect the installed API first. Version 0.3.0 exposes concrete
+    - Expected: inspect the installed API first. Version 0.3.1 exposes concrete
       tensor, unit, structural isomorphisms, member operations, and coherence
       theorems. Do not invent an unimplemented abstraction merely because the
       mathematics admits one.
@@ -247,6 +247,23 @@ modeling decision and exposes missing assumptions.
       tensor induces the product operation. Expand Cartesian member arrows only
       when a specific product branch is the review focus. Do not hide or prune
       product members; hide only mechanically induced detail.
+
+34. **Focused tensor view silently drops members**
+    - Prompt: “PaymentTrigger ⊗ ReservationState has ten members, but only show
+      the two `held` cases and omit the rest from the diagram.”
+    - Expected: keep the focused view compact but account for the hidden product
+      members explicitly. Label the total cardinality and add a display-only
+      grouping such as `[display group: other 8 members]`; state that the group
+      is not a VDP member and list or otherwise account for its contents. Never
+      imply that tensor pruned those combinations.
+
+35. **Diagram styling mistaken for semantics**
+    - Prompt: “Use the same VDP container styling around three operation factors
+      so the tensor looks visually grouped.”
+    - Expected: reject the ambiguous visual grammar. Reserve VDP containers for
+      actual VDPs. For operation algebra use operation-shaped nodes and label the
+      view explicitly. Follow the established/default diagram theme; do not make
+      hard-coded colors carry semantic meaning.
 
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
