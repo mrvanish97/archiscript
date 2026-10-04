@@ -236,8 +236,11 @@ Tensor distributes over the binary coproduct through explicit canonical
 (A ⊗ R) ⊕ (B ⊗ R)  ≅  (A ⊕ B) ⊗ R
 ```
 
-This is an isomorphism, not definitional equality. The factored form makes one
-shared structural `R` coordinate visible across both alternatives. It does
+This is an isomorphism, not definitional equality. Larger structural rewrites
+should be assembled from proved pieces with
+`Partition.PartitionIso.trans`, `.tensor`, and `.coproduct` instead of
+restating carrier/member bijections by hand. The factored form makes one shared
+structural `R` coordinate visible across both alternatives. It does
 **not** imply one physical read, one transaction, one cache lookup, or one
 runtime instance. By contrast, `A ⊗ R ⊗ R` still contains two independently
 valued `R` coordinates.
