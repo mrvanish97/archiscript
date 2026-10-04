@@ -3,30 +3,28 @@ import ArchiScriptExamples.Coproduct
 namespace ArchiScriptTests.Coproduct
 open ArchiScript ArchiScriptExamples.Coproduct
 
-#guard commandPartition.memberIndices.length == 5
-#guard commandPartition.classify (.inl .create) == Sum.inl UserCommand.create
-#guard commandPartition.classify (.inr .expire) == Sum.inr SystemCommand.expire
+#guard entryPartition.memberIndices.length == 4
+#guard entryPartition.classify (.inl ⟨"/"⟩) == Sum.inl BrowserMember.root
+#guard entryPartition.classify (.inr ⟨["status"]⟩) == Sum.inr CliMember.nonempty
 
 example :
-    handleCommand.comp
-      (Operation.coprodInl userCommandPartition systemCommandPartition) =
-      handleUser :=
-  Operation.copair_inl handleUser handleSystem
+    handleEntry.comp (Operation.coproductInl browserPartition cliPartition) =
+      handleBrowser :=
+  Operation.copair_inl handleBrowser handleCli
 
 example :
-    handleCommand.comp
-      (Operation.coprodInr userCommandPartition systemCommandPartition) =
-      handleSystem :=
-  Operation.copair_inr handleUser handleSystem
+    handleEntry.comp (Operation.coproductInr browserPartition cliPartition) =
+      handleCli :=
+  Operation.copair_inr handleBrowser handleCli
 
 example :
-    Operation.coprodMap
-      (Operation.id userCommandPartition)
-      (Operation.id systemCommandPartition) =
-      Operation.id commandPartition :=
-  Operation.coprodMap_id userCommandPartition systemCommandPartition
+    Operation.coproductMap
+      (Operation.id browserPartition)
+      (Operation.id cliPartition) =
+      Operation.id entryPartition :=
+  Operation.coproductMap_id browserPartition cliPartition
 
 example :
-    Operation.copair handleUser handleSystem = handleCommand := rfl
+    Operation.copair handleBrowser handleCli = handleEntry := rfl
 
 end ArchiScriptTests.Coproduct
