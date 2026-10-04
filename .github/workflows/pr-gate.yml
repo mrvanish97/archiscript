@@ -23,13 +23,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Lean and build
+      - name: Set up Lean
         uses: leanprover/lean-action@v1
         with:
           auto-config: false
-          build: true
+          build: false
           test: false
           lint: false
+
+      - name: Lake build
+        run: lake build
 
       - name: Negative Lean checks
         run: bash scripts/check-negative.sh
