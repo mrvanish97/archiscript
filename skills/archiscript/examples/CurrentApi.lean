@@ -69,6 +69,45 @@ def accept : Operation requestPartition requestPartition where
 #check Partition.RefinesVia
 #check Partition.coarseningOperation
 #check Operation.analyzeFactorization
+#check Partition.tensorCoproductRightDistributivity
+#check Partition.tensorCoproductLeftDistributivity
+#check Operation.distributeRight
+#check Operation.distributeLeft
+#check Operation.distributeRight_natural
+#check Operation.distributeLeft_natural
+#check Expression
+#check Expression.denote
+#check Expression.Family
+#check Expression.Rewrite
+#check Expression.Transport
+
+def acceptExpression : Expression requestPartition requestPartition :=
+  .atom accept
+
+def acceptExpressionFamily : Expression.Family :=
+  Expression.Family.singleton acceptExpression
+
+#guard acceptExpressionFamily.expressions.length == 1
+#guard acceptExpressionFamily.targets.length == 1
+
+example :
+    Expression.Rewrite
+      (Expression.comp (Expression.identity requestPartition) acceptExpression)
+      acceptExpression :=
+  Expression.Rewrite.id_left acceptExpression
+
+def requestSelfTensorCoproduct : Partition :=
+  (requestPartition.tensor requestPartition).coproduct
+    (requestPartition.tensor requestPartition)
+
+def requestFactoredCoproductTensor : Partition :=
+  (requestPartition.coproduct requestPartition).tensor requestPartition
+
+def requestDistributivityIso :
+    Partition.PartitionIso requestSelfTensorCoproduct
+      requestFactoredCoproductTensor :=
+  Partition.tensorCoproductRightDistributivity
+    requestPartition requestPartition requestPartition
 
 def pairedRequests : SemanticPartition :=
   requestSemanticPartition.tensor requestSemanticPartition
