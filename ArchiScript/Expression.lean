@@ -30,7 +30,7 @@ inductive Expression :
   | copair {P Q R : Partition.{u, v}}
       (f : Expression P R) (g : Expression Q R) :
       Expression (P.coproduct Q) R
-  | iso {P Q : Partition.{u, v}} (e : PartitionIso P Q) :
+  | iso {P Q : Partition.{u, v}} (e : Partition.PartitionIso P Q) :
       Expression P Q
 
 namespace Expression
@@ -90,8 +90,8 @@ change through explicit VDP isomorphisms.
 -/
 structure Transport {X Y X' Y' : Partition.{u, v}}
     (before : Expression X Y) (after : Expression X' Y') where
-  sourceIso : PartitionIso X X'
-  targetIso : PartitionIso Y Y'
+  sourceIso : Partition.PartitionIso X X'
+  targetIso : Partition.PartitionIso Y Y'
   commutes :
     targetIso.toOperation.comp (denote before) =
       (denote after).comp sourceIso.toOperation
