@@ -44,7 +44,7 @@ The basic vocabulary is:
 | **Refinement / coarsening** | two semantic resolutions of the same carrier |
 | **Factorization** | proof that a consumer is insensitive to distinctions a coarsening removes |
 | **Expression** | finite typed presentation syntax for one morphism, with exactly one source and one target |
-| **Expression family** | finite nonempty set of selected expressions sharing one source |
+| **Expression family** | finite nonempty family of selected expressions sharing one source |
 | **Local normalization** | semantics-preserving rewrite certified by Operation equality or structural transport |
 | **Architecture projection** | a derived view that intentionally hides selected nominal VDP boundaries |
 
