@@ -1,6 +1,8 @@
 import ArchiScript.Partition
 import ArchiScript.Monoidal
 import ArchiScript.Coproduct
+import ArchiScript.Distributive
+import ArchiScript.Expression
 import ArchiScript.Resolution
 import ArchiScript.Boundary
 import ArchiScript.Operation.Declaration
