@@ -142,6 +142,43 @@ structure PartitionIso (P Q : Partition) where
   memberIndex : Iso P.MemberIndex Q.MemberIndex
   classify_commutes : ∀ x, Q.classify (carrier.toFun x) = memberIndex.toFun (P.classify x)
 
+namespace PartitionIso
+
+def refl (P : Partition) : PartitionIso P P where
+  carrier := {
+    toFun := id
+    invFun := id
+    left_inv := by intro x; rfl
+    right_inv := by intro x; rfl
+  }
+  memberIndex := {
+    toFun := id
+    invFun := id
+    left_inv := by intro i; rfl
+    right_inv := by intro i; rfl
+  }
+  classify_commutes := by intro x; rfl
+
+def symm {P Q : Partition} (e : PartitionIso P Q) : PartitionIso Q P where
+  carrier := {
+    toFun := e.carrier.invFun
+    invFun := e.carrier.toFun
+    left_inv := e.carrier.right_inv
+    right_inv := e.carrier.left_inv
+  }
+  memberIndex := {
+    toFun := e.memberIndex.invFun
+    invFun := e.memberIndex.toFun
+    left_inv := e.memberIndex.right_inv
+    right_inv := e.memberIndex.left_inv
+  }
+  classify_commutes := by
+    intro y
+    apply e.memberIndex.injective
+    rw [e.classify_commutes, e.carrier.right_inv, e.memberIndex.right_inv]
+
+end PartitionIso
+
 theorem partitionIso_preserves_member {P Q : Partition} (r : PartitionIso P Q)
     (i : P.MemberIndex) (x : P.Carrier) :
     P.member i x ↔ Q.member (r.memberIndex.toFun i) (r.carrier.toFun x) := by
