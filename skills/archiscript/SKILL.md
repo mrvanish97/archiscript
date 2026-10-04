@@ -393,7 +393,7 @@ are intentionally forgotten.
 
 ## Compose independent factors with tensor
 
-Use `Partition.tensor P Q` only with its actual 0.3.1 meaning: independent
+Use `Partition.tensor P Q` only with its established meaning: independent
 aggregation. The result always has carrier `P.Carrier × Q.Carrier` and the full
 member product. Never prune a pair because it looks semantically inconvenient,
 never collapse `P.tensor P` to one carrier value, and never reinterpret tensor
