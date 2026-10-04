@@ -59,6 +59,10 @@ structure Entry (source : Partition.{u, v}) where
 /--
 A finite nonempty family of expressions with one common source.
 
+`List` is finite storage for the 0.5.0 API; its order has no architectural
+semantics. The release deliberately does not settle whether a later presentation
+model should use set-like or explicitly indexed family identity.
+
 The declaration that names a family remains presentation identity; no name field
 is added to the mathematical VDP or Operation structures.
 -/
