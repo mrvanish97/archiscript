@@ -557,16 +557,15 @@ is canonically isomorphic to
 This is structural factoring only. It does not claim one database read,
 transaction, cache entry, or runtime object for ReservationState.
 -/
-def userPaymentInputPartition : Partition :=
-  userContextPartition.coproduct paymentContextPartition
-
 /--
-The factored source is intentionally left as a structural expression rather
-than introduced as another named VDP declaration. The original nominal source
-remains present; this witness only supplies an isomorphic presentation.
+Both sides are kept as structural expressions rather than introduced as new
+named VDP declarations. The existing UserContext and PaymentContext nominal
+VDPs remain present; this witness only supplies an isomorphic presentation of
+their coproduct source.
 -/
 def userPaymentSourceIso :
-    Partition.PartitionIso userPaymentInputPartition
+    Partition.PartitionIso
+      (userContextPartition.coproduct paymentContextPartition)
       (((userTriggerPartition.tensor inventoryObservationPartition).coproduct
           paymentTriggerPartition).tensor reservationStatePartition) :=
   Partition.tensorCoproductRightDistributivity
@@ -575,7 +574,8 @@ def userPaymentSourceIso :
     reservationStatePartition
 
 def userPaymentPlanExpression :
-    Expression userPaymentInputPartition reservationMutationPartition :=
+    Expression (userContextPartition.coproduct paymentContextPartition)
+      reservationMutationPartition :=
   .copair
     planUserMutationExpression
     planPaymentMutationExpression
