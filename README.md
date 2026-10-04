@@ -346,23 +346,23 @@ flowchart TB
   UT --- UXT
   IO --- UXT
   RS --- UXT
-  UXT --- UC
+  UXT --> UC
 
   PT --- PXT
   RS --- PXT
-  PXT --- PC
+  PXT --> PC
 
   ET --- EXT
   RS --- EXT
-  EXT --- EC
+  EXT --> EC
 
   UC -->|"prepareUserContext"| UDC
   UDC -->|"decideUserMutation"| RM
 
-  UC -.->|"coproduct injection"| COP
-  PC -.->|"coproduct injection"| COP
-  EC -.->|"coproduct injection"| COP
-  COP --- CI
+  UC --- COP
+  PC --- COP
+  EC --- COP
+  COP --> CI
   CI -->|"planControllerMutation = copair(...)"| RM
 
   PC -->|"planPaymentMutation"| RM
@@ -385,6 +385,11 @@ confused:
 
 - the `⊗` nodes are **VDP construction** for independent coordinates;
 - the `⊕` node is **lossless design-time alternative aggregation**;
+- for both constructors, input lines have no arrowheads and the constructor's
+  output has one arrowhead toward the constructed VDP. That arrowhead indicates
+  construction direction, not an `Operation`;
+- coproduct injections are not shown in this structural view. If shown, they
+  would be actual directed Operations from each summand to the coproduct;
 - solid labeled arrows are ordinary partial `Operation` mappings or
   compositions of them;
 - `q` is an ordinary total operation induced by a proved coarsening;
