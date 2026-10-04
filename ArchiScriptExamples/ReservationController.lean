@@ -556,8 +556,7 @@ is canonically isomorphic to
 
 This is structural factoring only. It does not claim one database read,
 transaction, cache entry, or runtime object for ReservationState.
--/
-/--
+
 Both sides are kept as structural expressions rather than introduced as new
 named VDP declarations. The existing UserContext and PaymentContext nominal
 VDPs remain present; this witness only supplies an isomorphic presentation of
