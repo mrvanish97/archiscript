@@ -89,6 +89,21 @@ def fromTimer : Operation timerTriggerPartition reconcileModePartition where
   run
     | .due => some .normal
 
+/--
+The controller has exactly two design-time entry channels. Coproduct groups
+those channels losslessly; it does not classify runtime-discovered trigger
+variants.
+-/
+def triggerPartition : Partition :=
+  manualTriggerPartition.coproduct timerTriggerPartition
+
+def triggerSemantic : SemanticPartition :=
+  manualTriggerSemantic.coproduct timerTriggerSemantic
+
+/-- Canonical fan-in through the coproduct universal property. -/
+def fromTrigger : Operation triggerPartition reconcileModePartition :=
+  Operation.copair fromManual fromTimer
+
 inductive ReconcileNext where
   | stable
   | retry
@@ -176,6 +191,9 @@ def architecture : Architecture where
 #guard fromManual .reconcile == some .normal
 #guard fromManual .force == some .forced
 #guard fromTimer .due == some .normal
+#guard fromTrigger (.inl .reconcile) == some .normal
+#guard fromTrigger (.inl .force) == some .forced
+#guard fromTrigger (.inr .due) == some .normal
 #guard evaluateReconcile .normal == some .retry
 #guard retry .retry == some .normal
 #guard retry .stable == none

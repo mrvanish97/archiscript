@@ -49,23 +49,39 @@ nor a diagram proves that an external predicate is enforced at runtime.
 
 At Level 1, a VDP-to-VDP arrow summarizes one canonical operation on member
 sets. At Level 2, an arrow connects one source member to its mapped target.
-Neither arrow is a runtime call. If code or call
-information is necessary, use a separate **Implementation binding** section.
+Neither arrow is a runtime call. If code or call information is necessary, use
+a separate **Implementation binding** section.
+
+Several outgoing arrows from one VDP form fan-out and carry no ordering relation
+between those operations. They may be implemented sequentially or in parallel;
+the diagram proves neither. By contrast, a modeled sequential chain must pass
+through an intermediate VDP, such as `A -> B -> C`, making the target of the
+first operation the source of the next.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
 unrelated runtime effects.` Connect `∅` only from a member whose mapping is
 being shown; never draw a VDP-container-to-`∅` edge. Do not infer a side-effect
 guarantee from `none`.
 
-For a tensor view, show the elementary factor VDPs first. A product VDP has all
-factor-member tuples; a focused view may hide product tuples only when it states
-the omitted detail and never suggests pruning. If a product VDP has `n` members
-but only `k` are expanded, label the VDP with its total cardinality and account
-for the remaining `n-k` explicitly, for example
-`[display group: other 8 members]`. Such a display group is never a model
-member; list the collapsed members in the caption or nearby text. Label
-factor-to-product links as construction or membership, never as `Operation`
-arrows. `P ⊗ P` still has two slots.
+For a tensor view, show the elementary factor VDPs first. Use unoriented lines
+from the factors into a `⊗` constructor node and a directed edge from that node
+to the constructed product:
+
+```text
+P ---┐
+     ⊗ --▶ P ⊗ Q
+Q ---┘
+```
+
+The arrowhead is a visual reading aid for **object construction**, not a
+morphism. Do not draw arrows `P -> P ⊗ Q` or `Q -> P ⊗ Q`: tensor has no
+canonical injections. A product VDP has all factor-member tuples; a focused view
+may hide product tuples only when it states the omitted detail and never suggests
+pruning. If a product VDP has `n` members but only `k` are expanded, label the
+VDP with its total cardinality and account for the remaining `n-k` explicitly,
+for example `[display group: other 8 members]`. Such a display group is never a
+model member; list the collapsed members in the caption or nearby text.
+`P ⊗ P` still has two slots.
 
 For a tensor **operation**, prefer the factored presentation. In a VDP view,
 show the elementary factor operations independently and state that they induce
@@ -75,6 +91,45 @@ inside VDP-like subgraphs. Do not expand the induced Cartesian family of member
 arrows unless that exact branch-level mapping is the review question. The
 compact factored view carries the same componentwise rule and scales much
 better. It does not claim runtime parallel execution.
+
+For a **coproduct construction view**, use the same structural grammar:
+
+```text
+P ---┐
+     ⊕ --▶ P ⊕ Q
+Q ---┘
+```
+
+The incoming summand lines are structural and have no arrowheads. The outgoing
+arrowhead marks the direction in which the object is constructed; it is not an
+`Operation`.
+
+Do not call those structural lines coproduct injections. When the categorical
+injections themselves are relevant, draw the actual Operations separately:
+
+```text
+P ──ι₁──▶ P ⊕ Q
+Q ──ι₂──▶ P ⊕ Q
+```
+
+Coproduct is appropriate only when those alternatives are closed by architecture
+at design time; do not use the diagram to imply that runtime-discovered cases
+form an exhaustive external boundary.
+
+For a **resolution view**, show the fine VDP and coarse VDP as distinct VDPs on
+the same carrier, with the coarsening map `q` labeled explicitly. If a consumer
+is drawn from the coarse VDP, the model must contain a factorization proof
+`f = g ∘ q`. If factorization fails, do not draw `g` as though it existed;
+show the fine consumer and annotate the concrete fiber conflict instead. This
+distinguishes checked semantic zoom from a display-only grouping.
+
+For a comprehensive stress-test projection, it is acceptable to exceed the
+ordinary eight-node preference when one diagram is specifically intended to
+show how the calculus composes. Keep mechanically induced product members
+collapsed, but include the distinct algebraic structures that matter:
+sequential composition, tensor, coproduct, partiality, coarsening, and both
+successful and rejected factorization when the model supplies them. The
+repository's canonical example is `ArchiScriptExamples/ReservationController.lean`.
 
 Normalize factor-only review questions across associator, unitors, and
 symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use

@@ -209,6 +209,25 @@ def planExpiryMutation :
     | (.fired, .held) => some .expire
     | _ => none
 
+/--
+The controller has exactly three design-time entry channels. Their runtime
+carriers remain complete inside each summand; coproduct only aggregates the
+already-established architectural alternatives.
+-/
+def controllerInputPartition : Partition :=
+  (userContextPartition.coproduct paymentContextPartition).coproduct
+    expiryContextPartition
+
+/--
+One canonical controller operation is obtained by copairing the three existing
+entry-specific planners. No behavior is added or inferred by the coproduct.
+-/
+def planControllerMutation :
+    Operation controllerInputPartition reservationMutationPartition :=
+  Operation.copair
+    (Operation.copair planUserMutation planPaymentMutation)
+    planExpiryMutation
+
 /-- Pure semantic next-state contract. This is not persistence. -/
 def nextReservationState :
     Operation reservationMutationPartition reservationStatePartition where
@@ -262,7 +281,13 @@ def outboxMessagePartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-/-- Publishing is modeled by another ordinary member map. -/
+/--
+Publishing is another ordinary outgoing member map from ReservationMutation.
+Together with persistence, next-state selection, and inventory intent this is
+fan-out: no execution order between the sibling operations is modeled. They may
+be implemented sequentially or in parallel; only an explicit path through an
+intermediate VDP would state sequential composition.
+-/
 def publishMutation :
     Operation reservationMutationPartition outboxMessagePartition where
   run
@@ -293,6 +318,88 @@ def inventoryEffect :
     | .hold => some .reserveUnits
     | .cancel | .expire => some .releaseUnits
     | .markPaid => none
+
+inductive InventoryMutationView where
+  | reserve
+  | noCommand
+  | release
+  deriving DecidableEq, Repr
+
+/--
+A lower-resolution view of the same ReservationMutation carrier. It forgets
+distinctions that are irrelevant to the inventory consumer only.
+-/
+def inventoryMutationViewPartition : Partition where
+  Carrier := ReservationMutation
+  MemberIndex := InventoryMutationView
+  carrierNonempty := ⟨.hold⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := [.reserve, .noCommand, .release]
+  memberIndices_complete := by intro i; cases i <;> simp
+  classify
+    | .hold => .reserve
+    | .markPaid => .noCommand
+    | .cancel | .expire => .release
+  member_inhabited
+    | .reserve => ⟨.hold, rfl⟩
+    | .noCommand => ⟨.markPaid, rfl⟩
+    | .release => ⟨.cancel, rfl⟩
+
+def mutationToInventoryView :
+    reservationMutationPartition.MemberIndex →
+      inventoryMutationViewPartition.MemberIndex
+  | .hold => .reserve
+  | .markPaid => .noCommand
+  | .cancel | .expire => .release
+
+theorem reservationMutation_refines_inventoryView :
+    reservationMutationPartition.RefinesVia
+      inventoryMutationViewPartition mutationToInventoryView := by
+  refine ⟨rfl, ?_⟩
+  intro i mutation hx
+  change reservationMutationPartition.classify mutation = i at hx
+  cases hx
+  cases mutation <;> rfl
+
+def forgetInventoryMutationDetail :
+    Operation reservationMutationPartition inventoryMutationViewPartition :=
+  Partition.coarseningOperation mutationToInventoryView
+
+def inventoryEffectAtCoarseResolution :
+    Operation inventoryMutationViewPartition inventoryCommandPartition where
+  run
+    | .reserve => some .reserveUnits
+    | .noCommand => none
+    | .release => some .releaseUnits
+
+theorem inventoryEffect_factorizes :
+    inventoryEffectAtCoarseResolution.comp forgetInventoryMutationDetail =
+      inventoryEffect := by
+  apply Operation.ext
+  intro mutation
+  cases mutation <;> rfl
+
+theorem inventoryEffect_factorsThrough :
+    Operation.FactorsThrough forgetInventoryMutationDetail inventoryEffect :=
+  ⟨inventoryEffectAtCoarseResolution, inventoryEffect_factorizes⟩
+
+/--
+The same coarsening is not valid for the outbox consumer: cancel and expire are
+merged by the inventory view but publish different messages.
+-/
+theorem publishMutation_does_not_factorThrough_inventoryView :
+    ¬ Operation.FactorsThrough forgetInventoryMutationDetail publishMutation := by
+  intro h
+  have constant := Operation.factorsThrough_constantOnFibers h
+  have bad := constant .cancel .expire (by rfl)
+  change
+    (some OutboxMessage.reservationCancelled : Option OutboxMessage) =
+      some OutboxMessage.reservationExpired at bad
+  have impossible :
+      (some OutboxMessage.reservationCancelled : Option OutboxMessage) ≠
+        some OutboxMessage.reservationExpired := by
+    decide
+  exact impossible bad
 
 /-- Independently sourced paths all produce expected updates of the same state VDP. -/
 def userStateUpdate :
@@ -330,6 +437,12 @@ def expiryWrite :
 #guard planUserMutation ((.reserve, .unavailable), .empty) == none
 #guard planUserMutation ((.cancel, .unavailable), .held) == some .cancel
 
+#guard planControllerMutation (.inl (.inl ((.reserve, .available), .empty))) ==
+  some .hold
+#guard planControllerMutation (.inl (.inr (.authorized, .held))) ==
+  some .markPaid
+#guard planControllerMutation (.inr (.fired, .held)) == some .expire
+
 -- Concrete concurrency-review witness: both paths can observe Held and disagree.
 #guard planPaymentMutation (.authorized, .held) == some .markPaid
 #guard planExpiryMutation (.fired, .held) == some .expire
@@ -343,5 +456,12 @@ def expiryWrite :
 #guard publishMutation .markPaid == some .reservationPaid
 #guard inventoryEffect .markPaid == none
 #guard inventoryEffect .expire == some .releaseUnits
+
+#guard forgetInventoryMutationDetail .cancel == some .release
+#guard forgetInventoryMutationDetail .expire == some .release
+#guard (Operation.firstFiberConflict
+  forgetInventoryMutationDetail inventoryEffect).isNone
+#guard (Operation.firstFiberConflict
+  forgetInventoryMutationDetail publishMutation).isSome
 
 end ArchiScriptExamples.ReservationController

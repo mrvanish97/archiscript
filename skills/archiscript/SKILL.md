@@ -413,6 +413,13 @@ has both a persistence contract and an outbox contract, model two arrows from
 the same source VDP. `persist.tensor publish` would require two independent
 mutation slots and therefore says something different.
 
+Fan-out does not encode an execution order. Several arrows from one source VDP
+are therefore potentially parallel at runtime, but ArchiScript does not assert
+that they actually run concurrently. Sequential behavior must be represented by
+a path through an intermediate VDP, for example `A -> B -> C`, so the output
+classification of the first operation is the source classification of the
+second.
+
 Treat rebracketing and factor order as representation choices governed by the
 canonical associator and symmetry. A finding that concerns only the set of
 tensor factors should not appear or disappear merely because the author wrote
@@ -637,6 +644,26 @@ diagram level, focus, and omissions.
 Use one visual grammar consistently:
 
 - define elementary VDPs before showing products built from them;
+- draw object construction with unoriented factor/summand lines into the
+  constructor node and one directed construction edge from the constructor to
+  the constructed VDP:
+
+  ```text
+  P ---┐
+       ⊗ --▶ P ⊗ Q
+  Q ---┘
+
+  P ---┐
+       ⊕ --▶ P ⊕ Q
+  Q ---┘
+  ```
+
+  The arrowhead after `⊗` or `⊕` shows the reading direction of the
+  construction, not an `Operation`. Do not add arrowheads from the factors
+  into `⊗`: tensor has no canonical injections. Do not label structural
+  coproduct construction lines as coproduct injections; canonical injections
+  are actual Operations and should be drawn separately only when they are the
+  review subject;
 - a VDP is a labeled container and its actual members are nodes inside it;
 - reserve VDP containers for actual VDPs only; do not use the same container
   grammar for "factor groups", stages, or collections of operations;
@@ -661,12 +688,41 @@ Use one visual grammar consistently:
   nodes and label it as an operation-algebra view so those nodes cannot be
   mistaken for VDPs or members;
 - ordinary fan-out from one VDP is several arrows with the same source, not
-  `Operation.tensor`.
+  `Operation.tensor`. Such arrows have no modeled order and may correspond to
+  potentially parallel runtime work; do not claim actual parallel execution
+  without runtime evidence;
+- sequential operations must form a path through an intermediate VDP. Do not
+  describe two sibling outgoing arrows as sequential merely because an
+  implementation happens to call them in some order;
+- show coproduct as structural aggregation of already-established design-time
+  alternative VDPs. Keep the summands visible or explicitly named; a collapsed
+  coproduct node must not look like evidence that runtime cases were exhaustively
+  discovered;
+- show coarsening as a resolution-change arrow between VDPs on the same carrier,
+  distinct from tensor/coproduct construction;
+- collapse a fine VDP to a coarse VDP for a consumer only when factorization is
+  proved. When factorization fails, show the conflicting fine members or state
+  the conflict directly instead of drawing an invalid coarse consumer.
 
 Keep a diagram to about eight major nodes when possible and split broad reviews
 into complementary views rather than exploding mechanically induced detail.
 When the question does not imply a level, start with Level 1 and one focused
 Level 2 branch map.
+
+For a repository-level or release-level **stress example**, do the opposite of
+feature-island documentation: exercise the current calculus compositionally in
+one realistic model. Prefer an existing model that already has meaningful
+independent factors, alternative entry channels, partial operations, and
+multiple consumers. Add new algebraic structure only where its mathematical
+meaning is genuinely present.
+
+The canonical repository stress test is
+`ArchiScriptExamples/ReservationController.lean`. Its review projection should
+make the interactions between sequential composition, tensor, design-time
+coproduct, refinement/coarsening, successful factorization, failed
+factorization, partiality, and independent-source review questions visible in
+one coherent model. New calculus features should be integrated into this stress
+test when they naturally apply, not demonstrated only in isolated toy files.
 
 Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.
