@@ -615,85 +615,14 @@ def controllerSourceFactoringIso :
     Partition.PartitionIso controllerInputPartition
       ((((userTriggerPartition.tensor inventoryObservationPartition).coproduct
           paymentTriggerPartition).coproduct expiryTriggerPartition).tensor
-            reservationStatePartition) where
-  carrier := {
-    toFun := fun
-      | .inl (.inl (ui, state)) => (.inl (.inl ui), state)
-      | .inl (.inr (payment, state)) => (.inl (.inr payment), state)
-      | .inr (expiry, state) => (.inr expiry, state)
-    invFun := fun
-      | (.inl (.inl ui), state) => .inl (.inl (ui, state))
-      | (.inl (.inr payment), state) => .inl (.inr (payment, state))
-      | (.inr expiry, state) => .inr (expiry, state)
-    left_inv := by
-      intro x
-      cases x with
-      | inl channel =>
-          cases channel with
-          | inl userState =>
-              rcases userState with ⟨ui, state⟩
-              rfl
-          | inr paymentState =>
-              rcases paymentState with ⟨payment, state⟩
-              rfl
-      | inr expiryState =>
-          rcases expiryState with ⟨expiry, state⟩
-          rfl
-    right_inv := by
-      intro x
-      rcases x with ⟨channel, state⟩
-      cases channel with
-      | inl userOrPayment =>
-          cases userOrPayment <;> rfl
-      | inr expiry =>
-          rfl
-  }
-  memberIndex := {
-    toFun := fun
-      | .inl (.inl (ui, state)) => (.inl (.inl ui), state)
-      | .inl (.inr (payment, state)) => (.inl (.inr payment), state)
-      | .inr (expiry, state) => (.inr expiry, state)
-    invFun := fun
-      | (.inl (.inl ui), state) => .inl (.inl (ui, state))
-      | (.inl (.inr payment), state) => .inl (.inr (payment, state))
-      | (.inr expiry, state) => .inr (expiry, state)
-    left_inv := by
-      intro x
-      cases x with
-      | inl channel =>
-          cases channel with
-          | inl userState =>
-              rcases userState with ⟨ui, state⟩
-              rfl
-          | inr paymentState =>
-              rcases paymentState with ⟨payment, state⟩
-              rfl
-      | inr expiryState =>
-          rcases expiryState with ⟨expiry, state⟩
-          rfl
-    right_inv := by
-      intro x
-      rcases x with ⟨channel, state⟩
-      cases channel with
-      | inl userOrPayment =>
-          cases userOrPayment <;> rfl
-      | inr expiry =>
-          rfl
-  }
-  classify_commutes := by
-    intro x
-    cases x with
-    | inl channel =>
-        cases channel with
-        | inl userState =>
-            rcases userState with ⟨ui, state⟩
-            rfl
-        | inr paymentState =>
-            rcases paymentState with ⟨payment, state⟩
-            rfl
-    | inr expiryState =>
-        rcases expiryState with ⟨expiry, state⟩
-        rfl
+            reservationStatePartition) :=
+  (Partition.PartitionIso.coproduct userPaymentSourceIso
+      (Partition.PartitionIso.refl expiryContextPartition)).trans
+    (Partition.tensorCoproductRightDistributivity
+      ((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+        paymentTriggerPartition)
+      expiryTriggerPartition
+      reservationStatePartition)
 
 def controllerFactoredPlanExpression :
     Expression
