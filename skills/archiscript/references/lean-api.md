@@ -183,7 +183,7 @@ of `P` is wholly contained in the coarse member selected by the total map
 #check Operation.FactorsThrough
 #check Operation.firstFiberConflict
 #check Operation.factorizedThrough
-#check Operation.existsUnique_factorization
+#check Operation.factorization_exists_and_unique
 #check Operation.analyzeFactorization
 ```
 
