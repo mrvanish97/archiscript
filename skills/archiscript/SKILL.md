@@ -522,6 +522,12 @@ theory. Use the smallest explicit certificate that proves the rewrite:
 - when structural endpoint representatives change, use explicit
   `PartitionIso` witnesses and a commuting transport square.
 
+Local really means local: once a subexpression rewrite is certified, lift it
+through surrounding composition, tensor, or copairing with
+`Expression.Rewrite.comp`, `.tensor`, or `.copair`. Do not reprove an
+end-to-end equality when ordinary congruence already transports the smaller
+certificate.
+
 `Expression.Rewrite` records the first form.
 `Expression.Transport` records the second. Whole-architecture equivalence is
 deferred until transformations actually need to merge/split families, remove
