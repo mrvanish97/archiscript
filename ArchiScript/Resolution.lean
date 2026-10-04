@@ -69,9 +69,9 @@ theorem refines_trans {P Q R : Partition} :
   rintro ⟨q, eqPQ, hpq⟩ ⟨r, eqQR, hqr⟩
   refine ⟨fun i => r (q i), eqPQ.trans eqQR, ?_⟩
   intro i x hx
-  have hq := hpq i x hx
-  have hr := hqr (q i) (eqPQ ▸ x) hq
-  simpa using hr
+  cases eqPQ
+  cases eqQR
+  exact hqr (q i) x (hpq i x hx)
 
 end Partition
 
@@ -97,7 +97,8 @@ theorem coarseningOperation_surjective {P Q : Partition}
     IsSurjective (Partition.coarseningOperation q) := by
   intro j
   obtain ⟨i, hi⟩ := Partition.coarseningMap_surjective hq j
-  exact ⟨i, congrArg some hi⟩
+  refine ⟨i, ?_⟩
+  simpa [Partition.coarseningOperation] using congrArg some hi
 
 /-- A consumer ignores every distinction collapsed by q. -/
 def ConstantOnFibers {P Q Y : Partition}
@@ -113,10 +114,13 @@ theorem factorsThrough_constantOnFibers {P Q Y : Partition}
     {q : Operation P Q} {f : Operation P Y}
     (h : FactorsThrough q f) :
     ConstantOnFibers q f := by
-  rcases h with ⟨g, rfl⟩
+  rcases h with ⟨g, hgf⟩
   intro a b hab
-  simp only [comp_apply]
-  rw [hab]
+  have ha := congrArg (fun op : Operation P Y => op a) hgf
+  have hb := congrArg (fun op : Operation P Y => op b) hgf
+  simp only [comp_apply] at ha hb
+  rw [hab] at ha
+  exact ha.symm.trans hb
 
 /--
 A proof-carrying counterexample showing that a consumer distinguishes two source
@@ -142,6 +146,30 @@ private def findConflictWith {P Q Y : Partition}
       else
         findConflictWith q f a rest
 
+private theorem findConflictWith_none {P Q Y : Partition}
+    (q : Operation P Q) (f : Operation P Y) (a : P.MemberIndex)
+    {xs : List P.MemberIndex}
+    (h : findConflictWith q f a xs = none) :
+    ∀ b ∈ xs, q a = q b → f a = f b := by
+  induction xs with
+  | nil =>
+      intro b hb
+      simp at hb
+  | cons head tail ih =>
+      intro b hb hq
+      simp only [List.mem_cons] at hb
+      by_cases hsame : q a = q head
+      · by_cases hresult : f a = f head
+        · simp [findConflictWith, hsame, hresult] at h
+          rcases hb with rfl | hb
+          · exact hresult
+          · exact ih h b hb hq
+        · simp [findConflictWith, hsame, hresult] at h
+      · simp [findConflictWith, hsame] at h
+        rcases hb with rfl | hb
+        · exact False.elim (hsame hq)
+        · exact ih h b hb hq
+
 private def scanConflicts {P Q Y : Partition}
     (q : Operation P Q) (f : Operation P Y) :
     List P.MemberIndex → Option (FiberConflict q f)
@@ -151,11 +179,42 @@ private def scanConflicts {P Q Y : Partition}
       | some conflict => some conflict
       | none => scanConflicts q f rest
 
+private theorem scanConflicts_none {P Q Y : Partition}
+    (q : Operation P Q) (f : Operation P Y)
+    {xs : List P.MemberIndex}
+    (h : scanConflicts q f xs = none) :
+    ∀ a ∈ xs, ∀ b ∈ P.memberIndices, q a = q b → f a = f b := by
+  induction xs with
+  | nil =>
+      intro a ha
+      simp at ha
+  | cons head tail ih =>
+      simp only [scanConflicts] at h
+      cases hfind : findConflictWith q f head P.memberIndices with
+      | some conflict =>
+          simp [hfind] at h
+      | none =>
+          simp [hfind] at h
+          intro a ha b hb hq
+          simp only [List.mem_cons] at ha
+          rcases ha with rfl | ha
+          · exact findConflictWith_none q f head hfind b hb hq
+          · exact ih h a ha b hb hq
+
 /-- Executable finite search for a concrete obstruction to factorization. -/
 def firstFiberConflict {P Q Y : Partition}
     (q : Operation P Q) (f : Operation P Y) :
     Option (FiberConflict q f) :=
   scanConflicts q f P.memberIndices
+
+theorem firstFiberConflict_none_constantOnFibers {P Q Y : Partition}
+    {q : Operation P Q} {f : Operation P Y}
+    (h : firstFiberConflict q f = none) :
+    ConstantOnFibers q f := by
+  intro a b hab
+  exact scanConflicts_none q f h
+    a (P.memberIndices_complete a)
+    b (P.memberIndices_complete b) hab
 
 /--
 Choose the unique candidate coarse consumer using surjectivity of q. The
@@ -218,6 +277,23 @@ theorem existsUnique_factorization {P Q Y : Partition}
   intro g hg
   exact factorization_unique surjective hg
     (factorizedThrough_spec total surjective constant)
+
+inductive FactorizationAnalysis {P Q Y : Partition}
+    (q : Operation P Q) (f : Operation P Y) where
+  | factors (g : Operation Q Y) (commutes : g.comp q = f)
+  | conflict (witness : FiberConflict q f)
+
+noncomputable def analyzeFactorization {P Q Y : Partition}
+    (q : Operation P Q) (f : Operation P Y)
+    (total : IsTotal q) (surjective : IsSurjective q) :
+    FactorizationAnalysis q f :=
+  match h : firstFiberConflict q f with
+  | some conflict => .conflict conflict
+  | none =>
+      let constant := firstFiberConflict_none_constantOnFibers h
+      .factors
+        (factorizedThrough q f surjective)
+        (factorizedThrough_spec total surjective constant)
 
 end Operation
 
