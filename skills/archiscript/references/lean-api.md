@@ -263,8 +263,10 @@ def twoAlternativeAccept :
 
 `Expression.Family` stores a finite nonempty list of `Expression.Entry` values.
 All entries share `family.source`; each entry carries its own target and typed
-expression. The declaration naming the family is presentation identity. No name
-field is added to `Partition` or `Operation`.
+expression. The list is storage, not an ordering relation: 0.5.0 assigns no
+execution order, priority, or architectural identity to an entry's position.
+The declaration naming the family is presentation identity. No name field is
+added to `Partition` or `Operation`.
 
 For unchanged endpoints, use `Expression.Rewrite before after`. Its
 `sound` field proves equality of the denoted Operations. The library supplies
