@@ -4,6 +4,7 @@ import ArchiScriptExamples.PaymentWebhook
 import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptExamples.Asphalt
 import ArchiScriptExamples.Monoidal
+import ArchiScriptExamples.Coproduct
 import ArchiScriptExamples.Checkout
 import ArchiScriptExamples.ConcurrencyQuestions
 import ArchiScriptExamples.ReservationController
