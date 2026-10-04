@@ -4,71 +4,87 @@ namespace ArchiScriptExamples.Coproduct
 open ArchiScript
 
 /--
-These are architecture-defined command universes. The coproduct composes the
-already justified alternatives; it does not claim that an external boundary can
-produce only these commands.
+Coproduct is used here because the architecture has two design-time entry
+channels with different carriers: browser calls and CLI invocations. The
+software topology declares that the dispatcher has exactly these two input
+channels. The coproduct does not classify runtime-discovered alternatives
+inside either channel.
 -/
-inductive UserCommand where
-  | create
-  | update
-  | delete
+structure BrowserCall where
+  path : String
   deriving DecidableEq
 
-inductive SystemCommand where
-  | reconcile
-  | expire
+structure CliInvocation where
+  args : List String
   deriving DecidableEq
 
-inductive CommandDisposition where
+inductive BrowserMember where
+  | root
+  | otherPath
+  deriving DecidableEq
+
+inductive CliMember where
+  | empty
+  | nonempty
+  deriving DecidableEq
+
+inductive EntryDisposition where
   | accept
-  | defer
+  | reject
   deriving DecidableEq
 
-def userCommandPartition : Partition where
-  Carrier := UserCommand
-  MemberIndex := UserCommand
-  carrierNonempty := ⟨.create⟩
+def browserPartition : Partition where
+  Carrier := BrowserCall
+  MemberIndex := BrowserMember
+  carrierNonempty := ⟨⟨"/"⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.create, .update, .delete]
+  memberIndices := [.root, .otherPath]
   memberIndices_complete := by intro i; cases i <;> simp
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+  classify call := if call.path = "/" then .root else .otherPath
+  member_inhabited
+    | .root => ⟨⟨"/"⟩, by simp⟩
+    | .otherPath => ⟨⟨"/health"⟩, by simp⟩
 
-def systemCommandPartition : Partition where
-  Carrier := SystemCommand
-  MemberIndex := SystemCommand
-  carrierNonempty := ⟨.reconcile⟩
+def cliPartition : Partition where
+  Carrier := CliInvocation
+  MemberIndex := CliMember
+  carrierNonempty := ⟨⟨[]⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reconcile, .expire]
+  memberIndices := [.empty, .nonempty]
   memberIndices_complete := by intro i; cases i <;> simp
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+  classify invocation := if invocation.args.isEmpty then .empty else .nonempty
+  member_inhabited
+    | .empty => ⟨⟨[]⟩, by simp⟩
+    | .nonempty => ⟨⟨["status"]⟩, by simp⟩
 
 def dispositionPartition : Partition where
-  Carrier := CommandDisposition
-  MemberIndex := CommandDisposition
+  Carrier := EntryDisposition
+  MemberIndex := EntryDisposition
   carrierNonempty := ⟨.accept⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.accept, .defer]
+  memberIndices := [.accept, .reject]
   memberIndices_complete := by intro i; cases i <;> simp
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def commandPartition : Partition :=
-  userCommandPartition.coprod systemCommandPartition
+/--
+The dispatcher input is a lossless structural OR of two already established
+architectural entry channels.
+-/
+def entryPartition : Partition :=
+  browserPartition.coproduct cliPartition
 
-def handleUser : Operation userCommandPartition dispositionPartition where
+def handleBrowser : Operation browserPartition dispositionPartition where
   run
-    | .create => some .accept
-    | .update => some .accept
-    | .delete => some .defer
+    | .root => some .accept
+    | .otherPath => some .reject
 
-def handleSystem : Operation systemCommandPartition dispositionPartition where
+def handleCli : Operation cliPartition dispositionPartition where
   run
-    | .reconcile => some .accept
-    | .expire => some .defer
+    | .empty => some .reject
+    | .nonempty => some .accept
 
-def handleCommand : Operation commandPartition dispositionPartition :=
-  Operation.copair handleUser handleSystem
+def handleEntry : Operation entryPartition dispositionPartition :=
+  Operation.copair handleBrowser handleCli
 
 end ArchiScriptExamples.Coproduct
