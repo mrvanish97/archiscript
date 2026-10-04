@@ -12,46 +12,51 @@ This construction is exhaustive only relative to the sum carrier. It is not
 evidence that the two summands exhaust an independently supplied external
 boundary.
 -/
-def coprod (P Q : Partition) : Partition where
+def coproduct (P Q : Partition) : Partition where
   Carrier := Sum P.Carrier Q.Carrier
   MemberIndex := Sum P.MemberIndex Q.MemberIndex
   carrierNonempty := ⟨Sum.inl (Classical.choice P.carrierNonempty)⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices :=
-    P.memberIndices.map Sum.inl ++ Q.memberIndices.map Sum.inr
+  memberIndices := P.memberIndices.map Sum.inl ++ Q.memberIndices.map Sum.inr
   memberIndices_complete := by
     intro i
     cases i with
-    | inl i =>
-      simp only [List.mem_append, List.mem_map]
-      exact Or.inl ⟨i, P.memberIndices_complete i, rfl⟩
-    | inr j =>
-      simp only [List.mem_append, List.mem_map]
-      exact Or.inr ⟨j, Q.memberIndices_complete j, rfl⟩
+    | inl i => simp [P.memberIndices_complete i]
+    | inr j => simp [Q.memberIndices_complete j]
   classify
     | .inl x => .inl (P.classify x)
     | .inr y => .inr (Q.classify y)
   member_inhabited
     | .inl i =>
-      let ⟨x, hx⟩ := P.member_inhabited i
-      ⟨.inl x, congrArg Sum.inl hx⟩
+      obtain ⟨x, hx⟩ := P.member_inhabited i
+      exact ⟨.inl x, congrArg Sum.inl hx⟩
     | .inr j =>
-      let ⟨y, hy⟩ := Q.member_inhabited j
-      ⟨.inr y, congrArg Sum.inr hy⟩
+      obtain ⟨y, hy⟩ := Q.member_inhabited j
+      exact ⟨.inr y, congrArg Sum.inr hy⟩
 
-@[simp] theorem coprod_classify_inl (P Q : Partition) (x : P.Carrier) :
-    (P.coprod Q).classify (.inl x) = .inl (P.classify x) := rfl
+@[simp] theorem coproduct_classify_inl (P Q : Partition) (x : P.Carrier) :
+    (P.coproduct Q).classify (.inl x) = .inl (P.classify x) := rfl
 
-@[simp] theorem coprod_classify_inr (P Q : Partition) (y : Q.Carrier) :
-    (P.coprod Q).classify (.inr y) = .inr (Q.classify y) := rfl
+@[simp] theorem coproduct_classify_inr (P Q : Partition) (y : Q.Carrier) :
+    (P.coproduct Q).classify (.inr y) = .inr (Q.classify y) := rfl
+
+@[simp] theorem coproduct_member_inl_iff (P Q : Partition)
+    (i : P.MemberIndex) (x : P.Carrier) :
+    (P.coproduct Q).member (.inl i) (.inl x) ↔ P.member i x := by
+  simp [member, coproduct]
+
+@[simp] theorem coproduct_member_inr_iff (P Q : Partition)
+    (j : Q.MemberIndex) (y : Q.Carrier) :
+    (P.coproduct Q).member (.inr j) (.inr y) ↔ Q.member j y := by
+  simp [member, coproduct]
 
 end Partition
 
 namespace SemanticPartition
 
 /-- Semantic meanings lift losslessly through a tagged coproduct. -/
-def coprod (P Q : SemanticPartition) : SemanticPartition where
-  partition := P.partition.coprod Q.partition
+def coproduct (P Q : SemanticPartition) : SemanticPartition where
+  partition := P.partition.coproduct Q.partition
   members
     | .inl i, .inl x => P.members i x
     | .inl _, .inr _ => False
@@ -63,26 +68,26 @@ def coprod (P Q : SemanticPartition) : SemanticPartition where
     | inl i =>
       cases xy with
       | inl x =>
-        exact P.hasMembers i x
+        simpa [Partition.member, Partition.coproduct] using P.hasMembers i x
       | inr y =>
-        simp [Partition.member, Partition.coprod]
+        simp [Partition.member, Partition.coproduct]
     | inr j =>
       cases xy with
       | inl x =>
-        simp [Partition.member, Partition.coprod]
+        simp [Partition.member, Partition.coproduct]
       | inr y =>
-        exact Q.hasMembers j y
+        simpa [Partition.member, Partition.coproduct] using Q.hasMembers j y
 
 end SemanticPartition
 
 namespace Operation
 
 /-- Canonical left coproduct injection. -/
-def coprodInl (P Q : Partition) : Operation P (P.coprod Q) :=
+def coproductInl (P Q : Partition) : Operation P (P.coproduct Q) :=
   ⟨fun i => some (.inl i)⟩
 
 /-- Canonical right coproduct injection. -/
-def coprodInr (P Q : Partition) : Operation Q (P.coprod Q) :=
+def coproductInr (P Q : Partition) : Operation Q (P.coproduct Q) :=
   ⟨fun j => some (.inr j)⟩
 
 /--
@@ -90,63 +95,63 @@ Copairing of two partial member maps. This is the mediating morphism in the
 coproduct universal property.
 -/
 def copair {P Q R : Partition} (f : Operation P R) (g : Operation Q R) :
-    Operation (P.coprod Q) R :=
+    Operation (P.coproduct Q) R :=
   ⟨fun
     | .inl i => f i
     | .inr j => g j⟩
 
 @[simp] theorem copair_inl {P Q R : Partition} (f : Operation P R) (g : Operation Q R) :
-    (copair f g).comp (coprodInl P Q) = f := by
+    (copair f g).comp (coproductInl P Q) = f := by
   ext i
   rfl
 
 @[simp] theorem copair_inr {P Q R : Partition} (f : Operation P R) (g : Operation Q R) :
-    (copair f g).comp (coprodInr P Q) = g := by
+    (copair f g).comp (coproductInr P Q) = g := by
   ext j
   rfl
 
 /-- The coproduct mediating operation is unique. -/
 theorem copair_unique {P Q R : Partition}
     (f : Operation P R) (g : Operation Q R)
-    (h : Operation (P.coprod Q) R)
-    (left : h.comp (coprodInl P Q) = f)
-    (right : h.comp (coprodInr P Q) = g) :
+    (h : Operation (P.coproduct Q) R)
+    (left : h.comp (coproductInl P Q) = f)
+    (right : h.comp (coproductInr P Q) = g) :
     h = copair f g := by
   ext ij
   cases ij with
   | inl i =>
     have hi := congrArg (fun op : Operation P R => op i) left
-    simpa [comp, coprodInl, copair] using hi
+    simpa [comp, coproductInl, copair] using hi
   | inr j =>
     have hj := congrArg (fun op : Operation Q R => op j) right
-    simpa [comp, coprodInr, copair] using hj
+    simpa [comp, coproductInr, copair] using hj
 
-/-- Map two independent partial operations over the tagged alternatives. -/
-def coprodMap
+/-- Map two partial operations over tagged alternatives. -/
+def coproductMap
     {P P' Q Q' : Partition}
     (f : Operation P P') (g : Operation Q Q') :
-    Operation (P.coprod Q) (P'.coprod Q') :=
+    Operation (P.coproduct Q) (P'.coproduct Q') :=
   ⟨fun
     | .inl i => (f i).map Sum.inl
     | .inr j => (g j).map Sum.inr⟩
 
-@[simp] theorem coprodMap_id (P Q : Partition) :
-    coprodMap (id P) (id Q) = id (P.coprod Q) := by
+@[simp] theorem coproductMap_id (P Q : Partition) :
+    coproductMap (id P) (id Q) = id (P.coproduct Q) := by
   ext ij
   cases ij <;> rfl
 
-theorem coprodMap_comp
+theorem coproductMap_comp
     {P P' P'' Q Q' Q'' : Partition}
     (f₁ : Operation P P') (f₂ : Operation P' P'')
     (g₁ : Operation Q Q') (g₂ : Operation Q' Q'') :
-    coprodMap (f₂.comp f₁) (g₂.comp g₁) =
-      (coprodMap f₂ g₂).comp (coprodMap f₁ g₁) := by
+    coproductMap (f₂.comp f₁) (g₂.comp g₁) =
+      (coproductMap f₂ g₂).comp (coproductMap f₁ g₁) := by
   ext ij
   cases ij with
   | inl i =>
-    cases h₁ : f₁ i <;> simp [coprodMap, comp, h₁, Option.bind]
+    cases h₁ : f₁ i <;> simp [coproductMap, comp, h₁, Option.bind]
   | inr j =>
-    cases h₁ : g₁ j <;> simp [coprodMap, comp, h₁, Option.bind]
+    cases h₁ : g₁ j <;> simp [coproductMap, comp, h₁, Option.bind]
 
 end Operation
 
