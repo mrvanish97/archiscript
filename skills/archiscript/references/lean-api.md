@@ -164,6 +164,10 @@ Each summand still needs a complete VDP for its own runtime boundary. Coproduct
 proves exhaustiveness relative to `Sum P.Carrier Q.Carrier`; it never proves
 that this sum is the complete external universe.
 
+The public structure here is binary coproduct. Since `Partition` requires a
+nonempty carrier, this calculus has no empty/initial VDP; do not infer a
+nullary coproduct or claim full finite-coproduct structure including zero.
+
 See `ArchiScriptExamples.Coproduct` for the Browser/CLI example.
 
 ## Refinement, coarsening, and consumer factorization
@@ -233,7 +237,9 @@ operations. `Operation.associator_natural`, `leftUnitor_natural`,
 `rightUnitor_natural`, `symmetry_natural`, `pentagon`, `triangle`, and `hexagon`
 check the concrete symmetric monoidal laws. These maps do not schedule runtime
 work, establish resource independence, or provide a categorical product.
-Architectural joint relevance remains a human review question; normalize
+In particular, there are no canonical tensor projections in the partial-map
+calculus, and the tensor unit is not terminal because partial maps into it need
+not be unique. Architectural joint relevance remains a human review question; normalize
 factor-only findings across rebracketing and symmetry.
 
 ## Expressions, distributivity, and local normalization
