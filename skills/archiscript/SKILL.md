@@ -671,6 +671,9 @@ Use the public vocabulary exactly:
 - `Partition.RefinesVia`, `Partition.Refines`,
   `Partition.coarseningOperation`, and the `Operation` factorization helpers
   for checked semantic resolution changes;
+- `Partition.PartitionIso.refl`, `.symm`, `.trans`, `.tensor`, and
+  `.coproduct` for composing already-proved classified-carrier
+  isomorphisms without rebuilding carrier/member proofs by hand;
 - `Partition.tensorCoproductRightDistributivity`,
   `Partition.tensorCoproductLeftDistributivity`,
   `Operation.distributeRight`, `Operation.distributeLeft`, and their
