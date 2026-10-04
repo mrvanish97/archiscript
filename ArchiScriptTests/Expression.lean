@@ -58,6 +58,36 @@ example :
       (Expression.identity (Partition.unit.tensor Partition.unit)) :=
   Expression.Rewrite.tensor_identity _ _
 
+example :
+    Expression.Rewrite
+      (Expression.comp
+        unitId
+        (Expression.comp (Expression.identity Partition.unit) unitId))
+      (Expression.comp unitId unitId) :=
+  Expression.Rewrite.comp
+    (Expression.Rewrite.refl unitId)
+    (Expression.Rewrite.id_left unitId)
+
+example :
+    Expression.Rewrite
+      (Expression.tensor
+        (Expression.comp (Expression.identity Partition.unit) unitId)
+        unitId)
+      (Expression.tensor unitId unitId) :=
+  Expression.Rewrite.tensor
+    (Expression.Rewrite.id_left unitId)
+    (Expression.Rewrite.refl unitId)
+
+example :
+    Expression.Rewrite
+      (Expression.copair
+        (Expression.comp (Expression.identity Partition.unit) unitId)
+        unitId)
+      (Expression.copair unitId unitId) :=
+  Expression.Rewrite.copair
+    (Expression.Rewrite.id_left unitId)
+    (Expression.Rewrite.refl unitId)
+
 def unitTargetTransport :
     Expression.Transport unitId
       (Expression.comp
