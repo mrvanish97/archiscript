@@ -170,6 +170,60 @@ def decideCheckout :
 `submitOrder`. The undefined members say nothing by themselves about runtime
 database, network, or queue effects.
 
+## Concurrency review shapes
+
+ArchiScript 0.3.0 does not prove races, but its topology can expose places that
+deserve a concurrency review. The checked
+[ConcurrencyQuestions example](ArchiScriptExamples/ConcurrencyQuestions.lean)
+contains both independent fan-in and a retry cycle:
+
+```mermaid
+flowchart LR
+  subgraph M["ManualTrigger"]
+    M0["reconcile"]
+    M1["force"]
+  end
+
+  subgraph T["TimerTrigger"]
+    T0["due"]
+  end
+
+  subgraph R["ReconcileMode"]
+    R0["normal"]
+    R1["forced"]
+  end
+
+  subgraph N["ReconcileNext"]
+    N0["retry"]
+    N1["stable"]
+  end
+
+  M0 -->|"fromManual"| R0
+  M1 -->|"fromManual"| R1
+  T0 -->|"fromTimer"| R0
+
+  R0 -->|"evaluateReconcile"| N0
+  R1 -->|"evaluateReconcile"| N1
+  N0 -->|"retry"| R0
+```
+
+The two incoming arrows to `ReconcileMode` come from **different source VDPs**,
+so they represent independently available architectural triggers. That is a
+useful review boundary if both paths later affect the same mutable resource.
+
+The cycle
+
+```text
+ReconcileMode -> ReconcileNext -> ReconcileMode
+```
+
+is not a concurrency bug by itself; it is a sequential retry loop. The stronger
+question appears when an independently sourced arrow can enter the same loop
+while resource-changing work is in progress. At that point reviewers should ask
+about ordering, atomicity, idempotency, or commutativity. Those runtime claims
+remain `UNKNOWN` until resource/effect semantics or external evidence justify
+them.
+
 ## 0.3.0 monoidal API
 
 For VDPs `P` and `Q`, `Partition.tensor P Q` has carrier
@@ -274,6 +328,7 @@ behavior beyond this calculus.
 - [UserRegistration](ArchiScriptExamples/UserRegistration.lean) — canonical branches and routing
 - [Asphalt](ArchiScriptExamples/Asphalt.lean) — adversarial boundary/assumption stress test
 - [Monoidal](ArchiScriptExamples/Monoidal.lean) — compact tensor/coherence example
+- [ConcurrencyQuestions](ArchiScriptExamples/ConcurrencyQuestions.lean) — independent fan-in and retry-cycle review shapes
 
 ## Build
 

@@ -355,11 +355,15 @@ not evidence of concurrent work.
 
 Distinct operation declarations with independently available sources can raise
 a concurrency question, especially when they later concern one mutable
-resource. A common target, graph fan-in, or cycle alone does not prove a race,
-deadlock, or commutativity result. Record ordering, atomicity, and repeated
-effect safety as `UNKNOWN` or review findings until an explicit resource/effect
-model or external analyzer supports a stronger claim. Tensor expresses
-independent semantic slots and member maps, not scheduling.
+resource. Treat two independent source VDPs converging on one target as a
+candidate review boundary, not as proof of a race. Treat a cycle as an ordinary
+sequential feedback/retry path unless independent source provenance and shared
+mutable effects make interference possible. A common target, graph fan-in, or
+cycle alone does not prove a race, deadlock, or commutativity result. Record
+ordering, atomicity, idempotency, commutativity, and repeated-effect safety as
+`UNKNOWN` or review findings until an explicit resource/effect model or
+external analyzer supports a stronger claim. Tensor expresses independent
+semantic slots and member maps, not scheduling.
 
 ## Use the current Lean API
 

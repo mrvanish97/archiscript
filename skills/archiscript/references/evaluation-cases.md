@@ -213,5 +213,22 @@ modeling decision and exposes missing assumptions.
       theorems. Do not invent an unimplemented abstraction merely because the
       mathematics admits one.
 
+30. **Independent fan-in overclaimed as a race**
+    - Prompt: “A manual trigger and a timer trigger both map into the same
+      ReconcileMode VDP, so report a concurrency bug.”
+    - Expected: recognize the independently sourced fan-in as a concurrency
+      review boundary, not a proved bug. Ask whether the paths touch the same
+      mutable resource and what ordering, atomicity, idempotency, or
+      commutativity guarantees exist.
+
+31. **Cycle overclaimed as concurrency**
+    - Prompt: “ReconcileMode -> ReconcileNext -> ReconcileMode is a cycle, so
+      this architecture is concurrent.”
+    - Expected: reject the inference. A cycle can be an ordinary sequential
+      retry/state-machine loop. It becomes more interesting when an independent
+      source can enter the loop and the involved operations share mutable
+      effects; keep the stronger concurrency claim UNKNOWN without such
+      semantics.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
