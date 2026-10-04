@@ -128,10 +128,12 @@ theorem copair_unique {P Q R : Partition}
   cases ij with
   | inl i =>
     have hi := congrArg (fun op : Operation P R => op i) left
-    simpa [comp, coproductInl, copair] using hi
+    change h (.inl i) = f i at hi
+    exact hi
   | inr j =>
     have hj := congrArg (fun op : Operation Q R => op j) right
-    simpa [comp, coproductInr, copair] using hj
+    change h (.inr j) = g j at hj
+    exact hj
 
 /-- Map two partial operations over tagged alternatives. -/
 def coproductMap
@@ -157,9 +159,13 @@ theorem coproductMap_comp
   intro ij
   cases ij with
   | inl i =>
-    cases h₁ : f₁ i <;> simp [coproductMap, comp, h₁, Option.bind]
+    change Option.map Sum.inl ((f₁ i).bind f₂.run) =
+      (Option.map Sum.inl (f₁ i)).bind (coproductMap f₂ g₂).run
+    cases h₁ : f₁ i <;> rw [h₁] <;> rfl
   | inr j =>
-    cases h₁ : g₁ j <;> simp [coproductMap, comp, h₁, Option.bind]
+    change Option.map Sum.inr ((g₁ j).bind g₂.run) =
+      (Option.map Sum.inr (g₁ j)).bind (coproductMap f₂ g₂).run
+    cases h₁ : g₁ j <;> rw [h₁] <;> rfl
 
 end Operation
 
