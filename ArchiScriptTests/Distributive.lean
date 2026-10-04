@@ -20,6 +20,21 @@ example :
 
 example :
     (Operation.distributeRight Partition.unit Partition.unit Partition.unit).comp
+        (Operation.distributeRightInv Partition.unit Partition.unit Partition.unit) =
+      Operation.id
+        ((Partition.unit.coproduct Partition.unit).tensor Partition.unit) :=
+  Operation.distributeRight_right_inv _ _ _
+
+example :
+    (Operation.distributeLeftInv Partition.unit Partition.unit Partition.unit).comp
+        (Operation.distributeLeft Partition.unit Partition.unit Partition.unit) =
+      Operation.id
+        ((Partition.unit.tensor Partition.unit).coproduct
+          (Partition.unit.tensor Partition.unit)) :=
+  Operation.distributeLeft_left_inv _ _ _
+
+example :
+    (Operation.distributeRight Partition.unit Partition.unit Partition.unit).comp
         (Operation.coproductMap
           ((Operation.id Partition.unit).tensor (Operation.id Partition.unit))
           ((Operation.id Partition.unit).tensor (Operation.id Partition.unit))) =
@@ -28,6 +43,20 @@ example :
             (Operation.id Partition.unit)).comp
         (Operation.distributeRight Partition.unit Partition.unit Partition.unit) :=
   Operation.distributeRight_natural
+    (Operation.id Partition.unit)
+    (Operation.id Partition.unit)
+    (Operation.id Partition.unit)
+
+example :
+    (Operation.distributeLeft Partition.unit Partition.unit Partition.unit).comp
+        (Operation.coproductMap
+          ((Operation.id Partition.unit).tensor (Operation.id Partition.unit))
+          ((Operation.id Partition.unit).tensor (Operation.id Partition.unit))) =
+      ((Operation.id Partition.unit).tensor
+          (Operation.coproductMap
+            (Operation.id Partition.unit) (Operation.id Partition.unit))).comp
+        (Operation.distributeLeft Partition.unit Partition.unit Partition.unit) :=
+  Operation.distributeLeft_natural
     (Operation.id Partition.unit)
     (Operation.id Partition.unit)
     (Operation.id Partition.unit)
