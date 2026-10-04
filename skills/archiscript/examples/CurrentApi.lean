@@ -80,6 +80,10 @@ def accept : Operation requestPartition requestPartition where
 #check Expression.Family
 #check Expression.Rewrite
 #check Expression.Transport
+#check Expression.Transport.source
+#check Expression.Transport.target
+#check Partition.PartitionIso.refl
+#check Partition.PartitionIso.symm
 
 def acceptExpression : Expression requestPartition requestPartition :=
   .atom accept
