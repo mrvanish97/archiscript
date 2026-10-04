@@ -32,14 +32,14 @@ theorem coarseningMap_unique {P Q : Partition}
     q = r := by
   rcases hq with ⟨eq₁, hq⟩
   rcases hr with ⟨eq₂, hr⟩
-  cases eq₁
-  cases eq₂
+  have heq : eq₁ = eq₂ := Subsingleton.elim _ _
   funext i
   obtain ⟨x, hx⟩ := P.member_nonempty i
   have hqi := hq i x hx
   have hri := hr i x hx
-  change Q.classify x = q i at hqi
-  change Q.classify x = r i at hri
+  rw [← heq] at hri
+  change Q.classify (eq₁ ▸ x) = q i at hqi
+  change Q.classify (eq₁ ▸ x) = r i at hri
   exact hqi.symm.trans hri
 
 /-- Every coarse member has a fine preimage. -/
@@ -48,30 +48,33 @@ theorem coarseningMap_surjective {P Q : Partition}
     (hq : P.RefinesVia Q q) :
     Function.Surjective q := by
   rcases hq with ⟨eqCarrier, hcontain⟩
-  cases eqCarrier
   intro j
-  obtain ⟨x, hx⟩ := Q.member_nonempty j
+  obtain ⟨y, hy⟩ := Q.member_nonempty j
+  let x : P.Carrier := eqCarrier.symm ▸ y
   let i := P.classify x
   refine ⟨i, ?_⟩
   have hi : P.member i x := rfl
   have hqi := hcontain i x hi
-  change Q.classify x = q i at hqi
-  change Q.classify x = j at hx
-  exact hqi.symm.trans hx
+  have htransport : eqCarrier ▸ x = y := by
+    simp [x]
+  rw [htransport] at hqi
+  change Q.classify y = q i at hqi
+  change Q.classify y = j at hy
+  exact hqi.symm.trans hy
 
 theorem refines_refl (P : Partition) : P.Refines P := by
   refine ⟨id, rfl, ?_⟩
   intro i x hx
-  exact hx
+  simpa using hx
 
 theorem refines_trans {P Q R : Partition} :
     P.Refines Q → Q.Refines R → P.Refines R := by
   rintro ⟨q, eqPQ, hpq⟩ ⟨r, eqQR, hqr⟩
   refine ⟨fun i => r (q i), eqPQ.trans eqQR, ?_⟩
   intro i x hx
-  cases eqPQ
-  cases eqQR
-  exact hqr (q i) x (hpq i x hx)
+  have hq := hpq i x hx
+  have hr := hqr (q i) (eqPQ ▸ x) hq
+  simpa using hr
 
 end Partition
 
@@ -197,8 +200,9 @@ private theorem scanConflicts_none {P Q Y : Partition}
           simp [hfind] at h
           intro a ha b hb hq
           simp only [List.mem_cons] at ha
-          rcases ha with rfl | ha
-          · exact findConflictWith_none q f head hfind b hb hq
+          rcases ha with haeq | ha
+          · subst a
+            exact findConflictWith_none q f head hfind b hb hq
           · exact ih h a ha b hb hq
 
 /-- Executable finite search for a concrete obstruction to factorization. -/
@@ -247,7 +251,8 @@ theorem factorization_unique {P Q Y : Partition}
     (h₁ : g₁.comp q = f)
     (h₂ : g₂.comp q = f) :
     g₁ = g₂ := by
-  ext j
+  apply Operation.ext
+  intro j
   obtain ⟨i, hij⟩ := surjective j
   have hg₁ := congrArg (fun op : Operation P Y => op i) h₁
   have hg₂ := congrArg (fun op : Operation P Y => op i) h₂
@@ -266,16 +271,18 @@ theorem factorsThrough_of_constantOnFibers {P Q Y : Partition}
   ⟨factorizedThrough q f surjective,
     factorizedThrough_spec total surjective constant⟩
 
-theorem existsUnique_factorization {P Q Y : Partition}
+theorem factorization_exists_and_unique {P Q Y : Partition}
     {q : Operation P Q} {f : Operation P Y}
     (total : IsTotal q)
     (surjective : IsSurjective q)
     (constant : ConstantOnFibers q f) :
-    ∃! g : Operation Q Y, g.comp q = f := by
-  refine ⟨factorizedThrough q f surjective,
-    factorizedThrough_spec total surjective constant, ?_⟩
-  intro g hg
-  exact factorization_unique surjective hg
+    ∃ g : Operation Q Y,
+      g.comp q = f ∧
+      ∀ h : Operation Q Y, h.comp q = f → h = g := by
+  let g := factorizedThrough q f surjective
+  refine ⟨g, factorizedThrough_spec total surjective constant, ?_⟩
+  intro h hh
+  exact factorization_unique surjective hh
     (factorizedThrough_spec total surjective constant)
 
 inductive FactorizationAnalysis {P Q Y : Partition}
