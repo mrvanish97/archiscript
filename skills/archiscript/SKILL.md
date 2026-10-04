@@ -644,6 +644,26 @@ diagram level, focus, and omissions.
 Use one visual grammar consistently:
 
 - define elementary VDPs before showing products built from them;
+- draw object construction with unoriented factor/summand lines into the
+  constructor node and one directed construction edge from the constructor to
+  the constructed VDP:
+
+  ```text
+  P ---┐
+       ⊗ --▶ P ⊗ Q
+  Q ---┘
+
+  P ---┐
+       ⊕ --▶ P ⊕ Q
+  Q ---┘
+  ```
+
+  The arrowhead after `⊗` or `⊕` shows the reading direction of the
+  construction, not an `Operation`. Do not add arrowheads from the factors
+  into `⊗`: tensor has no canonical injections. Do not label structural
+  coproduct construction lines as coproduct injections; canonical injections
+  are actual Operations and should be drawn separately only when they are the
+  review subject;
 - a VDP is a labeled container and its actual members are nodes inside it;
 - reserve VDP containers for actual VDPs only; do not use the same container
   grammar for "factor groups", stages, or collections of operations;
