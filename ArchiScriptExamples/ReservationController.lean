@@ -427,6 +427,138 @@ def expiryWrite :
     Operation expiryContextPartition reservationWritePartition :=
   persistMutation.comp planExpiryMutation
 
+/-!
+0.5.0 expression-presentation stress coverage.
+
+The Operations above remain the semantic category. The declarations below keep
+selected presentation syntax without changing any VDP or Operation identity.
+Every expression has one source and one target; the family groups several
+consequences of one controller source without tensoring the outputs together.
+-/
+
+def controllerPlanExpression :
+    Expression controllerInputPartition reservationMutationPartition :=
+  .atom planControllerMutation
+
+def controllerStateExpression :
+    Expression controllerInputPartition reservationStatePartition :=
+  .comp (.atom nextReservationState) controllerPlanExpression
+
+def controllerWriteExpression :
+    Expression controllerInputPartition reservationWritePartition :=
+  .comp (.atom persistMutation) controllerPlanExpression
+
+def controllerPublishExpression :
+    Expression controllerInputPartition outboxMessagePartition :=
+  .comp (.atom publishMutation) controllerPlanExpression
+
+def controllerInventoryExpression :
+    Expression controllerInputPartition inventoryCommandPartition :=
+  .comp (.atom inventoryEffect) controllerPlanExpression
+
+/--
+One source, several selected consequence expressions. This is architectural
+fan-out in the presentation, not `Operation.tensor`: no order or parallel
+runtime schedule is asserted between the sibling consequences.
+-/
+def controllerExpressionFamily : Expression.Family where
+  source := controllerInputPartition
+  expressions := [
+    { target := reservationMutationPartition, expression := controllerPlanExpression },
+    { target := reservationStatePartition, expression := controllerStateExpression },
+    { target := reservationWritePartition, expression := controllerWriteExpression },
+    { target := outboxMessagePartition, expression := controllerPublishExpression },
+    { target := inventoryCommandPartition, expression := controllerInventoryExpression }
+  ]
+  nonempty := by simp
+
+example :
+    Expression.denote controllerStateExpression =
+      nextReservationState.comp planControllerMutation := rfl
+
+example :
+    Expression.denote controllerPublishExpression =
+      publishMutation.comp planControllerMutation := rfl
+
+/--
+A branch-relative coproduct simplification. The unused payment branch disappears
+from this selected expression by the coproduct law; the payment VDP and planner
+remain in the architecture and may be used by other expressions.
+-/
+def userSelectedCoproductNormalization :
+    Expression.Rewrite
+      (.comp
+        (.copair
+          (.atom planUserMutation)
+          (.atom planPaymentMutation))
+        (.coproductInl userContextPartition paymentContextPartition))
+      (.atom planUserMutation) :=
+  Expression.Rewrite.copair_inl
+    (.atom planUserMutation)
+    (.atom planPaymentMutation)
+
+/--
+The first two controller channels expose the shared ReservationState coordinate:
+
+  ((UserTrigger ⊗ InventoryObservation) ⊗ ReservationState)
+    ⊕ (PaymentTrigger ⊗ ReservationState)
+
+is canonically isomorphic to
+
+  ((UserTrigger ⊗ InventoryObservation) ⊕ PaymentTrigger)
+    ⊗ ReservationState.
+
+This is structural factoring only. It does not claim one database read,
+transaction, cache entry, or runtime object for ReservationState.
+-/
+def userPaymentInputPartition : Partition :=
+  userContextPartition.coproduct paymentContextPartition
+
+def userPaymentFactoredInputPartition : Partition :=
+  ((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+      paymentTriggerPartition).tensor reservationStatePartition
+
+def userPaymentSourceIso :
+    Partition.PartitionIso userPaymentInputPartition
+      userPaymentFactoredInputPartition :=
+  Partition.tensorCoproductRightDistributivity
+    (userTriggerPartition.tensor inventoryObservationPartition)
+    paymentTriggerPartition
+    reservationStatePartition
+
+def userPaymentPlanExpression :
+    Expression userPaymentInputPartition reservationMutationPartition :=
+  .copair
+    (.atom planUserMutation)
+    (.atom planPaymentMutation)
+
+def userPaymentFactoredPlanExpression :
+    Expression userPaymentFactoredInputPartition reservationMutationPartition :=
+  .comp userPaymentPlanExpression (.iso userPaymentSourceIso.symm)
+
+/-- The factored source presentation commutes with the original planner. -/
+def userPaymentFactoringCertificate :
+    Expression.Transport userPaymentPlanExpression
+      userPaymentFactoredPlanExpression :=
+  Expression.Transport.source userPaymentPlanExpression userPaymentSourceIso
+
+example :
+    userPaymentFactoringCertificate.targetIso.toOperation.comp
+        (Expression.denote userPaymentPlanExpression) =
+      (Expression.denote userPaymentFactoredPlanExpression).comp
+        userPaymentFactoringCertificate.sourceIso.toOperation :=
+  userPaymentFactoringCertificate.commutes
+
+/--
+Composition can denote an end-to-end controller result while the nominal
+ReservationMutation VDP still exists. A diagram that intentionally hides that
+intermediate VDP is an architecture projection of the view, not a normalization
+step that deleted the object from the category.
+-/
+def projectedControllerStateOperation :
+    Operation controllerInputPartition reservationStatePartition :=
+  Expression.denote controllerStateExpression
+
 #guard userContextPartition.memberIndices.length == 30
 
 #guard prepareUserContext ((.reserve, .available), .empty) ==
