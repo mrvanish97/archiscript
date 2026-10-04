@@ -531,6 +531,18 @@ def userSelectedCoproductNormalization :
     planUserMutationExpression
     planPaymentMutationExpression
 
+def paymentSelectedCoproductNormalization :
+    Expression.Rewrite
+      (.comp
+        (.copair
+          planUserMutationExpression
+          planPaymentMutationExpression)
+        (.coproductInr userContextPartition paymentContextPartition))
+      planPaymentMutationExpression :=
+  Expression.Rewrite.copair_inr
+    planUserMutationExpression
+    planPaymentMutationExpression
+
 /--
 The first two controller channels expose the shared ReservationState coordinate:
 
