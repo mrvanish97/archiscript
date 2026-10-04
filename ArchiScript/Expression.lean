@@ -155,6 +155,34 @@ theorem trans {X Y : Partition.{u, v}} {a b c : Expression X Y}
     (ab : Rewrite a b) (bc : Rewrite b c) : Rewrite a c :=
   ⟨ab.sound.trans bc.sound⟩
 
+/-- Local rewrites are stable under sequential composition. -/
+theorem comp {X Y Z : Partition.{u, v}}
+    {f f' : Expression X Y} {g g' : Expression Y Z}
+    (gRewrite : Rewrite g g') (fRewrite : Rewrite f f') :
+    Rewrite (.comp g f) (.comp g' f') := by
+  refine ⟨?_⟩
+  change (denote g).comp (denote f) = (denote g').comp (denote f')
+  rw [gRewrite.sound, fRewrite.sound]
+
+/-- Local rewrites are stable under independent tensor composition. -/
+theorem tensor {P P' Q Q' : Partition.{u, v}}
+    {f f' : Expression P P'} {g g' : Expression Q Q'}
+    (fRewrite : Rewrite f f') (gRewrite : Rewrite g g') :
+    Rewrite (.tensor f g) (.tensor f' g') := by
+  refine ⟨?_⟩
+  change (denote f).tensor (denote g) = (denote f').tensor (denote g')
+  rw [fRewrite.sound, gRewrite.sound]
+
+/-- Local rewrites are stable under coproduct copairing. -/
+theorem copair {P Q R : Partition.{u, v}}
+    {f f' : Expression P R} {g g' : Expression Q R}
+    (fRewrite : Rewrite f f') (gRewrite : Rewrite g g') :
+    Rewrite (.copair f g) (.copair f' g') := by
+  refine ⟨?_⟩
+  change Operation.copair (denote f) (denote g) =
+    Operation.copair (denote f') (denote g')
+  rw [fRewrite.sound, gRewrite.sound]
+
 @[simp] theorem id_left {X Y : Partition.{u, v}} (e : Expression X Y) :
     Rewrite (.comp (.identity Y) e) e := by
   refine ⟨?_⟩
