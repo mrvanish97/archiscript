@@ -452,6 +452,12 @@ equivalence, and classifier commutation. An invertible member-level `Operation`
 alone is too weak because it cannot distinguish unrelated carriers with
 isomorphic finite member sets.
 
+Do not make normalization search for arbitrary carrier bijections merely because
+a `PartitionIso` could exist mathematically. Normalization should use known,
+proved structural isomorphisms such as associativity, unitors, symmetry, and
+distributivity. Mathematical isomorphism and the chosen orientation of a
+normalization rule are separate concerns.
+
 Every expression has **exactly one source and exactly one target**:
 
 ```text
@@ -531,10 +537,17 @@ two independent `R` slots and must not be collapsed to one.
 ### Derive dependency before provenance
 
 A tensor coordinate required in the materialized family source can be an
-independent dependency. Coproduct behaves differently: from
-`A → A ⊕ B` through the left injection, no value of `B` is required merely
-because `B` occurs in the target type. Never infer dependency from codomain
-structure alone.
+independent dependency. Tensor syntax does not create a missing coordinate:
+there is no canonical `X → X ⊗ R`. An internal expression
+`f.tensor g : A ⊗ B → C ⊗ D` is valid because both source coordinates are
+already present. If an independent `R` seems to appear only midway through an
+analysis, either an ordinary preceding Operation explicitly produced that
+paired value or the family source is missing an exogenous dependency. Make the
+dependency explicit in the source instead of treating tensor as acquisition.
+
+Coproduct behaves differently: from `A → A ⊕ B` through the left injection,
+no value of `B` is required merely because `B` occurs in the target type.
+Never infer dependency from codomain structure alone.
 
 A source such as
 
