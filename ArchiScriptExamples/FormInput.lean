@@ -1,4 +1,5 @@
 import ArchiScript.Operation.Declaration
+import ArchiScript.Resolution
 
 namespace ArchiScriptExamples.FormInput
 open ArchiScript
@@ -75,11 +76,30 @@ def formSemanticPartition : SemanticPartition where
   members := formMembers
   hasMembers := formPartition_has_members
 
-/-- The member map forgets detail; it does not transform the input strings. -/
-def forgetFieldFailures : Operation fieldPartition formPartition where
-  run i := some (i.1 && i.2)
+/-- The unique coarse member containing each fine field-presence member. -/
+def forgetFieldFailuresMap : fieldPartition.MemberIndex → formPartition.MemberIndex :=
+  fun i => i.1 && i.2
+
+/--
+The four-member field partition refines the two-member form partition. This is
+semantic containment of whole fine members, not merely a total surjective label
+map.
+-/
+theorem fieldPartition_refines_formPartition :
+    fieldPartition.RefinesVia formPartition forgetFieldFailuresMap := by
+  refine ⟨rfl, ?_⟩
+  intro i x hx
+  change fieldPartition.classify x = i at hx
+  change formPartition.classify x = forgetFieldFailuresMap i
+  cases hx
+  rfl
+
+/-- The canonical coarsening map as an ordinary ArchiScript Operation. -/
+def forgetFieldFailures : Operation fieldPartition formPartition :=
+  Partition.coarseningOperation forgetFieldFailuresMap
 
 theorem forgetFieldFailures_preserves_classification (x : Input) :
-    forgetFieldFailures (fieldPartition.classify x) = some (formPartition.classify x) := rfl
+    forgetFieldFailures (fieldPartition.classify x) =
+      some (formPartition.classify x) := rfl
 
 end ArchiScriptExamples.FormInput
