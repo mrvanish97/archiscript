@@ -341,6 +341,11 @@ than asking the author to restate them. Use `Operation.tensor` to combine
 independent partial member maps. This is algebraic independence of slots and
 mappings, not a runtime scheduling claim.
 
+Do not use tensor to model fan-out from one semantic decision. If one mutation
+has both a persistence contract and an outbox contract, model two arrows from
+the same source VDP. `persist.tensor publish` would require two independent
+mutation slots and therefore says something different.
+
 Treat rebracketing and factor order as representation choices governed by the
 canonical associator and symmetry. A finding that concerns only the set of
 tensor factors should not appear or disappear merely because the author wrote
