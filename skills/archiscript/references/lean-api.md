@@ -236,6 +236,95 @@ work, establish resource independence, or provide a categorical product.
 Architectural joint relevance remains a human review question; normalize
 factor-only findings across rebracketing and symmetry.
 
+## Expressions, distributivity, and local normalization
+
+Version 0.5.0 keeps presentation syntax separate from semantic Operations.
+`Expression X Y` is a finite well-typed syntax tree with exactly one source
+and one target. Interpret it with `Expression.denote`:
+
+```lean
+def acceptExpression : Expression requestPartition requestPartition :=
+  .atom accept
+
+example : Expression.denote acceptExpression = accept := rfl
+
+def acceptFamily : Expression.Family :=
+  Expression.Family.singleton acceptExpression
+```
+
+An expression can branch internally through tensor or copairing without becoming
+a multi-source or multi-target object:
+
+```lean
+def twoAlternativeAccept :
+    Expression (requestPartition.coproduct requestPartition) requestPartition :=
+  .copair (.atom accept) (.atom accept)
+```
+
+`Expression.Family` stores a finite nonempty list of dependent entries. All
+entries share `family.source`; each entry carries its own target and typed
+expression. The declaration naming the family is presentation identity. No name
+field is added to `Partition` or `Operation`.
+
+For unchanged endpoints, use `Expression.Rewrite before after`. Its
+`sound` field proves equality of the denoted Operations. The library supplies
+initial laws for identities, associativity, tensor identity, and coproduct
+injection/copairing:
+
+```lean
+#check Expression.Rewrite.id_left
+#check Expression.Rewrite.id_right
+#check Expression.Rewrite.comp_assoc
+#check Expression.Rewrite.copair_inl
+#check Expression.Rewrite.copair_inr
+#check Expression.Rewrite.tensor_identity
+```
+
+When endpoint representatives change through a structural isomorphism, use
+`Expression.Transport`. `Expression.Transport.source` precomposes with the
+inverse source isomorphism and returns the commuting-square certificate.
+
+Binary tensor/coproduct distributivity is concrete, not definitional equality:
+
+```lean
+#check Partition.tensorCoproductRightDistributivity
+#check Partition.tensorCoproductLeftDistributivity
+#check Operation.distributeRight
+#check Operation.distributeRightInv
+#check Operation.distributeLeft
+#check Operation.distributeLeftInv
+#check Operation.distributeRight_natural
+#check Operation.distributeLeft_natural
+```
+
+For example,
+
+```lean
+def factoredSourceIso :
+    Partition.PartitionIso
+      ((requestPartition.tensor requestPartition).coproduct
+        (requestPartition.tensor requestPartition))
+      ((requestPartition.coproduct requestPartition).tensor requestPartition) :=
+  Partition.tensorCoproductRightDistributivity
+    requestPartition requestPartition requestPartition
+```
+
+The isomorphism shows one shared structural right coordinate. It does not prove
+one physical read, cache lookup, transaction, or runtime instance.
+
+Composition also does not remove its intermediate VDP. If an expression denotes
+`g.comp f : Operation A C`, the intermediate `B` from
+`A -> B -> C` remains an object of the architecture category. A review view
+that intentionally hides that nominal VDP is an **architecture projection**,
+not ordinary 0.5.0 normalization. There is intentionally no foundational
+projection object in this release.
+
+The canonical integration example is
+`ArchiScriptExamples.ReservationController`: it combines one common-source
+multi-target family, coproduct reachability simplification, and distributive
+factoring of the common `ReservationState` source coordinate with the existing
+tensor, partiality, coarsening, and factorization stress cases.
+
 ## Operations and canonical branch references
 
 An `Operation` is only a partial member map:
