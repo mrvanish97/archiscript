@@ -418,10 +418,10 @@ mutation slots and therefore says something different.
 
 Fan-out does not encode an execution order. Several arrows from one source VDP
 are therefore potentially parallel at runtime, but ArchiScript does not assert
-that they actually run concurrently. Sequential behavior must be represented by
-a path through an intermediate VDP, for example `A -> B -> C`, so the output
-classification of the first operation is the source classification of the
-second.
+that they actually run concurrently. Sequential behavior must be represented by composition through an intermediate
+VDP, for example `A -> B -> C`, so the output classification of the first
+operation is the source classification of the second. A linear path is an
+informal view of that expression, not a separate foundational syntax.
 
 Treat rebracketing and factor order as representation choices governed by the
 canonical associator and symmetry. A finding that concerns only the set of
