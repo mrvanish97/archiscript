@@ -33,7 +33,7 @@ ArchiScript gives those choices explicit mathematical objects:
 
 The core workflow is:
 
-\[
+$
 \text{requirements}
 \rightarrow
 \text{AI architecture proposal}
@@ -43,7 +43,7 @@ The core workflow is:
 \text{human review}
 \rightarrow
 \text{implementation}
-\]
+$
 
 Lean is **not** an architecture search engine and not a general model checker.
 It is the executable implementation of necessary correctness criteria for the
@@ -69,9 +69,9 @@ ledger state:
 
 The architectural input is therefore not just the payload. It is a product:
 
-\[
+$
 \text{WebhookPayload}\times\text{LedgerObservation}.
-\]
+$
 
 Two values with the same payload can legitimately belong to different semantic
 members:
@@ -192,25 +192,25 @@ location, and evidence without changing the underlying member map.
 Version 0.3.0 adds a concrete symmetric monoidal structure for independent VDP
 composition.
 
-For two partitions \(P\) and \(Q\),
+For two partitions $P$ and $Q$,
 
-\[
+$
 P\otimes Q
-\]
+$
 
 has carrier
 
-\[
+$
 C_P\times C_Q
-\]
+$
 
 and **every** member pair
 
-\[
+$
 M\times N
 \qquad
 (M\in\mathcal M_P,\;N\in\mathcal M_Q).
-\]
+$
 
 There is no compatibility pruning inside tensor. If both factors are valid VDPs,
 every product member is inhabited automatically.
@@ -257,18 +257,18 @@ f.tensor g    independent aggregation of member maps
 
 For independent maps
 
-\[
+$
 f:P\to P'
 \qquad\text{and}\qquad
 g:Q\to Q',
-\]
+$
 
 the tensor map is
 
-\[
+$
 f\otimes g:
 P\otimes Q\to P'\otimes Q'.
-\]
+$
 
 It is defined exactly where both partial maps are defined.
 
@@ -342,79 +342,88 @@ The checked
 [checkout example](ArchiScriptExamples/Checkout.lean) combines several VDPs,
 ordinary operations, tensor composition, and a final sequential decision.
 
-A payment input and an inventory observation are independent semantic factors:
+We begin with **two separate VDPs**: a payment input VDP and an inventory
+observation VDP. Tensor is the construction that combines those two objects into
+a third VDP:
 
-\[
+$$
 PaymentInput \otimes InventoryObservation.
-\]
+$$
 
 Each factor has its own local architectural map:
 
-\[
+$
 planPayment : PaymentInput \to PaymentPlan
-\]
+$
 
-\[
+$
 planInventory : InventoryObservation \to InventoryPlan.
-\]
+$
 
 Their tensor gives one joint operation without manually enumerating a new
 four-branch implementation:
 
-\[
+$
 planPayment \otimes planInventory :
 PaymentInput \otimes InventoryObservation
 \to
 PaymentPlan \otimes InventoryPlan.
-\]
+$
 
 An ordinary sequential operation then consumes that joint plan:
 
-\[
+$
 chooseCheckoutAction :
 PaymentPlan \otimes InventoryPlan
 \to
 CheckoutAction.
-\]
+$
 
 So the complete architectural path is:
 
-\[
+$
 chooseCheckoutAction
 \circ
 (planPayment \otimes planInventory).
-\]
+$
 
 ```mermaid
-flowchart LR
-  subgraph INPUTS["Independent input VDPs"]
-    PI["PaymentInput<br/>invalid · eligible"]
-    II["InventoryObservation<br/>unavailable · available"]
-  end
+flowchart TB
+  PI["PaymentInput VDP<br/>invalid · eligible"]
+  II["InventoryObservation VDP<br/>unavailable · available"]
 
-  subgraph PLANS["Local plan VDPs"]
-    PP["PaymentPlan<br/>reject · authorize"]
-    IP["InventoryPlan<br/>blocked · ready"]
-  end
-
+  TIN{{"⊗"}}
   JOINT_IN["PaymentInput ⊗ InventoryObservation<br/>4 semantic members"]
+
+  PP["PaymentPlan VDP<br/>reject · authorize"]
+  IP["InventoryPlan VDP<br/>blocked · ready"]
+
+  TOUT{{"⊗"}}
   JOINT_PLAN["PaymentPlan ⊗ InventoryPlan<br/>4 semantic members"]
-  ACTION["CheckoutAction<br/>rejectPayment · waitForStock · placeOrder"]
+
+  ACTION["CheckoutAction VDP<br/>rejectPayment · waitForStock · placeOrder"]
 
   PI -->|"planPayment"| PP
   II -->|"planInventory"| IP
 
-  PI -.-> JOINT_IN
-  II -.-> JOINT_IN
-  PP -.-> JOINT_PLAN
-  IP -.-> JOINT_PLAN
+  PI --- TIN
+  II --- TIN
+  TIN --- JOINT_IN
+
+  PP --- TOUT
+  IP --- TOUT
+  TOUT --- JOINT_PLAN
 
   JOINT_IN -->|"planPayment ⊗ planInventory"| JOINT_PLAN
   JOINT_PLAN -->|"chooseCheckoutAction"| ACTION
 ```
 
-The solid arrows are `Operation` values. The dotted edges only show which VDPs
-are tensor factors; they are not additional operations or runtime calls.
+`PaymentInput` and `InventoryObservation` are already two complete VDPs before
+tensor is formed. The undirected lines around each `⊗` node show **object
+construction only**: two VDPs are used as factors to construct their tensor VDP.
+Directed arrows are actual `Operation` values. In particular,
+`planPayment ⊗ planInventory` is the induced operation between the two tensor
+objects; the diagram does not start from one pre-combined input VDP.
 
 The full product is visible at member level:
 
@@ -487,9 +496,9 @@ nonempty, exhaustive, and disjoint.
 
 `Operation X Y` is a partial function
 
-\[
+$
 \mathcal M_X\rightharpoonup\mathcal M_Y.
-\]
+$
 
 It is not a database transaction, network request, scheduler, or handler
 execution. If runtime effects matter, record them as explicit contracts,
