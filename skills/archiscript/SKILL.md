@@ -47,10 +47,13 @@ location proves code conformance.
   member has at most one target. `none` means undefined, while `some` of a failure
   member is a defined outcome. Apparent nondeterminism calls for better source
   distinctions or explicit context, not a weaker operation law.
-- **Paths** are compositions. For `f : Operation X Y` and `g : Operation Y Z`,
+- **Expressions** preserve finite presentation syntax over those arrows. Every
+  expression has exactly one source and one target, even when its syntax tree
+  branches through tensor or copairing. Linear composition is only one special
+  expression shape. For `f : Operation X Y` and `g : Operation Y Z`,
   `g.comp f` requires the same middle object and propagates undefinedness.
   Identity and associativity are supplied by the library. The underlying
-  calculus is partial functions between finite member sets,
+  semantic calculus is partial functions between finite member sets,
   $\operatorname{Par}(\mathbf{FinSet})$; carrier values need not be finite.
 - **Tensor** is independent aggregation. `P.tensor Q` has carrier
   `P.Carrier × Q.Carrier` and every pair of selected members. `f.tensor g`
@@ -426,6 +429,137 @@ tensor factors should not appear or disappear merely because the author wrote
 `(P ⊗ Q) ⊗ R` instead of `P ⊗ (Q ⊗ R)`, or swapped factors through the
 declared symmetry.
 
+## Preserve expression syntax; normalize locally
+
+Version 0.5.0 separates category semantics from architecture presentation
+syntax. The ArchiScript category supplies VDP objects, `Operation` morphisms,
+composition, tensor, coproduct, and their laws. `Expression X Y` records one
+finite well-typed presentation of a morphism and
+`Expression.denote : Expression X Y → Operation X Y` gives its semantics.
+
+Every expression has **exactly one source and exactly one target**:
+
+```text
+e : X → Y
+```
+
+Its syntax can still be tree-shaped. `f.tensor g` combines two independent
+subexpressions into one morphism, and `copair f g` combines two alternative
+source branches into one morphism. Do not call such an expression a
+multi-source or multi-target path. Use "expression"; a sequence or graph path is
+only the linear composition special case.
+
+An `Expression.Family` is finite and nonempty. All selected expressions in one
+family share one source; their targets may differ. This represents one
+consequence question from one materialized source context without inventing
+`Trigger`, `Source`, or `Terminal` VDP kinds. The same nominal VDP may be
+the source of one family, a target of another, and an intermediate VDP in a
+third.
+
+Architecture may contain cycles. Each selected expression remains finite.
+Never define a family as an enumeration of every finite traversal of a cycle,
+and never infer a runtime loop, retry schedule, or temporal recurrence merely
+from categorical cyclicity.
+
+### Distinguish normalization from architecture projection
+
+Composition creates a composite morphism; it does **not** delete its
+intermediate object from the category. If
+
+```text
+A ──f──▶ B ──g──▶ C
+```
+
+then `g.comp f : Operation A C` exists while the nominal VDP `B` still
+exists. Rewriting expression syntax with composition is therefore not evidence
+that `B` disappeared from the architecture.
+
+If a human or generated view intentionally keeps only selected nominal VDPs and
+hides `B`, classify that as an **architecture projection**. Do not call it
+ordinary normalization and do not introduce an `Anchor` primitive merely to
+control it. The 0.5.0 normalizer preserves the nominal VDP boundary set in its
+scope; a future projection layer may deliberately choose a smaller view.
+
+Local normalization does not require a complete whole-architecture isomorphism
+theory. Use the smallest explicit certificate that proves the rewrite:
+
+- for unchanged endpoints, require equality of the denoted Operations;
+- when structural endpoint representatives change, use explicit
+  `PartitionIso` witnesses and a commuting transport square.
+
+`Expression.Rewrite` records the first form.
+`Expression.Transport` records the second. Whole-architecture equivalence is
+deferred until transformations actually need to merge/split families, remove
+nominal VDPs, replace architectural generators, or create new shared nominal
+boundaries.
+
+### Use distributivity only through proved structural isomorphisms
+
+The canonical 0.5.0 distributivity shape is
+
+```text
+(A ⊗ R) ⊕ (B ⊗ R)  ≅  (A ⊕ B) ⊗ R
+```
+
+with the left-handed analogue. The two bundled `Partition` values are not
+definitionally equal: their carrier types have different shapes. Use
+`Partition.tensorCoproductRightDistributivity` or
+`Partition.tensorCoproductLeftDistributivity`, together with the induced
+Operations and naturality theorems, rather than pretending the expressions are
+equal by reduction.
+
+Factoring a repeated `R` exposes one common **structural coordinate**. It does
+not prove one database read, one cache lookup, one transaction, one runtime
+object, or any scheduling property. Conversely, `A ⊗ R ⊗ R` still contains
+two independent `R` slots and must not be collapsed to one.
+
+### Derive dependency before provenance
+
+A tensor coordinate required in the materialized family source can be an
+independent dependency. Coproduct behaves differently: from
+`A → A ⊕ B` through the left injection, no value of `B` is required merely
+because `B` occurs in the target type. Never infer dependency from codomain
+structure alone.
+
+A source such as
+
+```text
+(A ⊗ S) ⊕ B
+```
+
+means structurally "(A AND S) OR B", not the flat dependency set
+`{A, S, B}`. The exact public result shape for richer dependency analysis is
+intentionally non-blocking in 0.5.0; do not erase the tensor/coproduct structure
+just to force a simple set API.
+
+Identify that a family needs the current `S` before asking which family might
+have produced it. Producer provenance is a second, architecture-wide query.
+Because tensor is not a categorical product, an expression ending in
+`X ⊗ S` is not automatically a producer of `S`: there is no canonical
+projection onto the `S` coordinate.
+
+Coproduct equations support branch-relative expression simplification. For
+example,
+
+```text
+[f,g] ∘ ι₁ = f
+```
+
+justifies normalizing that selected expression. It does not globally delete the
+`B` summand, the operation `g`, or any nominal coproduct VDP used elsewhere.
+If the family source itself is `A ⊕ B`, both tagged alternatives remain valid
+source alternatives.
+
+Graphs come after these semantics. Dependency graphs, provenance graphs, and
+cycle/SCC views are derived projections of already-defined relations; they are
+not the architecture foundation.
+
+The remaining questions about generator-versus-alias metadata, indexed versus
+set-like families, shared-subexpression storage, member-level reachability,
+global rewrite ordering, and whole-architecture equivalence are deliberately
+non-blocking for 0.5.0. Do not resolve them by adding ontology without a concrete
+need.
+
 ## Review independent arrows carefully
 
 Several branches of one `Operation` are alternative cases of one partial map.
@@ -495,13 +629,22 @@ Use the public vocabulary exactly:
 - `Partition.RefinesVia`, `Partition.Refines`,
   `Partition.coarseningOperation`, and the `Operation` factorization helpers
   for checked semantic resolution changes;
+- `Partition.tensorCoproductRightDistributivity`,
+  `Partition.tensorCoproductLeftDistributivity`,
+  `Operation.distributeRight`, `Operation.distributeLeft`, and their
+  naturality laws for canonical tensor/coproduct structural transport;
+- `Expression`, `Expression.denote`, `Expression.Family`,
+  `Expression.Rewrite`, and `Expression.Transport` for finite presentation
+  syntax and certified local normalization;
 - `ParameterizedPartition` for specialization by finite parameter members.
 
-Version 0.3.1 exposes concrete monoidal constructions and checked laws in the
-public library. Do not assume a separate Mathlib `MonoidalCategory` instance or
-invent abstractions that are not present in the installed API; use the concrete
-`Partition.tensor`, `Operation.tensor`, structural isomorphisms, and theorems
-the package actually exports.
+Version 0.5.0 retains the concrete symmetric-monoidal API and adds typed
+expressions, expression families, distributivity witnesses, and local
+normalization certificates. Do not assume a separate Mathlib
+`MonoidalCategory` instance or invent abstractions that are not present in the
+installed API; use the concrete `Partition.tensor`, `Operation.tensor`,
+structural isomorphisms, expression constructors, and theorems the package
+actually exports.
 
 Before writing code, inspect the installed package's imports and source API.
 Do not revive legacy TypeScript marker recipes or obsolete VDP/PVDP Lean names.
@@ -720,9 +863,12 @@ The canonical repository stress test is
 `ArchiScriptExamples/ReservationController.lean`. Its review projection should
 make the interactions between sequential composition, tensor, design-time
 coproduct, refinement/coarsening, successful factorization, failed
-factorization, partiality, and independent-source review questions visible in
-one coherent model. New calculus features should be integrated into this stress
-test when they naturally apply, not demonstrated only in isolated toy files.
+factorization, partiality, expression syntax/denotation, one-source
+multi-target expression families, distributive source factoring, local
+normalization certificates, architecture projection boundaries, and
+independent-source review questions visible in one coherent model. New calculus
+features should be integrated into this stress test when they naturally apply,
+not demonstrated only in isolated toy files.
 
 Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.
