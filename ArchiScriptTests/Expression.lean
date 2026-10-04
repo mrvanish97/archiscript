@@ -34,6 +34,24 @@ example :
 
 example :
     Expression.Rewrite
+      (Expression.comp
+        (Expression.copair unitId unitId)
+        (Expression.coproductInr Partition.unit Partition.unit))
+      unitId :=
+  Expression.Rewrite.copair_inr unitId unitId
+
+example :
+    Expression.Rewrite
+      (Expression.comp
+        (Expression.comp unitId unitId)
+        unitId)
+      (Expression.comp
+        unitId
+        (Expression.comp unitId unitId)) :=
+  Expression.Rewrite.comp_assoc unitId unitId unitId
+
+example :
+    Expression.Rewrite
       (Expression.tensor
         (Expression.identity Partition.unit)
         (Expression.identity Partition.unit))
