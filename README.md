@@ -2,666 +2,472 @@
 
 **Machine-checked architecture for AI-assisted software design.**
 
-ArchiScript is a Lean library and an authoring discipline for making an
-architecture precise before implementation. AI agents propose the model; Lean
-checks the formal obligations of that model; engineers review whether it
-actually describes the system.
+ArchiScript is a small Lean calculus for making architectural contracts precise
+before implementation. An architect or AI proposes the semantic model; Lean
+checks the stated mathematical obligations; engineers review whether the model
+matches the real system.
 
 Current release: **0.4.0**.
 
-## The idea
+ArchiScript deliberately does **not** standardize a vocabulary of queues,
+timeouts, failures, services, retries, or cloud resources. Those are meanings
+chosen by the model author. ArchiScript standardizes how such meanings are
+partitioned, connected, composed, combined, and safely viewed at different
+resolutions.
 
-ArchiScript models software architecture with a small calculus:
+## The core model
 
-- a **carrier** is the full value universe considered at a boundary;
-- a **Domain** is a semantic predicate over that carrier;
-- a **VDP** is a finite partition into nonempty, disjoint, exhaustive semantic
-  members;
-- an **Operation** is a partial map between VDP member sets;
-- `comp` is sequential composition;
-- `tensor` combines independent VDPs and independent member maps;
-- `coproduct` losslessly groups design-time closed alternative VDPs;
-- refinement/coarsening relates different semantic resolutions of the same
-  carrier, and factorization checks whether a consumer can safely use the
-  coarser view;
-- provenance, responsibility, bindings, evidence, findings, and approval live
-  in the review/handoff layer.
+A model starts from a value universe and derives finite semantic distinctions
+from it.
 
-Lean is not an architecture search engine and not a general model checker. It is
-the executable implementation of **necessary correctness criteria for the
-declared model**. A green proof means the stated obligations hold for the
-carrier, predicates, mappings, and assumptions that were supplied. It does not
-prove that the author chose the right requirements or that production code
-conforms.
+```text
+carrier
+  ↓ semantic predicates
+Domain
+  ↓ select a finite exhaustive disjoint family
+VDP / Partition
+  ↓ partial member maps
+Operation
+```
 
-## 0.4.0: structural OR and semantic resolution
+The basic vocabulary is:
 
-0.4.0 adds two conservative extensions without introducing a software-domain
-ontology.
+| Concept | Meaning |
+| --- | --- |
+| **Carrier** | the full value universe considered at a boundary |
+| **Domain** | a semantic predicate over that carrier |
+| **VDP / Partition** | finitely many nonempty, disjoint, exhaustive semantic members |
+| **Operation** | a partial function between VDP member sets |
+| **Composition** | ordinary sequential composition of partial maps |
+| **Tensor** | lossless structural AND for independent coordinates |
+| **Coproduct** | lossless structural OR for design-time closed alternatives |
+| **Refinement / coarsening** | two semantic resolutions of the same carrier |
+| **Factorization** | proof that a consumer is insensitive to distinctions a coarsening removes |
 
-`Partition.coproduct P Q` is categorical coproduct: a lossless structural OR
-with carrier `Sum P.Carrier Q.Carrier`. It preserves the summand tag and member
-identity. Canonical injections and `Operation.copair` satisfy the coproduct
-universal property.
+At member level, operations form partial maps between finite sets. Tensor and
+coproduct retain their conventional mathematical roles. Refinement is semantic
+containment between partitions of the same carrier.
 
-ArchiScript applies a stricter authoring rule than the bare mathematics:
-**use coproduct only when the alternatives are closed by architecture at design
-time**. For example, if a program exposes exactly a browser entry channel and a
-CLI entry channel, their independently justified VDPs may be grouped as:
+Lean checks the declared model. It does not discover missing requirements,
+validate an external protocol, or prove that production code implements the
+model.
+
+## The most important rule: start from the carrier
+
+Coverage is only meaningful relative to the carrier that was declared.
+
+If malformed input, existing state, environment, configuration, or another
+outcome-relevant fact can reach the boundary, removing it from the carrier does
+not simplify the model — it makes the proof prove less.
+
+For example, do this:
+
+```text
+WebhookPayload × LedgerObservation
+```
+
+when the outcome depends on both the incoming payload and existing ledger state.
+
+Do not encode only the convenient semantic leaves into the carrier and then use
+the resulting tautological coverage as evidence of completeness.
+
+Member names are also not semantic definitions. Define the predicates first;
+then prove that the VDP classifier corresponds to them.
+
+## Composition
+
+### Sequential composition
+
+For:
+
+```text
+f : A ⇀ B
+g : B ⇀ C
+```
+
+ArchiScript provides:
+
+```text
+g.comp f : A ⇀ C
+```
+
+Undefinedness propagates as ordinary partial-map composition.
+
+### Tensor: independent coordinates
+
+```text
+P ⊗ Q
+```
+
+has carrier:
+
+```text
+Carrier(P) × Carrier(Q)
+```
+
+and contains every pair of selected members.
+
+Tensor does not mean runtime concurrency. It says that the model has two
+independently valued semantic coordinates.
+
+Likewise:
+
+```lean
+f.tensor g
+```
+
+maps both coordinates componentwise and is defined only when both factor maps
+are defined.
+
+### Coproduct: design-time alternatives
+
+```text
+P ⊕ Q
+```
+
+has carrier:
+
+```text
+Carrier(P) + Carrier(Q)
+```
+
+and preserves both the summand tag and the original member identity.
+
+ArchiScript uses coproduct only when the alternatives are already closed by the
+architecture at design time. A program with exactly a browser entry point and a
+CLI entry point may model:
 
 ```text
 BrowserInput ⊕ CliInput
 ```
 
-This is not a way to enumerate cases discovered from runtime data. If CLI input
-is materialized at runtime, its own carrier must still include every value that
-can reach that boundary, and its VDP must cover invalid, unsupported, empty, and
-other relevant inputs. Likewise, seeing two known message shapes does not
-justify `PaymentMessage ⊕ RefundMessage` as the complete external universe.
+because the two channels exist independently of any runtime value.
+
+Coproduct must **not** be used to enumerate cases discovered by inspecting
+runtime data. A CLI parser, protocol decoder, or external message boundary still
+needs a complete carrier and a complete VDP for all values that may arrive.
 
 The invariant is:
 
 ```text
-P ⊕ Q is exhaustive over Carrier(P) + Carrier(Q),
-not evidence that the sum carrier exhausts an external boundary.
+P ⊕ Q is exhaustive over Carrier(P) + Carrier(Q).
+
+It does not prove that this sum exhausts an independently supplied
+external boundary.
 ```
 
-Refinement/coarsening addresses a different problem. For two VDPs on the same
-carrier, `P ≼ Q` requires every fine member of `P` to be wholly contained in
-one coarse member of `Q`. The induced coarsening map is an ordinary total
-`Operation`. Consumer factorization then checks whether:
+The public API provides canonical injections and `Operation.copair`; the
+mediating operation is unique.
+
+### Refinement and coarsening
+
+Two VDPs can classify the same carrier at different resolutions.
+
+```text
+P ≼ Q
+```
+
+means that every fine member of `P` lies wholly inside one member of `Q`.
+That containment induces a unique total coarsening member map:
+
+```text
+q : P → Q
+```
+
+and therefore an ordinary ArchiScript `Operation`.
+
+A total surjective member map alone is not enough. The whole fine semantic region
+must be contained in its selected coarse region.
+
+### Consumer factorization
+
+Given a coarsening:
+
+```text
+q : P → Q
+```
+
+and a consumer:
+
+```text
+f : P ⇀ Y
+```
+
+ArchiScript can ask whether there is a unique:
+
+```text
+g : Q ⇀ Y
+```
+
+with:
 
 ```text
 f = g ∘ q
 ```
 
-so a diagram may safely show the coarser VDP for that consumer. A failed check
-returns concrete fine members that the consumer still distinguishes.
+Equivalently, `f` must be constant on every fiber of `q`.
 
-The diagram meanings are intentionally different:
+This is the mathematical basis for **semantic zoom** in diagrams. If
+factorization succeeds, the consumer can be shown against the coarse VDP without
+losing behavior. If it fails, ArchiScript can expose concrete fine members that
+were incorrectly merged for that consumer.
 
-```text
-tensor       = lossless structural AND
-coproduct    = lossless structural OR
-coarsening   = intentional loss of semantic resolution
-factorization = proof that the loss is safe for a selected consumer
-```
-
-## Example: checkout
+## Small example: checkout
 
 The checked
-[checkout example](ArchiScriptExamples/Checkout.lean) is intentionally more than
-an enum-to-enum toy. Its two input carriers exist independently of the semantic
-cases we later select:
+[Checkout model](ArchiScriptExamples/Checkout.lean) starts from two independent
+runtime carriers:
 
 ```text
-PaymentRequest        = { amountCents : Nat, paymentToken : String }
-InventoryObservation  = { requestedUnits : Nat, availableUnits : Nat }
+PaymentRequest
+InventoryObservation
 ```
 
-They induce two separate VDPs:
-
-```mermaid
-flowchart LR
-  P["PaymentInput VDP<br/>invalidAmount · missingToken · eligible"]
-  I["InventoryObservation VDP<br/>invalidDemand · shortfall · sufficient"]
-  T{{"⊗"}}
-  J["PaymentInput ⊗ InventoryObservation<br/>9 semantic members"]
-
-  P --- T
-  I --- T
-  T --- J
-```
-
-The undirected lines above mean **VDP construction**, not execution. Tensor keeps
-the full product: no pair disappears because it looks inconvenient.
-
-The individual members are then related by ordinary operations:
-
-```mermaid
-flowchart LR
-  subgraph PIN["PaymentInput"]
-    P0["invalidAmount"]
-    P1["missingToken"]
-    P2["eligible"]
-  end
-
-  subgraph POUT["PaymentPlan"]
-    Q0["rejectAmount"]
-    Q1["rejectToken"]
-    Q2["authorize"]
-  end
-
-  subgraph IIN["InventoryObservation"]
-    I0["invalidDemand"]
-    I1["shortfall"]
-    I2["sufficient"]
-  end
-
-  subgraph IOUT["InventoryPlan"]
-    J0["rejectDemand"]
-    J1["backorder"]
-    J2["reserve"]
-  end
-
-  P0 -->|"planPayment"| Q0
-  P1 -->|"planPayment"| Q1
-  P2 -->|"planPayment"| Q2
-
-  I0 -->|"planInventory"| J0
-  I1 -->|"planInventory"| J1
-  I2 -->|"planInventory"| J2
-```
-
-Those two member maps tensor into one operation between the product VDPs:
-
-```lean
-def planCheckoutFactors :
-    Operation
-      (paymentInputPartition.tensor inventoryObservationPartition)
-      (paymentPlanPartition.tensor inventoryPlanPartition) :=
-  planPayment.tensor planInventory
-```
-
-The next operation is deliberately **not** factorized. It makes a joint checkout
-decision from the nine product members:
-
-```mermaid
-flowchart LR
-  subgraph PLAN["PaymentPlan ⊗ InventoryPlan"]
-    A0["rejectAmount × rejectDemand"]
-    A1["rejectAmount × backorder"]
-    A2["rejectAmount × reserve"]
-    B0["rejectToken × rejectDemand"]
-    B1["rejectToken × backorder"]
-    B2["rejectToken × reserve"]
-    C0["authorize × rejectDemand"]
-    C1["authorize × backorder"]
-    C2["authorize × reserve"]
-  end
-
-  subgraph ACTION["CheckoutAction"]
-    R["rejectPayment"]
-    V["rejectInventoryRequest"]
-    W["waitForStock"]
-    O["placeOrder"]
-  end
-
-  F["FulfillmentCommand<br/>submitOrder"]
-  N(["∅ · undefined"])
-
-  A0 -->|"chooseCheckoutAction"| R
-  A1 -->|"chooseCheckoutAction"| R
-  A2 -->|"chooseCheckoutAction"| R
-  B0 -->|"chooseCheckoutAction"| R
-  B1 -->|"chooseCheckoutAction"| R
-  B2 -->|"chooseCheckoutAction"| R
-  C0 -->|"chooseCheckoutAction"| V
-  C1 -->|"chooseCheckoutAction"| W
-  C2 -->|"chooseCheckoutAction"| O
-
-  R -.->|"requestFulfillment"| N
-  V -.->|"requestFulfillment"| N
-  W -.->|"requestFulfillment"| N
-  O -->|"requestFulfillment"| F
-```
-
-This one picture shows the three core ArchiScript ideas:
-
-- **VDP members carry semantic distinctions**;
-- **Operation arrows map those members explicitly**;
-- **tensor preserves independent combinations**, while later operations may
-  intentionally coarsen them.
-
-The complete path is ordinary sequential composition after the tensor operation:
-
-```lean
-def decideCheckout :
-    Operation
-      (paymentInputPartition.tensor inventoryObservationPartition)
-      checkoutActionPartition :=
-  chooseCheckoutAction.comp planCheckoutFactors
-```
-
-`requestFulfillment` is partial: only `placeOrder` maps to
-`submitOrder`. The undefined members say nothing by themselves about runtime
-database, network, or queue effects.
-
-## Concurrency review shapes
-
-ArchiScript 0.3.1 does not prove races, but its topology can expose places that
-deserve a concurrency review. The checked
-[ConcurrencyQuestions example](ArchiScriptExamples/ConcurrencyQuestions.lean)
-contains both independent fan-in and a retry cycle:
-
-```mermaid
-flowchart LR
-  subgraph M["ManualTrigger"]
-    M0["reconcile"]
-    M1["force"]
-  end
-
-  subgraph T["TimerTrigger"]
-    T0["due"]
-  end
-
-  subgraph R["ReconcileMode"]
-    R0["normal"]
-    R1["forced"]
-  end
-
-  subgraph N["ReconcileNext"]
-    N0["retry"]
-    N1["stable"]
-  end
-
-  M0 -->|"fromManual"| R0
-  M1 -->|"fromManual"| R1
-  T0 -->|"fromTimer"| R0
-
-  R0 -->|"evaluateReconcile"| N0
-  R1 -->|"evaluateReconcile"| N1
-  N0 -->|"retry"| R0
-```
-
-The two incoming arrows to `ReconcileMode` come from **different source VDPs**,
-so they represent independently available architectural triggers. That is a
-useful review boundary if both paths later affect the same mutable resource.
-
-The cycle
+Each receives its own complete VDP and local operation:
 
 ```text
-ReconcileMode -> ReconcileNext -> ReconcileMode
+PaymentInput ──planPayment────▶ PaymentPlan
+Inventory    ──planInventory──▶ InventoryPlan
 ```
 
-is not a concurrency bug by itself; it is a sequential retry loop. The stronger
-question appears when an independently sourced arrow can enter the same loop
-while resource-changing work is in progress. At that point reviewers should ask
-about ordering, atomicity, idempotency, or commutativity. Those runtime claims
-remain `UNKNOWN` until resource/effect semantics or external evidence justify
-them.
+The independent maps tensor:
 
-## Stateful stress example
+```text
+PaymentInput ⊗ Inventory
+        │
+        │ planPayment ⊗ planInventory
+        ▼
+PaymentPlan ⊗ InventoryPlan
+        │
+        │ chooseCheckoutAction
+        ▼
+CheckoutAction
+```
+
+The final fulfillment consumer does not need every `CheckoutAction`
+distinction. The example therefore also defines a coarser view of the same
+carrier:
+
+```text
+CheckoutAction
+  ├── rejectPayment
+  ├── rejectInventoryRequest
+  ├── waitForStock
+  └── placeOrder
+          │
+          │ coarsen
+          ▼
+FulfillmentView
+  ├── noCommand
+  └── submit
+```
+
+and proves:
+
+```text
+requestFulfillment
+  =
+requestFulfillmentAtCoarseResolution ∘ forgetCheckoutActionDetail
+```
+
+So the coarse view is not a presentation guess; it is justified by
+factorization.
+
+## Full-calculus stress test
 
 The checked
-[ReservationController example](ArchiScriptExamples/ReservationController.lean)
-puts most of the calculus in one small system: independent triggers, tensor
-composition, a shared logical state, partial operations, state transitions, and
-several downstream effect contracts.
+[ReservationController](ArchiScriptExamples/ReservationController.lean) is the
+canonical stress test. It intentionally combines the major algebraic features
+in one model instead of demonstrating them in isolation.
 
-The diagrams follow the repository's existing review conventions: VDPs are
-containers, members are nodes inside them, `∅` is outside every VDP, and
-operation mappings are arrows. No custom palette is assigned; labels and shapes,
-not colors, carry semantics.
+The system has three design-time entry channels:
 
-### 1. Define the elementary VDPs and member maps
+- user request + inventory observation + reservation state;
+- payment event + reservation state;
+- expiry trigger + reservation state.
 
-The factor operations are readable before any tensor is introduced.
-
-```mermaid
-flowchart LR
-  subgraph UT["UserTrigger VDP"]
-    U0["malformed"]
-    U1["reserve"]
-    U2["cancel"]
-  end
-
-  subgraph UI["UserIntent VDP"]
-    UI0["reserve"]
-    UI1["cancel"]
-  end
-
-  UX(["∅ · undefined"])
-
-  subgraph IO["InventoryObservation VDP"]
-    I0["unavailable"]
-    I1["available"]
-  end
-
-  subgraph IP["InventoryPlan VDP"]
-    IP0["blocked"]
-    IP1["canHold"]
-  end
-
-  U0 -->|"parseUser"| UX
-  U1 -->|"parseUser"| UI0
-  U2 -->|"parseUser"| UI1
-
-  I0 -->|"planInventory"| IP0
-  I1 -->|"planInventory"| IP1
-```
-
-The shared state is another elementary VDP, not something manufactured by a
-trigger:
-
-```mermaid
-flowchart LR
-  subgraph RS["ReservationState VDP"]
-    S0["empty"]
-    S1["held"]
-    S2["paid"]
-    S3["cancelled"]
-    S4["expired"]
-  end
-```
-
-### 2. Tensor the independent operations without exploding the product map
-
-The user path has three independent coordinates:
-
-```text
-parseUser     : UserTrigger          ⇀ UserIntent
-planInventory : InventoryObservation → InventoryPlan
-id            : ReservationState     → ReservationState
-```
-
-They are composed tensorially as one operation:
-
-```lean
-prepareUserContext =
-  (parseUser.tensor planInventory).tensor
-    (Operation.id reservationStatePartition)
-```
-
-The diagram deliberately leaves the component operations factored. Expanding
-`prepareUserContext` into twenty Cartesian member arrows would add no new
-architectural information: those arrows are already determined componentwise by
-the three operations above.
-
-This next picture is an **operation-algebra view**, not a VDP/member view.
-Rounded nodes denote operations; there are deliberately no VDP containers in
-this picture.
-
-```mermaid
-flowchart LR
-  F1(["parseUser<br/>UserTrigger ⇀ UserIntent"])
-  F2(["planInventory<br/>InventoryObservation → InventoryPlan"])
-  F3(["id<br/>ReservationState → ReservationState"])
-  T{{"⊗"}}
-  OP(["prepareUserContext<br/>(parseUser ⊗ planInventory) ⊗ id"])
-
-  F1 --- T
-  F2 --- T
-  F3 --- T
-  T --> OP
-```
-
-Together they induce the following compact **Level 1 VDP topology**. Here each
-box denotes one collapsed VDP; member detail is intentionally hidden because it
-is mechanically determined by the factors.
+Within a channel, independently valued coordinates are combined with tensor.
+Across the three already-established channels, the controller uses coproduct.
+The resulting paths converge on one detailed mutation VDP. Different consumers
+then require different semantic resolutions of that same mutation carrier.
 
 ```mermaid
 flowchart TB
-  SRC["Tensor VDP<br/>(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState<br/>30 = 3 × 2 × 5 members"]
-  DST["Tensor VDP<br/>(UserIntent ⊗ InventoryPlan) ⊗ ReservationState<br/>20 = 2 × 2 × 5 members"]
+  UT["UserTrigger VDP"]
+  IO["InventoryObservation VDP"]
+  RS["ReservationState VDP"]
+  PT["PaymentTrigger VDP"]
+  ET["ExpiryTrigger VDP"]
 
-  SRC -->|"prepareUserContext = (parseUser ⊗ planInventory) ⊗ id"| DST
+  UXT{{"⊗"}}
+  PXT{{"⊗"}}
+  EXT{{"⊗"}}
+
+  UC["UserContext<br/>(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState"]
+  PC["PaymentContext<br/>PaymentTrigger ⊗ ReservationState"]
+  EC["ExpiryContext<br/>ExpiryTrigger ⊗ ReservationState"]
+
+  UDC["UserDecisionContext<br/>(UserIntent ⊗ InventoryPlan) ⊗ ReservationState"]
+
+  COP{{"⊕"}}
+  CI["ControllerInput<br/>UserContext ⊕ PaymentContext ⊕ ExpiryContext"]
+
+  RM["ReservationMutation VDP<br/>hold · markPaid · cancel · expire"]
+  RSTATE["ReservationState VDP<br/>empty · held · paid · cancelled · expired"]
+  WRITE["ReservationWrite VDP"]
+  OUTBOX["OutboxMessage VDP"]
+
+  Q["InventoryMutationView<br/>reserve · noCommand · release"]
+  INV["InventoryCommand VDP<br/>reserveUnits · releaseUnits"]
+  NONE(["∅ · undefined"])
+
+  NOTE1["factorization proven:<br/>inventoryEffect = coarseInventoryEffect ∘ q"]
+  NOTE2["factorization rejected for publishMutation:<br/>cancel and expire coarsen together<br/>but publish different messages"]
+
+  UT --- UXT
+  IO --- UXT
+  RS --- UXT
+  UXT --- UC
+
+  PT --- PXT
+  RS --- PXT
+  PXT --- PC
+
+  ET --- EXT
+  RS --- EXT
+  EXT --- EC
+
+  UC -->|"prepareUserContext"| UDC
+  UDC -->|"decideUserMutation"| RM
+
+  UC -.->|"coproduct injection"| COP
+  PC -.->|"coproduct injection"| COP
+  EC -.->|"coproduct injection"| COP
+  COP --- CI
+  CI -->|"planControllerMutation = copair(...)"| RM
+
+  PC -->|"planPaymentMutation"| RM
+  EC -->|"planExpiryMutation"| RM
+
+  RM -->|"nextReservationState"| RSTATE
+  RM -->|"persistMutation"| WRITE
+  RM -->|"publishMutation"| OUTBOX
+
+  RM -->|"q = forgetInventoryMutationDetail"| Q
+  Q -->|"inventoryEffectAtCoarseResolution"| INV
+  Q -.->|"noCommand"| NONE
+
+  Q --- NOTE1
+  Q --- NOTE2
 ```
 
-with `3 × 2 × 5 = 30` source members and `2 × 2 × 5 = 20` target
-members. The full Cartesian products still exist; the diagram simply does not
-force the reader to trace mechanically induced arrows one by one.
+The diagram contains several different kinds of structure; they should not be
+confused:
 
-The next operation is different: `decideUserMutation` is genuinely
-cross-factor policy and therefore is **not** decomposed into factor operations.
+- the `⊗` nodes are **VDP construction** for independent coordinates;
+- the `⊕` node is **lossless design-time alternative aggregation**;
+- solid labeled arrows are ordinary partial `Operation` mappings or
+  compositions of them;
+- `q` is an ordinary total operation induced by a proved coarsening;
+- the first note records a successful factorization theorem;
+- the second note records a failed factorization: the inventory view may merge
+  `cancel` and `expire`, but the outbox consumer may not;
+- `∅` is undefinedness, not a VDP member.
 
-### 3. Independent triggers can observe the same state
-
-Payment and expiry are independently available trigger VDPs. Their decision
-operations consume different tensor contexts that both include the same
-`ReservationState` factor.
-
-This is a focused branch-map view: only members relevant to the review question
-are shown. The omitted product members remain present; the operation is
-undefined on them.
-
-```mermaid
-flowchart LR
-  subgraph PC["PaymentTrigger ⊗ ReservationState VDP · 10 members total"]
-    P0["authorized × held"]
-    P1["failed × held"]
-    POTHER["[display group: other 8 members]"]
-  end
-
-  subgraph EC["ExpiryTrigger ⊗ ReservationState VDP · 5 members total"]
-    E0["fired × held"]
-    EOTHER["[display group: other 4 members]"]
-  end
-
-  subgraph RM["ReservationMutation VDP"]
-    M0["hold"]
-    M1["markPaid"]
-    M2["cancel"]
-    M3["expire"]
-  end
-
-  P0 -->|"planPaymentMutation"| M1
-  P1 -->|"planPaymentMutation"| M2
-  E0 -->|"planExpiryMutation"| M3
-```
-
-The display-group boxes are **not new model members**; they only collapse
-members that are present but uninteresting for this focused review. Concretely:
-
-- `PaymentTrigger ⊗ ReservationState`: the other 8 members are
-  `authorized × empty`, `authorized × paid`,
-  `authorized × cancelled`, `authorized × expired`,
-  `failed × empty`, `failed × paid`, `failed × cancelled`, and
-  `failed × expired`;
-- `ExpiryTrigger ⊗ ReservationState`: the other 4 members are
-  `fired × empty`, `fired × paid`, `fired × cancelled`, and
-  `fired × expired`.
-
-The corresponding operations are undefined on every member in those display
-groups. No edge is drawn from a VDP container to `∅`, because an operation is
-defined on members, not on the container itself.
-
-The concurrency review hotspot is now easy to read:
+The same model also exposes a concurrency review boundary:
 
 ```text
-authorized × held -> markPaid
-fired      × held -> expire
+authorized × held ──▶ markPaid
+fired      × held ──▶ expire
 ```
 
-Two independently sourced paths can observe the same semantic state member and
-request incompatible updates. That is a strong review question, not a Lean
-proof of a runtime race.
+Those independently sourced paths can request incompatible updates from the
+same observed state. ArchiScript exposes the topology, but does not claim that a
+runtime race occurs. Ordering, atomicity, liveness, resource effects, and
+production conformance require additional semantics or evidence.
 
-### 4. State transition and effects are ordinary operations
+## Diagram discipline
 
-One mutation VDP fans out into several contracts. This is ordinary graph
-fan-out, not tensor: there is one mutation coordinate, not several independent
-copies of it.
+ArchiScript diagrams are projections of the checked model, not an independent
+source of truth.
 
-```mermaid
-flowchart LR
-  subgraph RM["ReservationMutation VDP"]
-    M0["hold"]
-    M1["markPaid"]
-    M2["cancel"]
-    M3["expire"]
-  end
+A useful diagram may collapse detail only when the collapse is justified:
 
-  subgraph RS["ReservationState VDP"]
-    S0["empty"]
-    S1["held"]
-    S2["paid"]
-    S3["cancelled"]
-    S4["expired"]
-  end
+- tensor factors may stay visually factored rather than expanding a large
+  Cartesian product;
+- coproduct summands may be shown under one structural alternative node because
+  the tags remain present in the model;
+- fine VDP members may be replaced by a coarse VDP for a selected consumer only
+  when factorization proves that the consumer cannot observe the removed
+  distinctions.
 
-  subgraph RW["ReservationWrite VDP"]
-    W0["setHeld"]
-    W1["setPaid"]
-    W2["setCancelled"]
-    W3["setExpired"]
-  end
+A display group with hidden members is only a presentation device. It does not
+create a new VDP member.
 
-  subgraph OM["OutboxMessage VDP"]
-    O0["requestPayment"]
-    O1["reservationPaid"]
-    O2["reservationCancelled"]
-    O3["reservationExpired"]
-  end
+## What ArchiScript checks
 
-  subgraph IC["InventoryCommand VDP"]
-    I0["reserveUnits"]
-    I1["releaseUnits"]
-  end
+For the declared model, Lean can check things such as:
 
-  IX(["∅ · undefined"])
+- VDP coverage, disjointness, and inhabitance;
+- correspondence between semantic predicates and selected members;
+- partial member mappings;
+- sequential composition;
+- tensor laws and symmetric monoidal coherence;
+- coproduct injections, copairing, and uniqueness;
+- semantic refinement/coarsening;
+- totality and surjectivity of proved coarsening maps;
+- positive consumer factorization;
+- concrete conflicts that prevent a proposed semantic zoom;
+- architecture review and implementation-handoff obligations encoded by the
+  review layer.
 
-  M0 -->|"nextReservationState"| S1
-  M1 -->|"nextReservationState"| S2
-  M2 -->|"nextReservationState"| S3
-  M3 -->|"nextReservationState"| S4
+## What ArchiScript does not claim
 
-  M0 -->|"persistMutation"| W0
-  M1 -->|"persistMutation"| W1
-  M2 -->|"persistMutation"| W2
-  M3 -->|"persistMutation"| W3
+A successful proof does not establish that:
 
-  M0 -->|"publishMutation"| O0
-  M1 -->|"publishMutation"| O1
-  M2 -->|"publishMutation"| O2
-  M3 -->|"publishMutation"| O3
+- the carrier matches reality if the boundary was specified incorrectly;
+- an external producer obeys an assumed contract;
+- production code conforms to the architecture;
+- a member arrow represents a successful database, queue, HTTP, or filesystem
+  effect;
+- tensor means simultaneous execution;
+- fan-in proves a race;
+- a cycle proves deadlock;
+- the model has temporal, scheduler, resource, or distributed-system semantics
+  that were never declared.
 
-  M0 -->|"inventoryEffect"| I0
-  M1 -->|"inventoryEffect"| IX
-  M2 -->|"inventoryEffect"| I1
-  M3 -->|"inventoryEffect"| I1
-```
+ArchiScript keeps these unknowns visible rather than silently deriving them from
+graph shape.
 
-The state cycle is semantic:
+## Public calculus
 
-```text
-ReservationState observation
-        -> trigger context
-        -> ReservationMutation
-        -> nextReservationState
-        -> ReservationState
-```
-
-There is deliberately no `ReservationWrite -> ReservationState` arrow. A
-persistence request does not prove that a runtime write succeeded or that a
-later observation changed.
-
-Likewise,
-
-```lean
-persistMutation.tensor publishMutation
-```
-
-would be the wrong model for this fan-out: it would require two independent
-`ReservationMutation` slots. Two ordinary arrows from the same mutation VDP
-express the architecture correctly.
-
-## 0.3.1 monoidal API
-
-For VDPs `P` and `Q`, `Partition.tensor P Q` has carrier
-`P.Carrier × Q.Carrier` and every pair of members. Even `P.tensor P` has two
-independent carrier slots.
-
-The public API includes:
-
-```lean
-#check Partition.tensor
-#check Partition.unit
-#check SemanticPartition.tensor
-
-#check Operation.tensor
-#check Operation.tensor_id
-#check Operation.tensor_comp
-
-#check Partition.tensorAssociator
-#check Partition.tensorLeftUnitor
-#check Partition.tensorRightUnitor
-#check Partition.tensorSymmetry
-
-#check Operation.associator_natural
-#check Operation.leftUnitor_natural
-#check Operation.rightUnitor_natural
-#check Operation.symmetry_natural
-#check Operation.pentagon
-#check Operation.triangle
-#check Operation.hexagon
-```
-
-Tensor is mathematically permissive. If `Account(A) ⊗ Payment(B)` is a strange
-architectural combination, that is a **review question**, not a reason to mutate
-or partially define tensor.
-
-Tensor also does not mean runtime parallelism. Two branches of one operation are
-ordinary alternatives of one partial map; they are not concurrent arrows.
-
-## Core tooling
-
-| Area | API |
+| Area | Main API |
 | --- | --- |
 | Semantic regions | `Domain`, complement, relative complement, `DomainDerivation` |
 | VDPs | `Partition`, `HasMembers`, `SemanticPartition` |
 | Boundary evidence | `CarrierOrigin`, `CarrierClosure`, `ArchitecturalPartition` |
 | Sequential calculus | `Operation.id`, `Operation.comp` |
-| Independent calculus | `Partition.tensor`, `SemanticPartition.tensor`, `Operation.tensor` |
+| Independent aggregation | `Partition.tensor`, `SemanticPartition.tensor`, `Operation.tensor` |
+| Alternative aggregation | `Partition.coproduct`, `SemanticPartition.coproduct`, injections, `Operation.copair` |
 | Coherence | associator, unitors, symmetry, naturality, pentagon, triangle, hexagon |
+| Semantic resolution | `Partition.RefinesVia`, `Partition.Refines`, `Partition.coarseningOperation` |
+| Factorization | `ConstantOnFibers`, `FactorsThrough`, `firstFiberConflict`, `analyzeFactorization` |
 | Handoff | `Operation.Declaration`, `Operation.Registry`, canonical branch addresses |
 | Routing | `ParameterizedPartition` |
 | Review | `ReviewFinding`, `ReviewRecord`, revision-bound implementation gate |
 
-## Modeling rules
-
-Three rules prevent most bad models.
-
-**Start from the carrier, not from desired outcomes.** Coverage proves coverage
-of the carrier you declared. If malformed input, stale state, or relevant
-environment context was omitted from the carrier, Lean cannot recover it.
-
-**State semantic meaning independently of the classifier.** Member names are not
-definitions. Define predicates first, then prove `Partition.HasMembers`.
-
-**Keep member maps separate from effects.** `Operation X Y` is a partial map
-between semantic members. It is not a database transaction, network request,
-scheduler, or handler execution.
-
-## Review and implementation handoff
-
-ArchiScript keeps proof and engineering approval separate.
-
-`ArchitecturalPartition` records carrier provenance and selected semantic
-members. `Operation.Registry` gives stable operation and branch identities,
-responsibility, implementation dispositions, source references, and evidence.
-`ReviewRecord.implementationAllowed` becomes true only for an approved matching
-revision with no open findings.
-
-A compiling model is therefore not automatically an approved architecture.
-
-## What ArchiScript does not claim
-
-ArchiScript 0.3.1 does not:
-
-- discover requirements omitted from the carrier;
-- prove that an external system enforces a declared boundary guarantee;
-- prove general production-code conformance;
-- infer runtime effects from member arrows;
-- model scheduler interleavings or liveness;
-- automatically prove races, deadlocks, atomicity, or idempotency;
-- treat tensor as common refinement or same-value synchronization;
-- filter supposedly impossible tensor member pairs.
-
-Use complementary formal tools when the problem requires temporal or distributed
-behavior beyond this calculus.
-
 ## Examples
 
-- [Checkout](ArchiScriptExamples/Checkout.lean) — multi-VDP tensor + sequential composition
+- [Checkout](ArchiScriptExamples/Checkout.lean) — tensor, composition, coarsening, and factorization
+- [ConcurrencyQuestions](ArchiScriptExamples/ConcurrencyQuestions.lean) — design-time coproduct fan-in, tensor, and retry-cycle review shapes
+- [ReservationController](ArchiScriptExamples/ReservationController.lean) — full-calculus stress test
+- [FormInput](ArchiScriptExamples/FormInput.lean) — direct refinement/coarsening example
+- [Coproduct](ArchiScriptExamples/Coproduct.lean) — minimal Browser/CLI coproduct example
 - [PaymentWebhook](ArchiScriptExamples/PaymentWebhook.lean) — semantic decisions with observed ledger state
 - [PaymentWebhookNetwork](ArchiScriptExamples/PaymentWebhookNetwork.lean) — connected multi-VDP architecture
-- [FormInput](ArchiScriptExamples/FormInput.lean) — multiple resolutions of one carrier
 - [UserRegistration](ArchiScriptExamples/UserRegistration.lean) — canonical branches and routing
-- [Asphalt](ArchiScriptExamples/Asphalt.lean) — adversarial boundary/assumption stress test
+- [Asphalt](ArchiScriptExamples/Asphalt.lean) — adversarial carrier and assumption stress test
 - [Monoidal](ArchiScriptExamples/Monoidal.lean) — compact tensor/coherence example
-- [ConcurrencyQuestions](ArchiScriptExamples/ConcurrencyQuestions.lean) — independent fan-in and retry-cycle review shapes
-- [ReservationController](ArchiScriptExamples/ReservationController.lean) — tensor, shared state, independent triggers, partial effects, and same-resource update review
 
 ## Build
 
@@ -673,27 +479,30 @@ python -m unittest discover -s scripts -p "test_*.py"
 node --test examples/payment-webhook.test.mjs
 ```
 
-The required PR gate runs the same checks. See [CONTRIBUTING.md](CONTRIBUTING.md).
+The required PR gate runs the same checks. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## AI skill
 
 The repository includes an
 [ArchiScript skill](skills/archiscript/SKILL.md) for AI agents. It teaches the
-agent to audit carriers, define semantic predicates independently, use tensor
-with full-product semantics, preserve assumptions and unknowns, resolve canonical
-branch bindings, and keep architecture proof separate from code conformance.
+agent to begin from a justified carrier, state semantics independently of
+classification, use tensor and coproduct with their strict structural meanings,
+prove resolution changes rather than drawing them heuristically, preserve
+unknowns, and keep formal architecture separate from production-code claims.
 
 The public API smoke test is
 [skills/archiscript/examples/CurrentApi.lean](skills/archiscript/examples/CurrentApi.lean).
 
 ## Project status
 
-ArchiScript deliberately builds on established mathematics. The experiment is
-whether a small semantic architecture calculus, Lean-checked obligations, and
-explicit human review improve AI-driven implementation by exposing omitted
-cases and hidden assumptions before code is written.
+ArchiScript deliberately builds on established mathematics rather than a
+project-specific software ontology. The experiment is whether a small semantic
+architecture calculus, machine-checked local obligations, and explicit human
+review improve AI-assisted implementation by exposing omitted cases, unjustified
+generalizations, and unsafe simplifications before code is written.
 
-See [CHANGELOG.md](CHANGELOG.md) for release history.
+Release history belongs in [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
