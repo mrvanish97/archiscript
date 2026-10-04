@@ -313,6 +313,13 @@ def factoredSourceIso :
 The isomorphism shows one shared structural right coordinate. It does not prove
 one physical read, cache lookup, transaction, or runtime instance.
 
+A normalizer should consume known/proved structural `PartitionIso` witnesses;
+it should not search for arbitrary carrier bijections simply because two VDPs
+happen to be mathematically isomorphic. Likewise, tensor does not acquire a
+missing context value: there is no canonical `Operation X (X.tensor R)`.
+If `R` is independent external context, make it a source coordinate unless a
+preceding ordinary Operation explicitly produces the paired value.
+
 Composition also does not remove its intermediate VDP. If an expression denotes
 `g.comp f : Operation A C`, the intermediate `B` from
 `A -> B -> C` remains an object of the architecture category. A review view
