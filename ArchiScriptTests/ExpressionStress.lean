@@ -30,6 +30,18 @@ example :
         controllerFactoringCertificate.sourceIso.toOperation :=
   controllerFactoringCertificate.commutes
 
+#guard controllerSourceFactoringIso.memberIndex.toFun
+    (.inl (.inl ((.reserve, .available), .empty))) ==
+  (.inl (.inl (.reserve, .available)), .empty)
+
+#guard controllerSourceFactoringIso.memberIndex.toFun
+    (.inl (.inr (.authorized, .held))) ==
+  (.inl (.inr .authorized), .held)
+
+#guard controllerSourceFactoringIso.memberIndex.toFun
+    (.inr (.fired, .held)) ==
+  (.inr .fired, .held)
+
 example :
     projectedControllerStateOperation =
       nextReservationState.comp planControllerMutation := rfl
