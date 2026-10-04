@@ -4,6 +4,18 @@ namespace ArchiScript
 
 namespace Partition
 
+private theorem cast_symm_cast {α β : Type u} (h : α = β) (y : β) :
+    h ▸ (h.symm ▸ y) = y := by
+  cases h
+  rfl
+
+private theorem cast_trans_apply {α β γ : Type u}
+    (h₁ : α = β) (h₂ : β = γ) (x : α) :
+    (h₁.trans h₂) ▸ x = h₂ ▸ (h₁ ▸ x) := by
+  cases h₁
+  cases h₂
+  rfl
+
 /--
 An explicit total member map witnesses that P refines Q when both VDPs classify
 one carrier and every fine semantic member is contained in its mapped coarse
@@ -56,7 +68,7 @@ theorem coarseningMap_surjective {P Q : Partition}
   have hi : P.member i x := rfl
   have hqi := hcontain i x hi
   have htransport : eqCarrier ▸ x = y := by
-    simp [x]
+    exact cast_symm_cast eqCarrier y
   rw [htransport] at hqi
   change Q.classify y = q i at hqi
   change Q.classify y = j at hy
@@ -74,7 +86,8 @@ theorem refines_trans {P Q R : Partition} :
   intro i x hx
   have hq := hpq i x hx
   have hr := hqr (q i) (eqPQ ▸ x) hq
-  simpa using hr
+  rw [cast_trans_apply]
+  exact hr
 
 end Partition
 
