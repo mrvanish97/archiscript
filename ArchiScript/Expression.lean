@@ -1,4 +1,5 @@
-import ArchiScript.Distributive
+import ArchiScript.Monoidal
+import ArchiScript.Coproduct
 
 namespace ArchiScript
 
