@@ -181,6 +181,33 @@ def symm {P Q : Partition} (e : PartitionIso P Q) : PartitionIso Q P where
     rw [← e.classify_commutes (e.carrier.invFun y)]
     rw [e.carrier.right_inv y, e.memberIndex.right_inv (Q.classify y)]
 
+/-- Compose classification-preserving VDP isomorphisms. -/
+def trans {P Q R : Partition} (e : PartitionIso P Q)
+    (f : PartitionIso Q R) : PartitionIso P R where
+  carrier := {
+    toFun := fun x => f.carrier.toFun (e.carrier.toFun x)
+    invFun := fun z => e.carrier.invFun (f.carrier.invFun z)
+    left_inv := by
+      intro x
+      rw [f.carrier.left_inv, e.carrier.left_inv]
+    right_inv := by
+      intro z
+      rw [e.carrier.right_inv, f.carrier.right_inv]
+  }
+  memberIndex := {
+    toFun := fun i => f.memberIndex.toFun (e.memberIndex.toFun i)
+    invFun := fun k => e.memberIndex.invFun (f.memberIndex.invFun k)
+    left_inv := by
+      intro i
+      rw [f.memberIndex.left_inv, e.memberIndex.left_inv]
+    right_inv := by
+      intro k
+      rw [e.memberIndex.right_inv, f.memberIndex.right_inv]
+  }
+  classify_commutes := by
+    intro x
+    rw [f.classify_commutes, e.classify_commutes]
+
 end PartitionIso
 
 theorem partitionIso_preserves_member {P Q : Partition} (r : PartitionIso P Q)
