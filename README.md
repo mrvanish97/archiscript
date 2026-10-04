@@ -228,362 +228,259 @@ them.
 
 The checked
 [ReservationController example](ArchiScriptExamples/ReservationController.lean)
-puts most of the calculus in one small system: several independently available
-triggers, tensor products, partial operations, a shared logical state, and
-multiple downstream effect contracts.
+puts most of the calculus in one small system: independent triggers, tensor
+composition, a shared logical state, partial operations, state transitions, and
+several downstream effect contracts.
 
-The diagrams use one visual grammar throughout:
+The diagrams follow the repository's existing review conventions: VDPs are
+containers, members are nodes inside them, `∅` is outside every VDP, and
+operation mappings are arrows. No custom palette is assigned; labels and shapes,
+not colors, carry semantics.
 
-- **yellow container = one VDP**;
-- **blue node = one member of that VDP**;
-- **undirected connection / ⊗ = tensor construction**;
-- **directed arrow = an `Operation` member mapping**.
+### 1. Define the elementary VDPs and member maps
 
-### 1. Elementary VDPs first
-
-Before any tensor appears, every elementary VDP is explicit and every blue node
-is an actual member.
+The factor operations are readable before any tensor is introduced.
 
 ```mermaid
 flowchart LR
-  classDef member fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:1.5px
-
   subgraph UT["UserTrigger VDP"]
-    UT0["malformed"]:::member
-    UT1["reserve"]:::member
-    UT2["cancel"]:::member
+    U0["malformed"]
+    U1["reserve"]
+    U2["cancel"]
   end
 
   subgraph UI["UserIntent VDP"]
-    UI0["reserve"]:::member
-    UI1["cancel"]:::member
+    UI0["reserve"]
+    UI1["cancel"]
   end
 
+  UX(["∅ · undefined"])
+
   subgraph IO["InventoryObservation VDP"]
-    IO0["unavailable"]:::member
-    IO1["available"]:::member
+    I0["unavailable"]
+    I1["available"]
   end
 
   subgraph IP["InventoryPlan VDP"]
-    IP0["blocked"]:::member
-    IP1["canHold"]:::member
+    IP0["blocked"]
+    IP1["canHold"]
   end
 
-  subgraph PT["PaymentTrigger VDP"]
-    PT0["authorized"]:::member
-    PT1["failed"]:::member
-  end
+  U0 -->|"parseUser"| UX
+  U1 -->|"parseUser"| UI0
+  U2 -->|"parseUser"| UI1
 
-  subgraph ET["ExpiryTrigger VDP"]
-    ET0["fired"]:::member
-  end
-
-  subgraph RS["ReservationState VDP"]
-    RS0["empty"]:::member
-    RS1["held"]:::member
-    RS2["paid"]:::member
-    RS3["cancelled"]:::member
-    RS4["expired"]:::member
-  end
-
-  subgraph RM["ReservationMutation VDP"]
-    RM0["hold"]:::member
-    RM1["markPaid"]:::member
-    RM2["cancel"]:::member
-    RM3["expire"]:::member
-  end
-
-  subgraph RW["ReservationWrite VDP"]
-    RW0["setHeld"]:::member
-    RW1["setPaid"]:::member
-    RW2["setCancelled"]:::member
-    RW3["setExpired"]:::member
-  end
-
-  subgraph OM["OutboxMessage VDP"]
-    OM0["requestPayment"]:::member
-    OM1["reservationPaid"]:::member
-    OM2["reservationCancelled"]:::member
-    OM3["reservationExpired"]:::member
-  end
-
-  subgraph IC["InventoryCommand VDP"]
-    IC0["reserveUnits"]:::member
-    IC1["releaseUnits"]:::member
-  end
-
-  UT1 -->|"parseUser"| UI0
-  UT2 -->|"parseUser"| UI1
-
-  IO0 -->|"planInventory"| IP0
-  IO1 -->|"planInventory"| IP1
-
-  RM0 -->|"nextReservationState"| RS1
-  RM1 -->|"nextReservationState"| RS2
-  RM2 -->|"nextReservationState"| RS3
-  RM3 -->|"nextReservationState"| RS4
-
-  RM0 -->|"persistMutation"| RW0
-  RM1 -->|"persistMutation"| RW1
-  RM2 -->|"persistMutation"| RW2
-  RM3 -->|"persistMutation"| RW3
-
-  RM0 -->|"publishMutation"| OM0
-  RM1 -->|"publishMutation"| OM1
-  RM2 -->|"publishMutation"| OM2
-  RM3 -->|"publishMutation"| OM3
-
-  RM0 -->|"inventoryEffect"| IC0
-  RM2 -->|"inventoryEffect"| IC1
-  RM3 -->|"inventoryEffect"| IC1
-
-  style UT fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style UI fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style IO fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style IP fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style PT fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style ET fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style RS fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style RM fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style RW fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style OM fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style IC fill:#fff4cc,stroke:#d6a700,stroke-width:2px
+  I0 -->|"planInventory"| IP0
+  I1 -->|"planInventory"| IP1
 ```
 
-The missing `malformed -> UserIntent` arrow and
-`markPaid -> InventoryCommand` arrow are deliberate: those operations are
-partial. Side effects are not special syntax; persistence, publication, and
-inventory work are just more member maps.
+The shared state is another elementary VDP, not something manufactured by a
+trigger:
 
-### 2. Then tensor the elementary VDPs
+```mermaid
+flowchart LR
+  subgraph RS["ReservationState VDP"]
+    S0["empty"]
+    S1["held"]
+    S2["paid"]
+    S3["cancelled"]
+    S4["expired"]
+  end
+```
 
-The user path forms
+### 2. Tensor the independent operations without exploding the product map
+
+The user path has three independent coordinates:
+
+```text
+parseUser     : UserTrigger          ⇀ UserIntent
+planInventory : InventoryObservation → InventoryPlan
+id            : ReservationState     → ReservationState
+```
+
+They are composed tensorially as one operation:
+
+```lean
+prepareUserContext =
+  (parseUser.tensor planInventory).tensor
+    (Operation.id reservationStatePartition)
+```
+
+The diagram deliberately leaves the component operations factored. Expanding
+`prepareUserContext` into twenty Cartesian member arrows would add no new
+architectural information: those arrows are already determined componentwise by
+the three operations above.
+
+```mermaid
+flowchart LR
+  subgraph F1["factor 1"]
+    A["UserTrigger VDP"] -->|"parseUser · partial"| B["UserIntent VDP"]
+  end
+
+  subgraph F2["factor 2"]
+    C["InventoryObservation VDP"] -->|"planInventory"| D["InventoryPlan VDP"]
+  end
+
+  subgraph F3["factor 3"]
+    E["ReservationState VDP"] -->|"id"| F["ReservationState VDP"]
+  end
+```
+
+Together they induce the compact product-level arrow
 
 ```text
 (UserTrigger ⊗ InventoryObservation) ⊗ ReservationState
-    3 × 2 × 5 = 30 members
-
+                         |
+                         | (parseUser ⊗ planInventory) ⊗ id
+                         v
 (UserIntent ⊗ InventoryPlan) ⊗ ReservationState
-    2 × 2 × 5 = 20 members
 ```
 
-and `prepareUserContext = (parseUser ⊗ planInventory) ⊗ id`.
-Every product member is shown below. The twenty directed
-`prepareUserContext` arrows are exactly the componentwise tensor mapping;
-the ten `malformed × ...` members have no arrow because `parseUser malformed =
-none`.
+with `3 × 2 × 5 = 30` source members and `2 × 2 × 5 = 20` target
+members. The full Cartesian products still exist; the diagram simply does not
+force the reader to trace mechanically induced arrows one by one.
+
+The next operation is different: `decideUserMutation` is genuinely
+cross-factor policy and therefore is **not** decomposed into factor operations.
+
+### 3. Independent triggers can observe the same state
+
+Payment and expiry are independently available trigger VDPs. Their decision
+operations consume different tensor contexts that both include the same
+`ReservationState` factor.
+
+This is a focused branch-map view: only members relevant to the review question
+are shown. The omitted product members remain present; the operation is
+undefined on them.
 
 ```mermaid
-flowchart TB
-  classDef member fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:1.5px
-
-  subgraph UC0["Tensor VDP · (UserTrigger ⊗ InventoryObservation) ⊗ ReservationState · 30 members"]
-    direction TB
-    subgraph UC0_SL_malformed["slice: malformed × InventoryObservation × ReservationState"]
-      direction LR
-      UC0_malformed_unavailable_empty["malformed × unavailable × empty"]:::member
-      UC0_malformed_unavailable_held["malformed × unavailable × held"]:::member
-      UC0_malformed_unavailable_paid["malformed × unavailable × paid"]:::member
-      UC0_malformed_unavailable_cancelled["malformed × unavailable × cancelled"]:::member
-      UC0_malformed_unavailable_expired["malformed × unavailable × expired"]:::member
-      UC0_malformed_available_empty["malformed × available × empty"]:::member
-      UC0_malformed_available_held["malformed × available × held"]:::member
-      UC0_malformed_available_paid["malformed × available × paid"]:::member
-      UC0_malformed_available_cancelled["malformed × available × cancelled"]:::member
-      UC0_malformed_available_expired["malformed × available × expired"]:::member
-    end
-    subgraph UC0_SL_reserve["slice: reserve × InventoryObservation × ReservationState"]
-      direction LR
-      UC0_reserve_unavailable_empty["reserve × unavailable × empty"]:::member
-      UC0_reserve_unavailable_held["reserve × unavailable × held"]:::member
-      UC0_reserve_unavailable_paid["reserve × unavailable × paid"]:::member
-      UC0_reserve_unavailable_cancelled["reserve × unavailable × cancelled"]:::member
-      UC0_reserve_unavailable_expired["reserve × unavailable × expired"]:::member
-      UC0_reserve_available_empty["reserve × available × empty"]:::member
-      UC0_reserve_available_held["reserve × available × held"]:::member
-      UC0_reserve_available_paid["reserve × available × paid"]:::member
-      UC0_reserve_available_cancelled["reserve × available × cancelled"]:::member
-      UC0_reserve_available_expired["reserve × available × expired"]:::member
-    end
-    subgraph UC0_SL_cancel["slice: cancel × InventoryObservation × ReservationState"]
-      direction LR
-      UC0_cancel_unavailable_empty["cancel × unavailable × empty"]:::member
-      UC0_cancel_unavailable_held["cancel × unavailable × held"]:::member
-      UC0_cancel_unavailable_paid["cancel × unavailable × paid"]:::member
-      UC0_cancel_unavailable_cancelled["cancel × unavailable × cancelled"]:::member
-      UC0_cancel_unavailable_expired["cancel × unavailable × expired"]:::member
-      UC0_cancel_available_empty["cancel × available × empty"]:::member
-      UC0_cancel_available_held["cancel × available × held"]:::member
-      UC0_cancel_available_paid["cancel × available × paid"]:::member
-      UC0_cancel_available_cancelled["cancel × available × cancelled"]:::member
-      UC0_cancel_available_expired["cancel × available × expired"]:::member
-    end
+flowchart LR
+  subgraph PC["PaymentTrigger ⊗ ReservationState VDP · 10 members"]
+    P0["authorized × held"]
+    P1["failed × held"]
   end
 
-  subgraph UC1["Tensor VDP · (UserIntent ⊗ InventoryPlan) ⊗ ReservationState · 20 members"]
-    direction TB
-    subgraph UC1_SL_reserve["slice: reserve × InventoryPlan × ReservationState"]
-      direction LR
-      UC1_reserve_blocked_empty["reserve × blocked × empty"]:::member
-      UC1_reserve_blocked_held["reserve × blocked × held"]:::member
-      UC1_reserve_blocked_paid["reserve × blocked × paid"]:::member
-      UC1_reserve_blocked_cancelled["reserve × blocked × cancelled"]:::member
-      UC1_reserve_blocked_expired["reserve × blocked × expired"]:::member
-      UC1_reserve_canHold_empty["reserve × canHold × empty"]:::member
-      UC1_reserve_canHold_held["reserve × canHold × held"]:::member
-      UC1_reserve_canHold_paid["reserve × canHold × paid"]:::member
-      UC1_reserve_canHold_cancelled["reserve × canHold × cancelled"]:::member
-      UC1_reserve_canHold_expired["reserve × canHold × expired"]:::member
-    end
-    subgraph UC1_SL_cancel["slice: cancel × InventoryPlan × ReservationState"]
-      direction LR
-      UC1_cancel_blocked_empty["cancel × blocked × empty"]:::member
-      UC1_cancel_blocked_held["cancel × blocked × held"]:::member
-      UC1_cancel_blocked_paid["cancel × blocked × paid"]:::member
-      UC1_cancel_blocked_cancelled["cancel × blocked × cancelled"]:::member
-      UC1_cancel_blocked_expired["cancel × blocked × expired"]:::member
-      UC1_cancel_canHold_empty["cancel × canHold × empty"]:::member
-      UC1_cancel_canHold_held["cancel × canHold × held"]:::member
-      UC1_cancel_canHold_paid["cancel × canHold × paid"]:::member
-      UC1_cancel_canHold_cancelled["cancel × canHold × cancelled"]:::member
-      UC1_cancel_canHold_expired["cancel × canHold × expired"]:::member
-    end
+  subgraph EC["ExpiryTrigger ⊗ ReservationState VDP · 5 members"]
+    E0["fired × held"]
   end
 
-  subgraph MUT["ReservationMutation VDP"]
-    MU0["hold"]:::member
-    MU1["markPaid"]:::member
-    MU2["cancel"]:::member
-    MU3["expire"]:::member
+  subgraph RM["ReservationMutation VDP"]
+    M0["hold"]
+    M1["markPaid"]
+    M2["cancel"]
+    M3["expire"]
   end
 
-  UC0_reserve_unavailable_empty -->|"prepareUserContext"| UC1_reserve_blocked_empty
-  UC0_reserve_unavailable_held -->|"prepareUserContext"| UC1_reserve_blocked_held
-  UC0_reserve_unavailable_paid -->|"prepareUserContext"| UC1_reserve_blocked_paid
-  UC0_reserve_unavailable_cancelled -->|"prepareUserContext"| UC1_reserve_blocked_cancelled
-  UC0_reserve_unavailable_expired -->|"prepareUserContext"| UC1_reserve_blocked_expired
-  UC0_reserve_available_empty -->|"prepareUserContext"| UC1_reserve_canHold_empty
-  UC0_reserve_available_held -->|"prepareUserContext"| UC1_reserve_canHold_held
-  UC0_reserve_available_paid -->|"prepareUserContext"| UC1_reserve_canHold_paid
-  UC0_reserve_available_cancelled -->|"prepareUserContext"| UC1_reserve_canHold_cancelled
-  UC0_reserve_available_expired -->|"prepareUserContext"| UC1_reserve_canHold_expired
-  UC0_cancel_unavailable_empty -->|"prepareUserContext"| UC1_cancel_blocked_empty
-  UC0_cancel_unavailable_held -->|"prepareUserContext"| UC1_cancel_blocked_held
-  UC0_cancel_unavailable_paid -->|"prepareUserContext"| UC1_cancel_blocked_paid
-  UC0_cancel_unavailable_cancelled -->|"prepareUserContext"| UC1_cancel_blocked_cancelled
-  UC0_cancel_unavailable_expired -->|"prepareUserContext"| UC1_cancel_blocked_expired
-  UC0_cancel_available_empty -->|"prepareUserContext"| UC1_cancel_canHold_empty
-  UC0_cancel_available_held -->|"prepareUserContext"| UC1_cancel_canHold_held
-  UC0_cancel_available_paid -->|"prepareUserContext"| UC1_cancel_canHold_paid
-  UC0_cancel_available_cancelled -->|"prepareUserContext"| UC1_cancel_canHold_cancelled
-  UC0_cancel_available_expired -->|"prepareUserContext"| UC1_cancel_canHold_expired
+  PX(["∅ · other product members"])
+  EX(["∅ · other product members"])
 
-  UC1_reserve_canHold_empty -->|"decideUserMutation"| MU0
-  UC1_cancel_blocked_held -->|"decideUserMutation"| MU2
-  UC1_cancel_canHold_held -->|"decideUserMutation"| MU2
+  P0 -->|"planPaymentMutation"| M1
+  P1 -->|"planPaymentMutation"| M2
+  E0 -->|"planExpiryMutation"| M3
 
-  style UC0 fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style UC1 fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style MUT fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style UC0_SL_malformed fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-  style UC0_SL_reserve fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-  style UC0_SL_cancel fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-  style UC1_SL_reserve fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-  style UC1_SL_cancel fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
+  PC -.-> PX
+  EC -.-> EX
 ```
 
-This is the important separation: the elementary VDPs exist first; tensor does
-not invent their meanings. It only forms the full product of their already
-defined members.
-
-### 3. Independent triggers tensor with the same state VDP
-
-Payment and expiry are separate source VDPs. Each forms its own tensor with the
-same `ReservationState` VDP. Again, every blue node below is a real product
-member.
-
-```mermaid
-flowchart TB
-  classDef member fill:#dbeafe,stroke:#2563eb,color:#0f172a,stroke-width:1.5px
-
-  subgraph PC["Tensor VDP · PaymentTrigger ⊗ ReservationState · 10 members"]
-    direction TB
-    subgraph PC_SL_authorized["slice: authorized × ReservationState"]
-      direction LR
-      PC_authorized_empty["authorized × empty"]:::member
-      PC_authorized_held["authorized × held"]:::member
-      PC_authorized_paid["authorized × paid"]:::member
-      PC_authorized_cancelled["authorized × cancelled"]:::member
-      PC_authorized_expired["authorized × expired"]:::member
-    end
-    subgraph PC_SL_failed["slice: failed × ReservationState"]
-      direction LR
-      PC_failed_empty["failed × empty"]:::member
-      PC_failed_held["failed × held"]:::member
-      PC_failed_paid["failed × paid"]:::member
-      PC_failed_cancelled["failed × cancelled"]:::member
-      PC_failed_expired["failed × expired"]:::member
-    end
-  end
-
-  subgraph EC["Tensor VDP · ExpiryTrigger ⊗ ReservationState · 5 members"]
-    direction LR
-    EC_fired_empty["fired × empty"]:::member
-    EC_fired_held["fired × held"]:::member
-    EC_fired_paid["fired × paid"]:::member
-    EC_fired_cancelled["fired × cancelled"]:::member
-    EC_fired_expired["fired × expired"]:::member
-  end
-
-  subgraph MUT["ReservationMutation VDP"]
-    M0["hold"]:::member
-    M1["markPaid"]:::member
-    M2["cancel"]:::member
-    M3["expire"]:::member
-  end
-
-  PC_authorized_held -->|"planPaymentMutation"| M1
-  PC_failed_held -->|"planPaymentMutation"| M2
-  EC_fired_held -->|"planExpiryMutation"| M3
-
-  style PC fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style EC fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style MUT fill:#fff4cc,stroke:#d6a700,stroke-width:2px
-  style PC_SL_authorized fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-  style PC_SL_failed fill:transparent,stroke:#d1d5db,stroke-dasharray:3 3
-```
-
-Now the concurrency review hotspot is visible at member level:
+The concurrency review hotspot is now easy to read:
 
 ```text
-authorized × held -> markPaid -> setPaid
-fired      × held -> expire   -> setExpired
+authorized × held -> markPaid
+fired      × held -> expire
 ```
 
-Two independently available triggers can therefore observe the same semantic
-state member and request incompatible writes to the same logical reservation
-record. ArchiScript exposes that topology; it still does not prove whether the
-runtime serializes the writes, uses compare-and-swap, rejects stale
-observations, or allows a race.
+Two independently sourced paths can observe the same semantic state member and
+request incompatible updates. That is a strong review question, not a Lean
+proof of a runtime race.
 
-The semantic state transition is also kept distinct from the persistence
-contract:
+### 4. State transition and effects are ordinary operations
+
+One mutation VDP fans out into several contracts. This is ordinary graph
+fan-out, not tensor: there is one mutation coordinate, not several independent
+copies of it.
+
+```mermaid
+flowchart LR
+  subgraph RM["ReservationMutation VDP"]
+    M0["hold"]
+    M1["markPaid"]
+    M2["cancel"]
+    M3["expire"]
+  end
+
+  subgraph RS["ReservationState VDP"]
+    S0["empty"]
+    S1["held"]
+    S2["paid"]
+    S3["cancelled"]
+    S4["expired"]
+  end
+
+  subgraph RW["ReservationWrite VDP"]
+    W0["setHeld"]
+    W1["setPaid"]
+    W2["setCancelled"]
+    W3["setExpired"]
+  end
+
+  subgraph OM["OutboxMessage VDP"]
+    O0["requestPayment"]
+    O1["reservationPaid"]
+    O2["reservationCancelled"]
+    O3["reservationExpired"]
+  end
+
+  subgraph IC["InventoryCommand VDP"]
+    I0["reserveUnits"]
+    I1["releaseUnits"]
+  end
+
+  IX(["∅ · undefined"])
+
+  M0 -->|"nextReservationState"| S1
+  M1 -->|"nextReservationState"| S2
+  M2 -->|"nextReservationState"| S3
+  M3 -->|"nextReservationState"| S4
+
+  M0 -->|"persistMutation"| W0
+  M1 -->|"persistMutation"| W1
+  M2 -->|"persistMutation"| W2
+  M3 -->|"persistMutation"| W3
+
+  M0 -->|"publishMutation"| O0
+  M1 -->|"publishMutation"| O1
+  M2 -->|"publishMutation"| O2
+  M3 -->|"publishMutation"| O3
+
+  M0 -->|"inventoryEffect"| I0
+  M1 -->|"inventoryEffect"| IX
+  M2 -->|"inventoryEffect"| I1
+  M3 -->|"inventoryEffect"| I1
+```
+
+The state cycle is semantic:
+
+```text
+ReservationState observation
+        -> trigger context
+        -> ReservationMutation
+        -> nextReservationState
+        -> ReservationState
+```
+
+There is deliberately no `ReservationWrite -> ReservationState` arrow. A
+persistence request does not prove that a runtime write succeeded or that a
+later observation changed.
+
+Likewise,
 
 ```lean
-nextReservationState : ReservationMutation -> ReservationState
-persistMutation      : ReservationMutation -> ReservationWrite
-publishMutation      : ReservationMutation -> OutboxMessage
-inventoryEffect      : ReservationMutation -> InventoryCommand
+persistMutation.tensor publishMutation
 ```
 
-There is deliberately no `ReservationWrite -> ReservationState` arrow. A write
-request does not prove that the runtime effect occurred or that a later state
-observation changed.
-
-Finally, ordinary fan-out is not tensor. One `ReservationMutation` may have
-several outgoing operations. Writing
-`persistMutation.tensor publishMutation` would instead require two independent
-mutation slots and would describe a different architecture.
+would be the wrong model for this fan-out: it would require two independent
+`ReservationMutation` slots. Two ordinary arrows from the same mutation VDP
+express the architecture correctly.
 
 ## 0.3.0 monoidal API
 
