@@ -51,7 +51,7 @@ instance {X Y : Partition.{u, v}} :
   ⟨denote⟩
 
 /-- A finite dependent entry keeps one target together with its typed expression. -/
-structure Some (source : Partition.{u, v}) where
+structure Entry (source : Partition.{u, v}) where
   target : Partition.{u, v}
   expression : Expression source target
 
@@ -63,7 +63,7 @@ is added to the mathematical VDP or Operation structures.
 -/
 structure Family where
   source : Partition.{u, v}
-  expressions : List (Some source)
+  expressions : List (Entry source)
   nonempty : expressions ≠ []
 
 namespace Family
@@ -118,12 +118,33 @@ def source {X X' Y : Partition.{u, v}}
         Partition.PartitionIso.symm, Partition.PartitionIso.refl,
         Operation.comp, h, sourceIso.memberIndex.left_inv]
 
+/--
+Re-present an expression against an isomorphic target by postcomposing with the
+structural isomorphism.
+-/
+def target {X Y Y' : Partition.{u, v}}
+    (before : Expression X Y)
+    (targetIso : Partition.PartitionIso Y Y') :
+    Transport before
+      (.comp (.iso targetIso) before) where
+  sourceIso := Partition.PartitionIso.refl X
+  targetIso := targetIso
+  commutes := by
+    change
+      targetIso.toOperation.comp (denote before) =
+        (targetIso.toOperation.comp (denote before)).comp (Operation.id X)
+    exact (Operation.comp_id _).symm
+
 end Transport
 
 namespace Rewrite
 
 def refl {X Y : Partition.{u, v}} (e : Expression X Y) : Rewrite e e :=
   ⟨rfl⟩
+
+def symm {X Y : Partition.{u, v}} {a b : Expression X Y}
+    (ab : Rewrite a b) : Rewrite b a :=
+  ⟨ab.sound.symm⟩
 
 def trans {X Y : Partition.{u, v}} {a b c : Expression X Y}
     (ab : Rewrite a b) (bc : Rewrite b c) : Rewrite a c :=
