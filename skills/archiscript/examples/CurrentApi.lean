@@ -60,6 +60,16 @@ def accept : Operation requestPartition requestPartition where
     | .zero => none
     | .positive => some .positive
 
+#check Partition.coproduct
+#check SemanticPartition.coproduct
+#check Operation.coproductInl
+#check Operation.coproductInr
+#check Operation.copair
+#check Operation.copair_unique
+#check Partition.RefinesVia
+#check Partition.coarseningOperation
+#check Operation.analyzeFactorization
+
 def pairedRequests : SemanticPartition :=
   requestSemanticPartition.tensor requestSemanticPartition
 
