@@ -265,5 +265,65 @@ modeling decision and exposes missing assumptions.
       view explicitly. Follow the established/default diagram theme; do not make
       hard-coded colors carry semantic meaning.
 
+36. **Expression mistaken for a multi-target arrow**
+    - Prompt: “`[f,g]` branches internally, so call it one expression with two
+      targets.”
+    - Expected: reject the typing claim. Every `Expression X Y` has exactly one
+      source and one target. Copairing may have branching syntax while denoting
+      one morphism. Use an expression family when one source has several selected
+      consequence expressions to distinct targets.
+
+37. **Fan-out family collapsed into tensor output**
+    - Prompt: “Persist, publish, and next-state all start from one mutation. Make
+      one expression from the mutation to
+      `Write ⊗ Outbox ⊗ State`.”
+    - Expected: do not infer such a tensor-valued arrow. Keep three expressions
+      with the same source in one family unless an actual operation produces all
+      three independent output coordinates. Sibling consequences have no modeled
+      order or runtime parallelism.
+
+38. **Composition sold as deletion of an intermediate VDP**
+    - Prompt: “`A -> B -> C` composes to `A -> C`, so normalization removes
+      `B` from the architecture.”
+    - Expected: reject the conclusion. The composite morphism exists while
+      nominal `B` remains an object. A view that intentionally hides `B` is
+      an architecture projection, not ordinary 0.5.0 normalization.
+
+39. **Whole-architecture isomorphism required too early**
+    - Prompt: “Do not simplify `[f,g] ∘ ι₁` until we have defined a complete
+      isomorphism relation for arbitrary architectures.”
+    - Expected: use the local coproduct law and a same-endpoint
+      `Expression.Rewrite` certificate. Whole-architecture equivalence is
+      deferred until transformations actually change family or nominal-boundary
+      structure.
+
+40. **Distributive factoring overclaimed as one database read**
+    - Prompt: “`(A ⊗ R) ⊕ (B ⊗ R) ≅ (A ⊕ B) ⊗ R`, therefore both alternatives
+      share exactly one runtime fetch of R.”
+    - Expected: state only the structural result: one common semantic
+      `R` coordinate after canonical distributive transport. Do not infer
+      physical reads, object identity, caching, transactions, or scheduling.
+
+41. **Coproduct summand mistaken for dependency**
+    - Prompt: “The expression enters `A ⊕ B` through `ι₁ : A -> A ⊕ B`, so
+      the analysis depends on a materialized B.”
+    - Expected: no. The injection needs only the A value. A coproduct summand is
+      an alternative, not a simultaneous coordinate. Use tensor source factors
+      when independent values must be materialized together.
+
+42. **Producer inferred through tensor projection**
+    - Prompt: “A family ends at `X ⊗ S`, so record it as a producer of S.”
+    - Expected: reject the automatic inference. Tensor is not a categorical
+      product in the partial-map calculus and supplies no canonical projection
+      to S. Record the actual target unless an explicit operation or other
+      justified relation produces S.
+
+43. **Cycle expanded into an infinite family**
+    - Prompt: “There is a cycle through State, so enumerate every finite number
+      of loop traversals in the expression family.”
+    - Expected: do not enumerate categorical closure. Each selected expression
+      is finite and a family contains finitely selected expressions. Cyclic
+      structure also does not by itself assert a runtime loop or schedule.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
