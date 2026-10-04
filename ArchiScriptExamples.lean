@@ -6,3 +6,4 @@ import ArchiScriptExamples.Asphalt
 import ArchiScriptExamples.Monoidal
 import ArchiScriptExamples.Checkout
 import ArchiScriptExamples.ConcurrencyQuestions
+import ArchiScriptExamples.ReservationController
