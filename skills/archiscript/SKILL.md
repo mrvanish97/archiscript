@@ -11,7 +11,11 @@ VDP members, operations, independent factors, and open questions. Lean checks
 the explicit obligations of that proposed model. It cannot choose the right
 carrier, invent missing requirements, or establish unmodeled production behavior.
 Proof success is necessary evidence for the declared model and still needs human
-engineering review before implementation.
+engineering review before implementation. Treat Lean as the executable
+implementation of those necessary correctness criteria, not as an architecture
+search engine or general model checker: the agent proposes the architecture;
+Lean prevents the agent from hand-waving over the obligations ArchiScript has
+made formal.
 
 **The wide carrier is the first and most important modeling obligation.** Begin
 with the full universe of values that can reach the chosen boundary, including
@@ -317,6 +321,32 @@ force a deterministic member map.
 “Quantum superposition” is at most a bounded teaching analogy for unresolved
 observer knowledge. It is not implemented ArchiScript semantics.
 
+## Compose independent factors with tensor
+
+Use `Partition.tensor P Q` only with its actual 0.3.0 meaning: independent
+aggregation. The result always has carrier `P.Carrier × Q.Carrier` and the full
+member product. Never prune a pair because it looks semantically inconvenient,
+never collapse `P.tensor P` to one carrier value, and never reinterpret tensor
+as same-carrier intersection or common refinement.
+
+The mathematical tensor is permissive. `Account(A) ⊗ Payment(B)` is a valid
+VDP construction even when the architectural reason for considering those
+factors together is unclear. Do not make such a pair fail to compile merely
+because it looks unrelated. Preserve the full product and raise a human-review
+question about joint relevance when the model supplies no clear reason.
+
+Use `SemanticPartition.tensor` when both factors already carry independently
+stated member meanings; it derives product meanings and correspondence rather
+than asking the author to restate them. Use `Operation.tensor` to combine
+independent partial member maps. This is algebraic independence of slots and
+mappings, not a runtime scheduling claim.
+
+Treat rebracketing and factor order as representation choices governed by the
+canonical associator and symmetry. A finding that concerns only the set of
+tensor factors should not appear or disappear merely because the author wrote
+`(P ⊗ Q) ⊗ R` instead of `P ⊗ (Q ⊗ R)`, or swapped factors through the
+declared symmetry.
+
 ## Review independent arrows carefully
 
 Several branches of one `Operation` are alternative cases of one partial map.
@@ -353,6 +383,12 @@ Use the public vocabulary exactly:
   `Operation.tensor` for independent product composition, plus canonical
   associator, unitors, and symmetry in `ArchiScript.Monoidal`;
 - `ParameterizedPartition` for specialization by finite parameter members.
+
+Version 0.3.0 exposes concrete monoidal constructions and checked laws in the
+public library. Do not assume a separate Mathlib `MonoidalCategory` instance or
+invent abstractions that are not present in the installed API; use the concrete
+`Partition.tensor`, `Operation.tensor`, structural isomorphisms, and theorems
+the package actually exports.
 
 Before writing code, inspect the installed package's imports and source API.
 Do not revive legacy TypeScript marker recipes or obsolete VDP/PVDP Lean names.
@@ -516,6 +552,10 @@ presenting them as new guarantees about the system.
 ## Verification and scope
 
 - Run `lake build` and meaningful negative checks.
+- When changing the public API or this skill, also run
+  `lake env lean skills/archiscript/examples/CurrentApi.lean`; the smoke file
+  should exercise semantic partitions, tensor/coherence, architectural handoff,
+  canonical declarations, routed parameterization, and the review gate.
 - Check the chosen VDP members against their declared predicates. Do not impose
   partition obligations on every supporting subdomain or require a tree.
 - Require carrier provenance in review/handoff objects. Treat

@@ -2,638 +2,809 @@
 
 **Machine-checked software design for human review before AI writes code.**
 
-Use ArchiScript when an AI coding task has consequential cases: retries, stale
-state, failures, approvals, or several possible downstream actions. Agents
-propose the distinctions; Lean checks the stated obligations; engineers decide
-whether the model describes the actual problem before implementation.
+ArchiScript is a Lean library and an authoring discipline for making software
+architecture precise before implementation. An AI agent proposes the carrier,
+semantic distinctions, operations, independent factors, assumptions, and open
+questions. Lean checks the formal obligations of that declared model. Engineers
+then decide whether the model is adequate for the real system.
 
-**Without ArchiScript: an unchecked shortcut.** “Successful webhook → fulfill”
-merges first and duplicate deliveries and leaves other inputs out of the plan.
+Current release: **0.3.0**.
 
-```mermaid
-flowchart LR
-  A["First success"] --> S["status = success"]
-  B["Duplicate success"] --> S
-  S --> F["Fulfill for both"]
-  C["Empty event ID"] -.->|"omitted"| Q["No case in plan"]
-  D["status = pending"] -.->|"omitted"| Q
-```
+## What ArchiScript is for
 
-**With ArchiScript: start with the carrier.** The incoming webhook payload and
-the existing ledger observation are separate inputs to the decision:
+Architecture work often fails before code exists: an input case is omitted, a
+piece of preexisting state is treated as if it were part of the request, two
+branches that need different outcomes are merged, a partial operation is
+mistaken for a runtime effect, or two independently available inputs are combined
+without anyone asking why.
+
+ArchiScript gives those choices explicit mathematical objects:
+
+- a **carrier** is the full value universe considered at one architectural
+  boundary;
+- a **domain** is a semantic predicate over a carrier;
+- a **VDP** (value-domain partition) selects finitely many nonempty, disjoint,
+  exhaustive semantic members;
+- an **operation** is a partial function between VDP member sets;
+- sequential composition is ordinary operation composition;
+- independent composition is the VDP tensor introduced in 0.3.0;
+- review metadata records provenance, responsibility, implementation bindings,
+  evidence, assumptions, and approval separately from the calculus.
+
+The core workflow is:
+
+\[
+\text{requirements}
+\rightarrow
+\text{AI architecture proposal}
+\rightarrow
+\text{Lean obligations}
+\rightarrow
+\text{human review}
+\rightarrow
+\text{implementation}
+\]
+
+Lean is **not** an architecture search engine and not a general model checker.
+It is the executable implementation of necessary correctness criteria for the
+model that was declared. A successful proof says that those criteria hold
+relative to the chosen carrier, predicates, mappings, assumptions, and scope. It
+does not prove that the author chose the right carrier, included every real-world
+requirement, or that production code conforms.
+
+## A motivating example
+
+Suppose a payment webhook contains:
 
 ```json
-{"eventId":"p1","status":"pending"}
+{"eventId":"p1","status":"success"}
 ```
+
+Whether that event should trigger fulfillment may also depend on preexisting
+ledger state:
 
 ```json
 {"alreadyRecorded":false}
 ```
 
-The carrier is every pair `Input = WebhookPayload × LedgerObservation`.
-`eventId` and `status` can be *any* strings; the ledger observation can have
-either Boolean value. The input VDP must cover **all** such pairs, including
-this `pending` payload, empty IDs, and successful payloads paired with either
-ledger state.
+The architectural input is therefore not just the payload. It is a product:
 
-The carrier is the collection of things under consideration. It need not be a
-list of cases or a closed enum. The selected VDP members supply the strict
-classification: each carrier value must belong to exactly one nonempty member.
+\[
+\text{WebhookPayload}\times\text{LedgerObservation}.
+\]
 
-```mermaid
-flowchart TB
-  subgraph CARRIER["Carrier: Input = WebhookPayload × LedgerObservation"]
-    subgraph INPUT["inputPartition · selected members"]
-      direction TB
-      M["malformed · empty ID"]
-      U["unsupported · nonempty ID, other status"]
-      E["failed · nonempty ID, failed status"]
-      A["firstSuccess · nonempty ID, success, not recorded"]
-      B["duplicateSuccess · nonempty ID, success, recorded"]
-    end
-  end
+Two values with the same payload can legitimately belong to different semantic
+members:
+
+```text
+success + alreadyRecorded = false  -> firstSuccess
+success + alreadyRecorded = true   -> duplicateSuccess
 ```
 
-Lean checks that every payload and ledger-state pair belongs to exactly one
-separately stated member. Reviewers check that those predicates were defined
-independently of the classifier. If `unsupported` is omitted while this carrier
-stays intact,
-`eventId = "p1", status = "pending"` exposes the gap and `HasMembers` cannot be
-proved.
-The example treats this pair as a trusted fixture boundary. It does not prove
-how raw HTTP data is decoded or how the ledger observation is acquired.
+The checked example in
+[ArchiScriptExamples/PaymentWebhook.lean](ArchiScriptExamples/PaymentWebhook.lean)
+selects five members over the full carrier:
 
-**With ArchiScript: map the important members.** First and duplicate successes
-now have different outcomes. This view hides the other three members.
-
-```mermaid
-flowchart LR
-  subgraph INPUT["inputPartition"]
-    A["firstSuccess"]
-    B["duplicateSuccess"]
-  end
-  subgraph DECISION["decisionPartition"]
-    F["fulfill"]
-    D["acknowledgeDuplicate"]
-  end
-  subgraph LEDGER["ledgerCommandPartition"]
-    L["recordAndQueueFulfillment"]
-  end
-  U(["∅ · undefined"])
-  A -->|"decide"| F
-  B -->|"decide"| D
-  F -->|"requestLedgerCommand"| L
-  D -->|"requestLedgerCommand"| U
+```text
+malformed
+unsupported
+failed
+firstSuccess
+duplicateSuccess
 ```
 
-Arrows map semantic members, not runtime calls. `∅` means this ledger-command
-operation is undefined for the duplicate.
+and maps them through architectural decisions:
 
-**What fails automatically, before coding:**
-
-```mermaid
-flowchart LR
-  O["Omit unsupported from full Input"] --> V["eventId=p1, status=pending has no member"]
-  V --> H["HasMembers proof fails"]
-  C["Map duplicateSuccess to fulfill"] --> P["duplicate_requests_no_ledger_command fails"]
+```text
+inputPartition
+    |
+    | decide
+    v
+decisionPartition
+    |
+    | requestLedgerCommand
+    v
+ledgerCommandPartition
 ```
 
-**AI proposes. Lean checks. Engineers review. AI implements.** Lean checks
-coverage and consistency over the **declared** input. Engineers review whether
-that input and the claimed behavior match reality. If an author silently narrows
-the carrier to success-only values, these proofs cannot recover omitted inputs;
-carrier provenance makes that choice explicit for review. The generated pack shows
-branches, code locations, assumptions, and unknowns; approval is tied to the
-checked revision. The model does not establish that production code conforms.
+The arrows are **member mappings**, not runtime calls. In particular,
+`none` means that a member map is undefined for that source member; it does not
+mean “no log write”, “no database write”, or “no side effect of any kind”.
 
-**Explore the working example:** [review PDF](review/generated/PaymentWebhook.pdf)
-· [generated Mermaid views](review/generated/PaymentWebhook.md)
-· [TikZ branch diagram](review/generated/PaymentWebhook-decide.tikz)
-· [seven-VDP showcase](review/generated/PaymentWebhookNetwork.md)
-· [Lean model](ArchiScriptExamples/PaymentWebhook.lean)
-· [bound implementation](examples/payment-webhook.mjs)
+This distinction is central to ArchiScript: model the semantic decision space
+first, then keep runtime effects and implementation evidence at their actual
+evidence level.
 
-**Stress the boundary:** [Project Asphalt](benchmarks/asphalt/README.md) is an
-adversarial deployment-control-plane benchmark with checked admission semantics,
-seeded defects, runtime fixtures, and explicit unsupported obligations.
+## The smallest useful Lean model
 
-## Three modeling rules
-
-1. **A carrier is not justified by the cases you want to handle.** Coverage
-   applies to the carrier the author declared. The author must also explain why
-   that carrier represents the real boundary. A union of successful cases can
-   exclude malformed or unsupported input before checking begins.
-2. **A semantic name is not a semantic definition.** Names help people read a
-   model; predicates establish membership. Define each meaningful region from
-   a justified base, including any containment, relative complement, or fixed
-   environmental context it depends on.
-3. **A classifier is not evidence for its own meaning.** The predicates used to
-   justify a partition must be stated independently of its classifier or
-   `Partition.member` fibers. Proving agreement with regions defined as those
-   same fibers adds no independent semantic evidence.
-
-These rules guide the [AI skill](skills/archiscript/SKILL.md). Lean can check a
-precise claim even when the claim omits a real-world case. For review and handoff,
-`ArchitecturalPartition` now requires a declared carrier origin. A narrowed
-carrier must be linked to an explicitly trusted external guarantee; the latter
-remains an assumption about the source. Carrier origins justify architectural
-universes; they never model a producer or a value transformation. Operations map
-VDP members, not carrier values. Architecture-defined carriers can use
-`architecturalDomain` and optional `CarrierClosure` when finite constructors
-are part of the model.
-Constructor closure proves which values exist *inside* an already chosen type;
-it cannot establish that the real boundary emits only that type.
-
-## Worked example: payment webhook retries
-
-The [PaymentWebhook model](ArchiScriptExamples/PaymentWebhook.lean) declares
-`WebhookPayload` with `eventId : String` and `status : String`, and a separate
-`LedgerObservation` with `alreadyRecorded : Bool`. Its `Input` carrier pairs
-them. The model does not establish how the observation is obtained or kept
-stable. Empty IDs, unsupported statuses, and both ledger outcomes remain
-possible.
-
-The input partition selects five members. Their predicates are stated
-separately from the classifier:
+A VDP starts from a carrier that exists independently of the cases we want to
+handle. Here the boundary supplies all natural numbers:
 
 ```lean
-def firstSuccess : Domain Input := fun x =>
-  x.payload.eventId ≠ "" ∧
-  x.payload.status = "success" ∧
-  x.ledger.alreadyRecorded = false
+import ArchiScript
 
-def duplicateSuccess : Domain Input := fun x =>
-  x.payload.eventId ≠ "" ∧
-  x.payload.status = "success" ∧
-  x.ledger.alreadyRecorded = true
+open ArchiScript
+
+inductive RequestMember where
+  | zero
+  | positive
+  deriving DecidableEq
+
+def positive : Domain Nat := fun n => 0 < n
+
+def requestPartition : Partition where
+  Carrier := Nat
+  MemberIndex := RequestMember
+  carrierNonempty := ⟨0⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := [.zero, .positive]
+  memberIndices_complete := by
+    intro i
+    cases i <;> simp
+  classify n := if n = 0 then .zero else .positive
+  member_inhabited
+    | .zero => ⟨0, rfl⟩
+    | .positive => ⟨1, rfl⟩
 ```
 
-These are Lean predicates over the whole carrier, including observed ledger
-state. In the checked model, `inputMembers` states all five predicates,
-`DomainDerivation.predicate` records each exact predicate as its definition,
-and `inputPartition.HasMembers inputMembers` proves classifier agreement.
-
-| Canonical member | Semantic membership condition |
-| --- | --- |
-| `malformed` | `eventId = ""` |
-| `unsupported` | `eventId ≠ "" ∧ status ≠ "success" ∧ status ≠ "failed"` |
-| `failed` | `eventId ≠ "" ∧ status = "failed"` |
-| `firstSuccess` | `eventId ≠ "" ∧ status = "success" ∧ alreadyRecorded = false` |
-| `duplicateSuccess` | `eventId ≠ "" ∧ status = "success" ∧ alreadyRecorded = true` |
-
-These definitions let an engineer challenge whether an empty ID is the right
-malformed criterion, whether other statuses need separate handling, or whether
-a Boolean ledger observation is sound under concurrency. The predicates are
-precise; the boundary justification remains an engineering judgment.
-
-The checked architecture connects three value-domain partitions (VDPs):
-
-```mermaid
-flowchart LR
-  P0["inputPartition"] -->|"decide"| P1["decisionPartition"]
-  P1["decisionPartition"] -->|"requestLedgerCommand · partial"| P2["ledgerCommandPartition"]
-```
-
-**Level 1 · Operation topology.** This is an excerpt from the
-[generated Markdown review pack](review/generated/PaymentWebhook.md), which
-projects the Lean operation registry. It hides members, effects, and proofs.
-
-At this level, each arrow summarizes an **operation on semantic members**, not
-a runtime call. The two operations
-yield this path table:
-
-| Input member | `decide` target | `requestLedgerCommand` target |
-| --- | --- | --- |
-| `malformed` | `reject` | `none` |
-| `unsupported` | `ignore` | `none` |
-| `failed` | `recordFailure` | `recordFailure` |
-| `firstSuccess` | `fulfill` | `recordAndQueueFulfillment` |
-| `duplicateSuccess` | `acknowledgeDuplicate` | `none` |
-
-```mermaid
-flowchart LR
-  subgraph INPUT["inputPartition"]
-    S0["malformed"]
-    S1["unsupported"]
-    S2["failed"]
-    S3["firstSuccess"]
-    S4["duplicateSuccess"]
-  end
-  subgraph DECISION["decisionPartition"]
-    T0["reject"]
-    T1["ignore"]
-    T2["recordFailure"]
-    T3["fulfill"]
-    T4["acknowledgeDuplicate"]
-  end
-  S0 -->|"decide"| T0
-  S1 -->|"decide"| T1
-  S2 -->|"decide"| T2
-  S3 -->|"decide"| T3
-  S4 -->|"decide"| T4
-```
-
-**Level 2 · `decide` branch map.** The review builder derives every arrow from
-the canonical branch registry. The table above adds the partial downstream
-ledger mapping; `none` means that operation is undefined for the member.
-
-`Partition.HasMembers` checks that every carrier value is classified into the
-member whose stated predicate it satisfies. `SemanticPartition`
-keeps those predicates and their proof. Its `members_cover`, `members_disjoint`,
-and `member_nonempty` theorems make strict VDP coverage available directly for
-the stated predicates over the declared carrier. `ArchitecturalPartition` adds a declared
-carrier origin and the definition status of each selected member for review and
-handoff. External origins remain trusted claims; `architecturalDomain` identifies
-an internal semantic universe, and constructor closure is optional evidence
-about values inside that universe. Operations still map only selected VDP
-members.
-Composition proofs
-check the first-success and duplicate-success paths. A change that maps
-`duplicateSuccess` to `fulfill` breaks the duplicate path theorem.
+The semantic meanings are stated separately from the classifier:
 
 ```lean
-import ArchiScriptExamples.PaymentWebhook
-open ArchiScriptExamples.PaymentWebhook
+def requestMembers : RequestMember → Domain Nat
+  | .zero => Domain.complement positive
+  | .positive => positive
 
-example : inputPartition.HasMembers inputMembers :=
-  inputSemanticPartition.hasMembers
-
-example (x : Input) : ∃ i, inputMembers i x :=
-  inputSemanticPartition.members_cover x
-
-example : (requestLedgerCommand.comp decide) .duplicateSuccess = none :=
-  duplicate_requests_no_ledger_command
+def requestSemanticPartition : SemanticPartition where
+  partition := requestPartition
+  members := requestMembers
+  hasMembers := by
+    intro i n
+    cases i <;> cases n <;>
+      simp [Partition.member, requestPartition, requestMembers,
+        Domain.complement, positive]
 ```
 
-Here `none` says only that **this ledger-command operation is undefined** for
-`acknowledgeDuplicate`. It says nothing about logging, metrics, another store,
-or a queue call in production code. If absence of runtime effects matters,
-state an effect contract and inspect its implementation.
+That correspondence matters. Defining the meaning as
+`requestPartition.member i` and then proving it matches the classifier would
+be circular semantic justification.
 
-### From branch to code
-
-Each defined branch has a canonical `(OperationName, BranchName)` address.
-Responsibility and implementation location are separate facts:
-
-| Fact | `PaymentWebhook.decide.duplicateSuccess` |
-| --- | --- |
-| Semantic mapping | `duplicateSuccess → acknowledgeDuplicate` |
-| Responsibility | `payments-webhooks` |
-| Primary implementation | [examples/payment-webhook.mjs](examples/payment-webhook.mjs), symbol `decide` |
-| Supporting implementation | same file, symbol `handleWebhook` |
-| Binding state | resolved in the companion example |
-| Evidence reference | [Node tests](examples/payment-webhook.test.mjs) for duplicate acknowledgment without ledger or queue effects |
-| Remaining question | ledger observation and effects under concurrent delivery |
-
-A `SourceRef` identifies a repository, path, and optional symbol. Line ranges
-and revision are navigation metadata. A resolved binding declares an
-implementation site; it is **not** a proof of code conformance. The companion
-tests exercise selected behavior, but do not prove transactional atomicity or
-that every production environment follows the model.
-
-## A connected seven-VDP review
-
-The [PaymentWebhookNetwork model](ArchiScriptExamples/PaymentWebhookNetwork.lean)
-extends the checked webhook decision with provider-response, audit,
-notification, and fulfillment-request plans. Each plan is a separate
-architectural obligation. An arrow still means a member mapping, never a
-runtime call or proof that an effect occurred.
-
-The [generated multi-view showcase](review/generated/PaymentWebhookNetwork.md)
-starts with this Level 1 topology, exported from six canonical Lean operations:
-
-```mermaid
-flowchart LR
-  P0["inputPartition"]
-  P1["decisionPartition"]
-  P2["ledgerCommandPartition"]
-  P3["responsePartition"]
-  P4["auditPartition"]
-  P5["notificationPartition"]
-  P6["fulfillmentPartition"]
-  P0 -->|"decide"| P1
-  P1 -->|"requestLedgerCommand · partial"| P2
-  P1 -->|"planResponse"| P3
-  P1 -->|"planAudit"| P4
-  P1 -->|"planNotification · partial"| P5
-  P2 -->|"planFulfillment · partial"| P6
-```
-
-The same generated artifact lets a reviewer narrow the question to one path:
-
-**Focused composition.** Focus: duplicate delivery, its decision, response
-plan, and undefined ledger mapping. Hidden: other branches and runtime effects.
-
-```mermaid
-flowchart LR
-  subgraph INPUT["inputPartition"]
-    A["duplicateSuccess"]
-  end
-  subgraph DECISION["decisionPartition"]
-    B["acknowledgeDuplicate"]
-  end
-  subgraph RESPONSE["responsePartition"]
-    D["acknowledge"]
-  end
-  C(["∅ · undefined"])
-  A -->|"decide"| B
-  B -->|"requestLedgerCommand"| C
-  B -->|"planResponse"| D
-```
-
-Here the duplicate has a provider-response plan and no ledger-command mapping.
-The [full showcase](review/generated/PaymentWebhookNetwork.md) also shows the
-`decisionPartition` neighborhood, every `planNotification` branch including
-undefined cases, input-region descriptions, branch-to-code bindings, proofs,
-and open findings. The new code locations are **planned**; this expanded model
-is **draft** and has no engineering approval. Its diagrams do not claim
-production effects or conformance.
-
-This compact Lean example keeps several VDPs in one file. The original
-[Stage 2 source design](../archiscript-docs/chapter-1/stage-2/scope.md#one-architectural-pvdp-per-source-file)
-requires one root (P)VDP per `.archi.ts` file and places each ordinary operation
-with its codomain. The current Lean prototype has no declaration-file linker;
-the showcase demonstrates review projections, not a replacement source layout.
-
-## Engineering review is a gate
-
-Lean can establish consistency of the declared model. It cannot decide whether
-the boundary matches the real system, whether a distinction is useful, whether
-responsibility is sensible, or whether the observation and effects are safe.
-Engineers review a human-readable projection before architecture-driven
-implementation. They can request changes against canonical IDs such as
-`PaymentWebhook.inputPartition` or
-`PaymentWebhook.decide.duplicateSuccess`.
-
-The generated [PDF review pack](review/generated/PaymentWebhook.pdf) is a bounded
-reading snapshot. Its [Markdown version](review/generated/PaymentWebhook.md)
-includes the Mermaid diagrams shown above. A fast pass shows scope, boundary, topology,
-major assumptions, and open questions. A deep pass shows semantic descriptions,
-branch mappings, undefined outcomes, bindings, proof references, effects, and
-findings. [Structured review metadata](review/payment-webhook.review.json)
-holds object-addressed findings and review state; the PDF is not the review
-database. The generator can compare a new snapshot with an earlier one and
-report semantic changes.
-
-[![First-page preview of the generated PaymentWebhook engineering review pack, showing the draft gate, boundary question, and operation topology](review/generated/PaymentWebhook-preview.png)](review/generated/PaymentWebhook.pdf)
-
-*The first page of the generated draft review PDF, rasterized for this README.
-Select it to open the full review pack.*
-
-The prototype recognizes `draft`, `ready-for-review`, `changes-requested`,
-`approved`, and `superseded`. Approval is tied to a named reviewer and model
-revision with no open findings. The PaymentWebhook pack is currently **draft**;
-its implementation gate is **closed**. Two open findings ask for the ledger
-observation boundary and record/queue recovery behavior. The companion code is
-an experiment, not evidence of engineering approval for this architecture.
-
-Review diagrams have focused levels: system context, operation topology,
-one-operation branch map, semantic partition, and implementation/evidence path.
-One view should answer one review question. Tables often explain branch mappings
-better than graphs. The [diagram guide](skills/archiscript/references/review-diagrams.md)
-and [review-pack guide](skills/archiscript/references/review-packs.md) specify
-these projections. A reviewer unfamiliar with Lean should be able to dispute a
-boundary, predicate, branch, owner, code site, effect assumption, or unsupported
-claim without opening a `.lean` file.
-
-## Keep claims at their actual evidence level
-
-| Layer | What this example establishes |
-| --- | --- |
-| Architecture | **PROVED:** the input classifier agrees with the stated members; the two named composition paths have the stated results. |
-| Carrier adequacy | **REVIEW FINDING:** ledger-observation consistency and scope need engineering judgment. |
-| Implementation binding | **RESOLVED:** defined branches point to symbols in the companion code. |
-| Code conformance | **PARTIAL EVIDENCE:** named tests cover selected behavior; no general conformance proof. |
-| Runtime effects | **UNKNOWN:** atomic record/queue behavior and concurrent retries. |
-
-A theorem about a branch may be **CONDITIONAL** on an explicit effect premise.
-That premise must not be reported as proved about production code. The project
-keeps `PROVED`, `CONDITIONAL`, review findings, and `UNKNOWN` distinct in agent
-reports and review artifacts.
-
-## How the model works
-
-The authoring path is: justify the boundary, declare its carrier, define
-semantic subdomains, select a VDP resolution, classify carrier values, and prove
-correspondence. Only then should agents add operations, canonical branches,
-responsibility, implementation disposition, and effect or value obligations.
-
-A **subdomain** is a predicate over a meaningful base domain. Supporting
-subdomains may overlap and need not exhaust that base. A **VDP** selects a finite
-set of nonempty, disjoint members that exhausts its carrier. Several VDPs can
-expose different resolutions of the same carrier; coarsening deliberately
-forgets distinctions. The smaller [FormInput example](ArchiScriptExamples/FormInput.lean)
-shows four field-presence cases grouped into `complete` and `incomplete`.
-The [negative examples](Test/Negative) show failed correspondence for missing
-and overlapping selected regions.
-
-A subdomain may have a precise Lean formula, such as `0 ≤ x` within a signed
-count domain. [Asphalt](ArchiScriptExamples/Asphalt.lean) defines a capacity
-subdomain from three formulas:
+An operation maps **members**, not carrier values:
 
 ```lean
-def aFits : Domain AllocationContext := fun x => x.requestA ≤ x.capacity
-def bFits : Domain AllocationContext := fun x => x.requestB ≤ x.capacity
-def jointlyFits : Domain AllocationContext :=
-  fun x => x.requestA + x.requestB ≤ x.capacity
-def individuallyFits : Domain AllocationContext :=
-  fun x => aFits x ∧ bFits x
-def contended : Domain AllocationContext :=
-  Domain.relativeComplement individuallyFits jointlyFits (by
-    intro x h
-    simp only [aFits, bFits, individuallyFits, jointlyFits] at *
-    omega)
+def accept : Operation requestPartition requestPartition where
+  run
+    | .zero => none
+    | .positive => some .positive
 ```
 
-Its checked `contendedDerivation` composes the individual predicates with
-intersection and relative complement; `capacity = 4`, `requestA = 3`, and
-`requestB = 2` belong to that region. The definitions are Lean objects whose
-denotations must match the member meanings. An `opaque` leaf remains valid when
-no defining formula is available, but its reason and every derived domain that
-depends on it carry a review warning. The opaque Asphalt security-result region
-does not become a Lean proof of a passing scan.
-The type index prevents a derivation for one predicate from being attached to a
-different member. It cannot detect a classifier restatement or an opaque Lean
-constant deliberately passed to `.predicate`; reviewers must reject those as
-semantic justification.
+Operations compose right-to-left:
 
-Lean's `Partition` represents a VDP with finite member indices and a
-classifier. `Partition.HasMembers` checks its classifier fibers against separately
-defined semantic predicates. A `SemanticPartition` carries those predicates and
-the proof. An `ArchitecturalPartition` additionally records where its carrier
-comes from and whether each selected subdomain has a formula or is opaque. The
-`Architecture` container lists `ArchitecturalOperation` values whose source and
-target are both architectural partitions. The generated webhook review packs
-require this evidence for every reviewed VDP.
-Opaque subdomains remain valid, but their missing formula and reason appear as
-review warnings. A `Domain α` is a predicate;
-`Domain.relativeComplement` defines a remainder within an explicit parent.
+```lean
+#check Operation.comp
+#check Operation.id
+```
 
-An `Operation X Y` is a partial function between the **member sets** of VDPs
-`X` and `Y`. A `some failureMember` mapping is defined; `none` is undefined.
-Compatible operations compose, and undefinedness propagates. These are
-architectural maps, not value-level handlers or execution schedules. The
-[mathematical foundation](../archiscript-docs/chapter-1/stage-1/foundation.tex)
-and [Stage 2 design](../archiscript-docs/chapter-1/stage-2/scope.md) explain
-the underlying subdomains, partitions, observation, and operation discipline.
-The older design uses TypeScript notation; the Lean source defines this
-repository's current API.
+A branch can later be given canonical identity, responsibility, implementation
+location, and evidence without changing the underlying member map.
 
-### Independent VDP composition in 0.3.0
+## 0.3.0: independent VDP tensor
 
-A VDP is a finite partition $P : C_P \twoheadrightarrow \mathcal M_P$ whose
-members are nonempty semantic subdomains of $C_P$. Lean represents members by
-finite indices and checks their classifier fibers against separately stated
-predicates with `HasMembers`. A carrier's fit to the real boundary still needs
-independent justification and engineering review.
+Version 0.3.0 adds a concrete symmetric monoidal structure for independent VDP
+composition.
 
-`Operation.comp` connects member maps in sequence. `Partition.tensor` combines
-two independent VDPs. Its carrier is `P.Carrier × Q.Carrier`, and its members
-are **every** pair of a member of `P` and a member of `Q`. Even `P.tensor P`
-has two separate carrier slots; it never classifies one value twice or removes
-an inconvenient pair.
+For two partitions \(P\) and \(Q\),
+
+\[
+P\otimes Q
+\]
+
+has carrier
+
+\[
+C_P\times C_Q
+\]
+
+and **every** member pair
+
+\[
+M\times N
+\qquad
+(M\in\mathcal M_P,\;N\in\mathcal M_Q).
+\]
+
+There is no compatibility pruning inside tensor. If both factors are valid VDPs,
+every product member is inhabited automatically.
+
+The public API is direct:
+
+```lean
+def pairedRequests : SemanticPartition :=
+  requestSemanticPartition.tensor requestSemanticPartition
+
+def pairedAccept :
+    Operation
+      (requestPartition.tensor requestPartition)
+      (requestPartition.tensor requestPartition) :=
+  accept.tensor accept
+```
+
+A self tensor still has two independent carrier slots. If the source VDP has two
+members, the self tensor has all four member pairs:
+
+```text
+zero     x zero
+zero     x positive
+positive x zero
+positive x positive
+```
+
+It does **not** classify one value twice, intersect same-carrier members, or
+discard mixed pairs.
+
+That rule is deliberate. `Account(A) ⊗ Payment(B)` is mathematically valid
+even if the architecture gives no convincing reason to consider those factors
+together. ArchiScript should preserve the product and turn unclear joint
+relevance into a review question rather than silently changing the tensor.
+
+### Sequential versus independent composition
+
+ArchiScript now has two distinct composition ideas:
+
+```text
+g.comp f      sequential / causal member mapping
+f.tensor g    independent aggregation of member maps
+```
+
+For independent maps
+
+\[
+f:P\to P'
+\qquad\text{and}\qquad
+g:Q\to Q',
+\]
+
+the tensor map is
+
+\[
+f\otimes g:
+P\otimes Q\to P'\otimes Q'.
+\]
+
+It is defined exactly where both partial maps are defined.
+
+The library proves the expected interaction:
+
+```lean
+#check Operation.tensor_id
+#check Operation.tensor_comp
+```
+
+so independent local maps can be composed without manually enumerating the
+Cartesian product of their branches.
+
+### Structural isomorphisms and coherence
+
+The public `ArchiScript.Monoidal` module provides classification-preserving
+isomorphisms and their induced member operations:
+
+```lean
+#check Partition.tensorAssociator
+#check Partition.tensorLeftUnitor
+#check Partition.tensorRightUnitor
+#check Partition.tensorSymmetry
+
+#check Operation.associator
+#check Operation.leftUnitor
+#check Operation.rightUnitor
+#check Operation.symmetry
+```
+
+and checks the concrete coherence laws:
+
+```lean
+#check Operation.associator_natural
+#check Operation.leftUnitor_natural
+#check Operation.rightUnitor_natural
+#check Operation.symmetry_natural
+#check Operation.pentagon
+#check Operation.triangle
+#check Operation.hexagon
+```
+
+This matters beyond notation. A factor-only architectural finding should not
+depend on whether an author wrote
+
+```text
+(P ⊗ Q) ⊗ R
+```
+
+or
+
+```text
+P ⊗ (Q ⊗ R)
+```
+
+and factor order should not invent a semantic ordering when the symmetry is the
+only change.
+
+The implementation is concrete: 0.3.0 exposes `Partition.tensor`,
+`Operation.tensor`, structural isomorphisms, and checked laws. It does not
+require users to work through a generic Mathlib `MonoidalCategory` instance.
+
+See
+[ArchiScriptExamples/Monoidal.lean](ArchiScriptExamples/Monoidal.lean) and
+[ArchiScriptTests/Monoidal.lean](ArchiScriptTests/Monoidal.lean) for the compact
+working example and regression proofs.
+
+## A complete multi-VDP example
+
+The checked
+[checkout example](ArchiScriptExamples/Checkout.lean) combines several VDPs,
+ordinary operations, tensor composition, and a final sequential decision.
+
+A payment input and an inventory observation are independent semantic factors:
+
+\[
+PaymentInput \otimes InventoryObservation.
+\]
+
+Each factor has its own local architectural map:
+
+\[
+planPayment : PaymentInput \to PaymentPlan
+\]
+
+\[
+planInventory : InventoryObservation \to InventoryPlan.
+\]
+
+Their tensor gives one joint operation without manually enumerating a new
+four-branch implementation:
+
+\[
+planPayment \otimes planInventory :
+PaymentInput \otimes InventoryObservation
+\to
+PaymentPlan \otimes InventoryPlan.
+\]
+
+An ordinary sequential operation then consumes that joint plan:
+
+\[
+chooseCheckoutAction :
+PaymentPlan \otimes InventoryPlan
+\to
+CheckoutAction.
+\]
+
+So the complete architectural path is:
+
+\[
+chooseCheckoutAction
+\circ
+(planPayment \otimes planInventory).
+\]
 
 ```mermaid
 flowchart LR
-  subgraph P["Request VDP"]
-    P0["invalid"]
-    P1["valid"]
+  subgraph INPUTS["Independent input VDPs"]
+    PI["PaymentInput<br/>invalid · eligible"]
+    II["InventoryObservation<br/>unavailable · available"]
   end
-  subgraph Q["Ledger observation VDP"]
-    Q0["missing"]
-    Q1["recorded"]
+
+  subgraph PLANS["Local plan VDPs"]
+    PP["PaymentPlan<br/>reject · authorize"]
+    IP["InventoryPlan<br/>blocked · ready"]
   end
-  subgraph PQ["Request ⊗ Ledger · all four members"]
-    A["invalid × missing"]
-    B["invalid × recorded"]
-    C["valid × missing"]
-    D["valid × recorded"]
-  end
-  P0 -.-> A
-  P0 -.-> B
-  P1 -.-> C
-  P1 -.-> D
-  Q0 -.-> A
-  Q0 -.-> C
-  Q1 -.-> B
-  Q1 -.-> D
+
+  JOINT_IN["PaymentInput ⊗ InventoryObservation<br/>4 semantic members"]
+  JOINT_PLAN["PaymentPlan ⊗ InventoryPlan<br/>4 semantic members"]
+  ACTION["CheckoutAction<br/>rejectPayment · waitForStock · placeOrder"]
+
+  PI -->|"planPayment"| PP
+  II -->|"planInventory"| IP
+
+  PI -.-> JOINT_IN
+  II -.-> JOINT_IN
+  PP -.-> JOINT_PLAN
+  IP -.-> JOINT_PLAN
+
+  JOINT_IN -->|"planPayment ⊗ planInventory"| JOINT_PLAN
+  JOINT_PLAN -->|"chooseCheckoutAction"| ACTION
 ```
 
-The dotted links show how member pairs are formed. They are not operations.
+The solid arrows are `Operation` values. The dotted edges only show which VDPs
+are tensor factors; they are not additional operations or runtime calls.
 
-`SemanticPartition.tensor` derives product predicates and their correspondence
-proof from the two factors. `Operation.tensor` combines two partial member maps;
-the product map is defined only where both component maps are defined. Authors
-can state two local maps instead of manually listing every product branch.
+The full product is visible at member level:
 
-Lean proves identity and interchange for tensor, then checks the canonical
-associator, left and right unitors, symmetry, naturality, pentagon, triangle,
-and hexagon laws. These laws allow independent factors to be grouped or swapped
-through explicit isomorphisms. Tensor means independent aggregation in the
-calculus. It does not assert runtime parallelism, resource independence,
-same-value synchronization, or a categorical product universal property.
+```mermaid
+flowchart LR
+  A["invalid × unavailable"] -->|"planPayment ⊗ planInventory"| A1["reject × blocked"] -->|"chooseCheckoutAction"| X["rejectPayment"]
+  B["invalid × available"] -->|"planPayment ⊗ planInventory"| B1["reject × ready"] -->|"chooseCheckoutAction"| X
+  C["eligible × unavailable"] -->|"planPayment ⊗ planInventory"| C1["authorize × blocked"] -->|"chooseCheckoutAction"| Y["waitForStock"]
+  D["eligible × available"] -->|"planPayment ⊗ planInventory"| D1["authorize × ready"] -->|"chooseCheckoutAction"| Z["placeOrder"]
+```
 
-A tensor such as `Account(A) ⊗ Payment(B)` is mathematically valid; reviewers
-should ask why those factors are considered together. Two branches of one
-operation are ordinary alternative member mappings. Distinct arrows from
-independent sources that converge on a mutable resource raise an ordering
-question, but this calculus does not prove a race. The
-[monoidal example](ArchiScriptExamples/Monoidal.lean) and
-[mathematical review](../archiscript-docs/chapter-1/stage-2/archiscript_monoidal_vdp_review.tex)
-give the checked API and full definition.
+No mixed pair disappears. The architecture can later decide that several joint
+members lead to the same downstream action, but that coarsening happens through
+an explicit operation, not by changing tensor semantics.
 
-## What is available in 0.3.0
+The corresponding Lean is small:
 
-| Available now | Scope |
+```lean
+def planCheckoutFactors :
+    Operation
+      (paymentInputPartition.tensor inventoryObservationPartition)
+      (paymentPlanPartition.tensor inventoryPlanPartition) :=
+  planPayment.tensor planInventory
+
+def decideCheckout :
+    Operation
+      (paymentInputPartition.tensor inventoryObservationPartition)
+      checkoutActionPartition :=
+  chooseCheckoutAction.comp planCheckoutFactors
+```
+
+This example demonstrates the intended relationship between the two composition
+laws:
+
+```text
+tensor  = combine independent semantic coordinates and maps
+comp    = continue the architectural decision path
+```
+
+It still says nothing about whether payment and inventory code execute
+concurrently, whether either operation performs an effect, or whether a runtime
+resource is atomic.
+
+## Three rules that prevent most bad models
+
+### 1. Start from the carrier, not from the outcomes you want
+
+A coverage proof proves coverage of the carrier the author declared. If the
+carrier omitted malformed input, stale state, another database outcome, or a
+relevant environment variable, Lean cannot recover that missing reality.
+
+Ask first:
+
+> Can two situations with identical modeled input require different
+> architectural outcomes?
+
+If yes, the differing fact belongs in the carrier, in an independently justified
+upstream guarantee, or in an explicit unresolved assumption.
+
+### 2. State semantic meaning independently of the classifier
+
+A label such as `duplicateSuccess` is not a definition. State its predicate.
+Then prove that the classifier fiber agrees with that predicate using
+`Partition.HasMembers`.
+
+Supporting subdomains may overlap. Only the selected VDP members must be
+nonempty, exhaustive, and disjoint.
+
+### 3. Keep member maps separate from runtime effects
+
+`Operation X Y` is a partial function
+
+\[
+\mathcal M_X\rightharpoonup\mathcal M_Y.
+\]
+
+It is not a database transaction, network request, scheduler, or handler
+execution. If runtime effects matter, record them as explicit contracts,
+assumptions, evidence, or open findings. Do not infer them from a member arrow.
+
+## Boundary provenance and semantic derivation
+
+A model also needs to explain where its carrier came from.
+
+`ArchitecturalPartition` records:
+
+- the checked `Partition`;
+- a `CarrierOrigin`;
+- optional finite `CarrierClosure`;
+- selected member meanings;
+- typed `DomainDerivation` values;
+- supporting subdomains;
+- the checked `HasMembers` correspondence.
+
+Carrier origins distinguish:
+
+```text
+externalRoot
+externalNarrowing
+architecturalDomain
+```
+
+An `externalNarrowing` keeps the wider upstream origin and records the trusted
+external guarantee that justifies the narrower boundary. A finite constructor
+closure proves which values exist *inside* an already chosen carrier; it does not
+prove that an external source emits only those values.
+
+`DomainDerivation` keeps semantic definitions machine-addressable:
+
+```text
+predicate
+opaque
+intersection
+union
+relativeComplement
+```
+
+An opaque domain remains valid when no defining formula is available, but its
+reason stays visible for review and propagates through composed derivations.
+
+## Canonical operations, branches, and implementation handoff
+
+The low-level calculus stays small. Handoff metadata is layered on top through
+`Operation.Declaration` and `Operation.Registry`.
+
+A declaration gives an operation:
+
+- a stable operation identity;
+- scoped branch names;
+- typed branch witnesses;
+- responsibility owners;
+- implementation disposition;
+- branch-specific overrides.
+
+A registry gives canonical branch addresses:
+
+```text
+(OperationName, BranchName)
+```
+
+so two operations may both have a branch called `existing` without ambiguity.
+
+Implementation dispositions distinguish:
+
+```text
+planned
+resolved
+external
+intentionallyAbstract
+unimplemented
+```
+
+A resolved or planned binding can include:
+
+- one primary `SourceRef`;
+- supporting source references;
+- `EvidenceRef` values such as tests, static analysis, formal proofs, manual
+  review, runtime traces, or external contracts.
+
+Bindings are navigation and handoff facts. They do not prove production
+conformance.
+
+Useful review queries include:
+
+```lean
+#check Operation.Registry.branchAddresses
+#check Operation.Registry.branchesWithoutResponsibility
+#check Operation.Registry.branchesWithoutImplementation
+#check Operation.Registry.branchesAt
+#check Operation.Declaration.definedMappingsWithoutBranch
+```
+
+## Parameterized routing
+
+`ParameterizedPartition` models the case where a finite parameter member
+changes which canonical outbound operations are available.
+
+Use it for routing topology, not merely because ordinary values differ.
+`ParameterizedPartition.Routed` resolves actual operations through a registry,
+and the library exposes:
+
+```text
+resolveOutbound
+HasOperation
+RoutingRelevant
+RoutesEquivalent
+```
+
+The example in
+[ArchiScriptExamples/UserRegistration.lean](ArchiScriptExamples/UserRegistration.lean)
+shows canonical routes and branch identities.
+
+## Human review is part of the system
+
+A compiling Lean model is not an approved architecture.
+
+`ArchiScript.Review` provides object-addressed findings and a revision-bound
+review gate:
+
+```text
+ReviewSubject
+ReviewFinding
+ReviewDecision
+ReviewRecord
+```
+
+A review record can be:
+
+```text
+draft
+readyForReview
+changesRequested
+approved reviewer revision
+superseded
+```
+
+`ReviewRecord.implementationAllowed` is true only for an approved matching
+revision with no open findings.
+
+Review should challenge things Lean cannot decide on its own:
+
+- Is the carrier actually wide enough for the real boundary?
+- Are the semantic predicates the distinctions the system really needs?
+- Is an external guarantee trustworthy and correctly scoped?
+- Why are these tensor factors considered together?
+- Are two independently available arrows later interacting through mutable
+  state?
+- Does a production binding still implement the reviewed contract?
+- Which runtime effects are proved, conditional, evidenced, or unknown?
+
+The repository includes structured review metadata and generated Markdown
+projections for the webhook examples. The review data is attached to canonical
+model identities rather than to presentation page numbers.
+
+## Independent arrows and concurrency questions
+
+Tensor makes independent semantic slots explicit, but 0.3.0 does **not** claim
+automatic race detection.
+
+Several branches of one `Operation` are alternatives of one partial map. They
+are not concurrent arrows.
+
+Distinct operations with independently available sources are different. If they
+later converge on one mutable resource, ArchiScript has enough architectural
+structure to raise an ordering or atomicity question, but not enough runtime
+semantics to prove a race, deadlock, or commutativity result.
+
+Keep such claims at their actual evidence level until resource/effect semantics
+or a complementary analyzer supports them.
+
+## What 0.3.0 checks
+
+| Area | Available now |
 | --- | --- |
-| Lean model checks | Partitions, supplied semantic correspondence, member maps, typed composition, independent tensor and its coherence laws, branches, and finite routing. |
-| Canonical registry | Enumerable declared operations and branches, effective responsibility and implementation disposition, missing-metadata queries, and reverse navigation from a declared source identity. |
-| Review protocol | Object-addressed findings, revision-specific approval state, diagram guidance, and a generated PaymentWebhook PDF/Markdown review pack with semantic snapshot diff. |
-| Multi-VDP showcase | A second checked webhook model with seven VDPs, six operations, and generated topology, neighborhood, path, branch, semantic, and binding views. |
-| Implementation experiment | A companion PaymentWebhook handler and selected Node tests with evidence references. |
+| Semantic domains | `Domain`, complement, relative complement, intersections/unions through typed derivations |
+| VDP correctness | finite member enumeration, inhabitance, classifier fibers, coverage, disjointness, `HasMembers` correspondence |
+| Semantic handoff | `SemanticPartition`, `ArchitecturalPartition`, carrier provenance, selected/supporting subdomains |
+| Sequential calculus | partial `Operation`, identity, composition, associativity |
+| Independent calculus | VDP tensor, semantic tensor, operation tensor, Unit VDP |
+| Monoidal laws | associator, unitors, symmetry, naturality, interchange, pentagon, triangle, hexagon |
+| Canonical identity | operation registry, scoped branches, stable branch addresses |
+| Ownership and bindings | responsibility, implementation dispositions, source references, evidence references |
+| Routing | finite parameterized specialization and canonical outbound routes |
+| Review workflow | canonical findings, revision-bound approval gate |
+| Regression coverage | positive examples, monoidal laws, negative Lean fixtures, skill smoke file |
 
-The review exporter and PDF generator are currently **PaymentWebhook-specific**;
-there is no general Review IR renderer yet. The registry does not inspect source
-files for stale symbols or prove conformance. The Lean core records declared
-carrier provenance but cannot infer whether an external source enforces its
-claim or discover omitted upstream values. It does not emit
-`unjustified-generalization` diagnostics automatically,
-model temporal concurrency, or prove code effects. There is no parser, runtime,
-or review UI. `ParameterizedPartition` supports finite member-indexed
-specialization and routing, rather than the general recursive language of the
-original design.
+## What 0.3.0 deliberately does not claim
 
-The pack currently displays human descriptions stored beside the Lean input
-predicates. Lean checks the predicates against the classifier; it does not
-verify that the English descriptions faithfully translate those predicates.
+ArchiScript 0.3.0 does not:
 
-The [AI skill](skills/archiscript/SKILL.md) is part of this workflow. In
-authoring mode it requires boundary justification, independent semantic
-definitions, correspondence, explicit assumptions, and a human review pack.
-In implementation mode it resolves approved canonical branches to code,
-preserves the reviewed contract, records evidence, and reports remaining
-unknowns. The skill carries reasoning discipline that Lean cannot currently
-enforce automatically.
+- discover requirements that the author omitted from the carrier;
+- prove that an external system enforces a declared boundary guarantee;
+- prove general production-code conformance;
+- interpret member arrows as runtime effects;
+- model scheduler interleavings, liveness, or temporal concurrency;
+- automatically prove races, deadlocks, atomicity, or idempotency;
+- treat tensor as same-value synchronization or common refinement;
+- filter “semantically impossible” tensor pairs;
+- provide a general model checker;
+- provide a general-purpose review renderer for every possible model.
 
-## Why these pieces are separate
+For temporal or distributed behavior beyond this calculus, use complementary
+formal tools rather than weakening the meaning of ArchiScript operations.
 
-- **A flowchart** can show a route; ArchiScript operations state typed partial
-  mappings between semantic member sets. A semantic arrow is not a runtime call.
-- **Tests** exercise selected implementations; they do not justify an input
-  boundary or independently define every architectural case.
-- **Types** constrain values; they need not state a chosen semantic resolution,
-  branch identity, composition obligation, responsibility, or code binding.
-- **Broader formal tools** can analyze behaviors beyond this calculus.
-  ArchiScript's hypothesis is narrower: a reviewable design contract connected
-  directly to AI implementation work. Predicates, partitions, and partial
-  functions themselves are established mathematics.
+## Repository tour
 
-## The experiment
+| Path | Purpose |
+| --- | --- |
+| [ArchiScript/Partition.lean](ArchiScript/Partition.lean) | Domains, partitions, tensor, Unit, semantic partitions |
+| [ArchiScript/Operation.lean](ArchiScript/Operation.lean) | Partial member maps, composition, operation tensor |
+| [ArchiScript/Monoidal.lean](ArchiScript/Monoidal.lean) | Structural isomorphisms and coherence laws |
+| [ArchiScript/Boundary.lean](ArchiScript/Boundary.lean) | Carrier origins, semantic derivations, architectural partitions |
+| [ArchiScript/Operation/Declaration.lean](ArchiScript/Operation/Declaration.lean) | Canonical branches, responsibility, bindings, evidence |
+| [ArchiScript/ParameterizedPartition.lean](ArchiScript/ParameterizedPartition.lean) | Finite parameterized routing |
+| [ArchiScript/Review.lean](ArchiScript/Review.lean) | Findings, review state, implementation gate |
+| [ArchiScriptExamples/PaymentWebhook.lean](ArchiScriptExamples/PaymentWebhook.lean) | Stateful webhook decision |
+| [ArchiScriptExamples/PaymentWebhookNetwork.lean](ArchiScriptExamples/PaymentWebhookNetwork.lean) | Connected multi-VDP topology |
+| [ArchiScriptExamples/FormInput.lean](ArchiScriptExamples/FormInput.lean) | Multiple resolutions of one carrier |
+| [ArchiScriptExamples/UserRegistration.lean](ArchiScriptExamples/UserRegistration.lean) | Contracts, canonical branches, routing |
+| [ArchiScriptExamples/Asphalt.lean](ArchiScriptExamples/Asphalt.lean) | Adversarial boundary and assumption stress test |
+| [ArchiScriptExamples/Monoidal.lean](ArchiScriptExamples/Monoidal.lean) | Independent tensor and monoidal API |
+| [ArchiScriptExamples/Checkout.lean](ArchiScriptExamples/Checkout.lean) | Multi-VDP architecture combining local operations, tensor, and sequential composition |
+| [ArchiScriptTests/Monoidal.lean](ArchiScriptTests/Monoidal.lean) | Coherence regression checks |
+| [Test/Negative](Test/Negative) | Models that should fail Lean checking |
+| [skills/archiscript/SKILL.md](skills/archiscript/SKILL.md) | AI authoring/review/implementation discipline |
+| [skills/archiscript/examples/CurrentApi.lean](skills/archiscript/examples/CurrentApi.lean) | Installed-skill API smoke test |
 
-Does requiring a checked, human-reviewed design before AI implementation reduce
-omitted cases, hidden assumptions, inconsistent branches, wrong code locations,
-model/code drift, and rework without making review too costly? The comparison
-is `requirement → AI → code` against `requirement → AI → ArchiScript → Lean →
-engineer review → AI implementation → evidence`. The PaymentWebhook companion
-model is a first test case, not proof that this workflow succeeds in general.
+The original design research lives in the sibling
+[archiscript-docs](https://github.com/mrvanish97/archiscript-docs) repository.
+The current repository is Lean-first; historical TypeScript notation in those
+documents is not the current public API.
 
-## Build and use
+## Build
+
+The project uses Lean 4 and Lake.
 
 ```sh
 lake build
 bash scripts/check-negative.sh
 lake env lean skills/archiscript/examples/CurrentApi.lean
+```
+
+The companion webhook implementation experiment can also run its selected Node
+tests:
+
+```sh
 node --test examples/payment-webhook.test.mjs
+```
+
+To rebuild the current Markdown review artifacts:
+
+```sh
 uv run --no-project python scripts/build-review-pack.py
 uv run --no-project python scripts/build-webhook-network-showcase.py
 ```
 
-The public Lean entry point is [ArchiScript.lean](ArchiScript.lean). Companion
-models live in the separate [ArchiScriptExamples library](ArchiScriptExamples.lean).
-The installed skill smoke example imports only the public library. The
-[Lean API guide](skills/archiscript/references/lean-api.md) covers registry
-identity, bindings, routing, and effect contracts. To compare review revisions,
-run the pack builder with `--previous path/to/PaymentWebhook.snapshot.json`.
+## Use the AI skill
 
-Install the complete skill directory into a supported skills location. This
-command refuses to overwrite an existing installation:
+The repository includes an ArchiScript skill for AI agents. It teaches the
+agent to:
+
+- audit the carrier before proving coverage;
+- define semantic predicates independently of classifiers;
+- preserve assumptions and unknowns;
+- use tensor with full-product semantics;
+- distinguish branches from independent arrows;
+- resolve canonical branch bindings before implementation;
+- produce focused review projections;
+- keep architecture proof, human approval, implementation binding, and code
+  conformance separate.
+
+Install the complete skill directory into a supported skills location:
 
 ```sh
-skill_target="${CODEX_HOME:-$HOME/.codex}/skills/archiscript"
+skill_target="$HOME/.codex/skills/archiscript"
 if [ -e "$skill_target" ]; then
   echo "skill already exists: $skill_target" >&2
   exit 1
 fi
+
 mkdir -p "$(dirname "$skill_target")"
 cp -R skills/archiscript "$skill_target"
 ```
 
-Restart or reload the agent host if it discovers skills only at startup, then
-request ArchiScript work normally or invoke `$archiscript` explicitly where
-supported.
+Reload the agent host if it discovers skills only at startup. Then request
+ArchiScript work normally or invoke `$archiscript` explicitly where supported.
+
+When maintaining the public API or the skill, keep
+[skills/archiscript/examples/CurrentApi.lean](skills/archiscript/examples/CurrentApi.lean)
+compiling. The evaluation cases in
+[skills/archiscript/references/evaluation-cases.md](skills/archiscript/references/evaluation-cases.md)
+exercise the authoring decisions that Lean itself cannot infer.
+
+## Project status
+
+ArchiScript is an experiment in a narrow question:
+
+> Does a machine-checked, human-reviewed architecture contract improve AI-driven
+> implementation by exposing omitted cases, hidden assumptions, incompatible
+> mappings, and unclear responsibilities before code is written?
+
+The project intentionally builds on established mathematics rather than claiming
+a new general formal-methods language. The hypothesis is that semantic
+partitions, partial member maps, independent tensor composition, Lean-checked
+obligations, and explicit human review form a useful architecture workflow for
+AI-assisted software development.
+
+See [CHANGELOG.md](CHANGELOG.md) for release history and
+[plans/0.3.0.md](plans/0.3.0.md) for the implemented 0.3.0 scope.
 
 ## License
 
-This repository is licensed under the [Apache License 2.0](LICENSE). For
-material owned by the project author, this grant also covers earlier revisions
-of this repository, including commits created before `LICENSE` was added.
+Apache License 2.0. See [LICENSE](LICENSE).
