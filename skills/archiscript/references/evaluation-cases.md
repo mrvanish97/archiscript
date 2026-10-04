@@ -208,10 +208,11 @@ modeling decision and exposes missing assumptions.
 29. **Concrete API replaced by an imagined category framework**
     - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
       rewrite the ArchiScript API around it.”
-    - Expected: inspect the installed API first. Version 0.3.1 exposes concrete
-      tensor, unit, structural isomorphisms, member operations, and coherence
-      theorems. Do not invent an unimplemented abstraction merely because the
-      mathematics admits one.
+    - Expected: inspect the installed API first. The current public calculus
+      exposes concrete tensor, unit, structural isomorphisms, member operations,
+      coherence theorems, typed expressions, and local normalization
+      certificates. Do not invent an unimplemented abstraction merely because
+      the mathematics admits one.
 
 30. **Independent fan-in overclaimed as a race**
     - Prompt: “A manual trigger and a timer trigger both map into the same
