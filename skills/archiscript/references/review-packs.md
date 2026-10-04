@@ -42,6 +42,20 @@ unknowns. A Lean source diff can accompany this, but should not replace it.
 Display groupings are only visual. Preserve canonical IDs in tables and
 findings even when the diagram uses shorter labels.
 
+For 0.5.0 expression presentations, keep normalization evidence visible in the
+deep pass. If a displayed expression is replaced by a same-endpoint normalized
+form, cite the semantic equality or `Expression.Rewrite` that justifies it. If
+a structural endpoint representation changes, cite the `PartitionIso` /
+`Expression.Transport` commuting certificate. An expression family should
+show its one common source and its separately typed targets; do not render it as
+one tensor-valued multi-target arrow.
+
+If a review view intentionally omits a nominal intermediate VDP, label the view
+as an **architecture projection** and list the hidden nominal boundary. Do not
+present composition alone as evidence that the intermediate VDP was removed
+from the architecture, and do not require a speculative whole-architecture
+isomorphism merely to justify an already proved local expression rewrite.
+
 ## Current prototype
 
 The repository's `PaymentWebhook` example has a generated Markdown review pack
