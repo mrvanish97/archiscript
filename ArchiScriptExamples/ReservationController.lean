@@ -281,7 +281,13 @@ def outboxMessagePartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-/-- Publishing is modeled by another ordinary member map. -/
+/--
+Publishing is another ordinary outgoing member map from ReservationMutation.
+Together with persistence, next-state selection, and inventory intent this is
+fan-out: no execution order between the sibling operations is modeled. They may
+be implemented sequentially or in parallel; only an explicit path through an
+intermediate VDP would state sequential composition.
+-/
 def publishMutation :
     Operation reservationMutationPartition outboxMessagePartition where
   run
