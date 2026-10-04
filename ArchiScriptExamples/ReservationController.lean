@@ -544,6 +544,25 @@ theorem paymentSelectedCoproductNormalization :
     planPaymentMutationExpression
 
 /--
+A local coproduct simplification remains valid inside a larger consequence
+expression. This is the basic 0.5.0 normalization pattern: simplify a proved
+subexpression and lift that equality through the surrounding composition.
+-/
+theorem userSelectedStateNormalization :
+    Expression.Rewrite
+      (.comp
+        (.atom nextReservationState)
+        (.comp
+          (.copair
+            planUserMutationExpression
+            planPaymentMutationExpression)
+          (.coproductInl userContextPartition paymentContextPartition)))
+      (.comp (.atom nextReservationState) planUserMutationExpression) :=
+  Expression.Rewrite.comp
+    (Expression.Rewrite.refl (.atom nextReservationState))
+    userSelectedCoproductNormalization
+
+/--
 The first two controller channels expose the shared ReservationState coordinate:
 
   ((UserTrigger ⊗ InventoryObservation) ⊗ ReservationState)
