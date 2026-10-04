@@ -311,29 +311,34 @@ The diagram deliberately leaves the component operations factored. Expanding
 architectural information: those arrows are already determined componentwise by
 the three operations above.
 
+This next picture is an **operation-algebra view**, not a VDP/member view.
+Rounded nodes denote operations; there are deliberately no VDP containers in
+this picture.
+
 ```mermaid
 flowchart LR
-  subgraph F1["factor 1"]
-    A["UserTrigger VDP"] -->|"parseUser · partial"| B["UserIntent VDP"]
-  end
+  F1(["parseUser<br/>UserTrigger ⇀ UserIntent"])
+  F2(["planInventory<br/>InventoryObservation → InventoryPlan"])
+  F3(["id<br/>ReservationState → ReservationState"])
+  T{{"⊗"}}
+  OP(["prepareUserContext<br/>(parseUser ⊗ planInventory) ⊗ id"])
 
-  subgraph F2["factor 2"]
-    C["InventoryObservation VDP"] -->|"planInventory"| D["InventoryPlan VDP"]
-  end
-
-  subgraph F3["factor 3"]
-    E["ReservationState VDP"] -->|"id"| F["ReservationState VDP"]
-  end
+  F1 --- T
+  F2 --- T
+  F3 --- T
+  T --> OP
 ```
 
-Together they induce the compact product-level arrow
+Together they induce the following compact **Level 1 VDP topology**. Here each
+box denotes one collapsed VDP; member detail is intentionally hidden because it
+is mechanically determined by the factors.
 
-```text
-(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState
-                         |
-                         | (parseUser ⊗ planInventory) ⊗ id
-                         v
-(UserIntent ⊗ InventoryPlan) ⊗ ReservationState
+```mermaid
+flowchart TB
+  SRC["Tensor VDP<br/>(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState<br/>30 = 3 × 2 × 5 members"]
+  DST["Tensor VDP<br/>(UserIntent ⊗ InventoryPlan) ⊗ ReservationState<br/>20 = 2 × 2 × 5 members"]
+
+  SRC -->|"prepareUserContext = (parseUser ⊗ planInventory) ⊗ id"| DST
 ```
 
 with `3 × 2 × 5 = 30` source members and `2 × 2 × 5 = 20` target
@@ -371,16 +376,15 @@ flowchart LR
     M3["expire"]
   end
 
-  PX(["∅ · other product members"])
-  EX(["∅ · other product members"])
-
   P0 -->|"planPaymentMutation"| M1
   P1 -->|"planPaymentMutation"| M2
   E0 -->|"planExpiryMutation"| M3
-
-  PC -.-> PX
-  EC -.-> EX
 ```
+
+The omitted product members are still present in the tensor VDPs; both
+operations are undefined on those omitted members. No edge is drawn from a VDP
+container to `∅`, because an operation is defined on members, not on the
+container itself.
 
 The concurrency review hotspot is now easy to read:
 
