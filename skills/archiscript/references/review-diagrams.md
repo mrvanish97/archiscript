@@ -26,11 +26,13 @@ its selected members as boxes inside it. Connect member boxes with arrows for
 semantic operation mappings. Draw `∅` outside every VDP, since it is not a
 member. At Level 1, a VDP may appear as one collapsed box because individual
 members are intentionally hidden. Use a distinct boundary shape for external
-appearances. Put long source locations and evidence outside the graph. Labels,
-not colors, carry meaning. Display canonical names, optionally after a human
-label such as `Duplicate successful delivery [duplicateSuccess]`. If several
-members are collapsed, label the aggregate `[display group: ...]` and list its
-members in the caption; never treat the group as a new model member.
+appearances. Put long source locations and evidence outside the graph. Follow
+the repository's established/default diagram theme rather than hard-coding
+semantic colors: labels, containment, shapes, and arrow direction carry
+meaning. Display canonical names, optionally after a human label such as
+`Duplicate successful delivery [duplicateSuccess]`. If several members are
+collapsed, label the aggregate `[display group: ...]` and list its members in
+the caption; never treat the group as a new model member.
 
 At Level 3, show supporting subdomains beside the VDP, with their base,
 containment relationship, and defining formula when available. Label an opaque
@@ -49,13 +51,18 @@ For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
 unrelated runtime effects.` Do not infer a side-effect guarantee from `none`.
 
-For a tensor view, show two factor VDP containers and a product VDP whose
-members are all factor-member pairs. Label the factor-to-product links as
-construction or membership, never as `Operation` arrows. `P ⊗ P` still shows
-two slots. A focused view may hide product pairs only when it states the omitted
-pairs in the caption; it must never suggest the tensor prunes them. A product
-operation `f ⊗ g` may be displayed as two independent member arrows with their
-induced product mapping. It does not claim runtime parallel execution.
+For a tensor view, show the elementary factor VDPs first. A product VDP has all
+factor-member tuples; a focused view may hide product tuples only when it states
+the omitted detail and never suggests pruning. Label factor-to-product links as
+construction or membership, never as `Operation` arrows. `P ⊗ P` still has
+two slots.
+
+For a tensor **operation**, prefer the factored presentation: show `f : P → P′`
+and `g : Q → Q′` as independent arrows and state that they induce
+`f ⊗ g : P ⊗ Q → P′ ⊗ Q′`. Do not expand the induced Cartesian family of
+member arrows unless that exact branch-level mapping is the review question.
+The compact factored view carries the same componentwise rule and scales much
+better. It does not claim runtime parallel execution.
 
 Normalize factor-only review questions across associator, unitors, and
 symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use
