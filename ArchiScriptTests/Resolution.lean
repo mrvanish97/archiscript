@@ -34,7 +34,9 @@ private def identityFine : Operation fieldPartition fieldPartition :=
 example : ¬ Operation.ConstantOnFibers forgetFieldFailures identityFine := by
   intro h
   have bad := h (false, false) (false, true) rfl
-  simp [forgetFieldFailures, Partition.coarseningOperation, forgetFieldFailuresMap,
-    identityFine, Operation.id] at bad
+  have impossible :
+      (some (false, false) : Option (Bool × Bool)) ≠ some (false, true) := by
+    decide
+  exact impossible bad
 
 end ArchiScriptTests.Resolution
