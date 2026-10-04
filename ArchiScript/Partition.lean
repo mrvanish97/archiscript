@@ -175,7 +175,11 @@ def symm {P Q : Partition} (e : PartitionIso P Q) : PartitionIso Q P where
   classify_commutes := by
     intro y
     apply e.memberIndex.injective
-    rw [e.classify_commutes, e.carrier.right_inv, e.memberIndex.right_inv]
+    change
+      e.memberIndex.toFun (P.classify (e.carrier.invFun y)) =
+        e.memberIndex.toFun (e.memberIndex.invFun (Q.classify y))
+    rw [← e.classify_commutes (e.carrier.invFun y)]
+    simp [e.carrier.right_inv, e.memberIndex.right_inv]
 
 end PartitionIso
 
