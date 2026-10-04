@@ -627,10 +627,26 @@ def controllerSourceFactoringIso :
       | (.inr expiry, state) => .inr (expiry, state)
     left_inv := by
       intro x
-      rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+      cases x with
+      | inl channel =>
+          cases channel with
+          | inl userState =>
+              rcases userState with ⟨ui, state⟩
+              rfl
+          | inr paymentState =>
+              rcases paymentState with ⟨payment, state⟩
+              rfl
+      | inr expiryState =>
+          rcases expiryState with ⟨expiry, state⟩
+          rfl
     right_inv := by
       intro x
-      rcases x with ⟨(⟨⟨ui⟩ | ⟨payment⟩⟩ | ⟨expiry⟩), state⟩ <;> rfl
+      rcases x with ⟨channel, state⟩
+      cases channel with
+      | inl userOrPayment =>
+          cases userOrPayment <;> rfl
+      | inr expiry =>
+          rfl
   }
   memberIndex := {
     toFun := fun
@@ -643,14 +659,41 @@ def controllerSourceFactoringIso :
       | (.inr expiry, state) => .inr (expiry, state)
     left_inv := by
       intro x
-      rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+      cases x with
+      | inl channel =>
+          cases channel with
+          | inl userState =>
+              rcases userState with ⟨ui, state⟩
+              rfl
+          | inr paymentState =>
+              rcases paymentState with ⟨payment, state⟩
+              rfl
+      | inr expiryState =>
+          rcases expiryState with ⟨expiry, state⟩
+          rfl
     right_inv := by
       intro x
-      rcases x with ⟨(⟨⟨ui⟩ | ⟨payment⟩⟩ | ⟨expiry⟩), state⟩ <;> rfl
+      rcases x with ⟨channel, state⟩
+      cases channel with
+      | inl userOrPayment =>
+          cases userOrPayment <;> rfl
+      | inr expiry =>
+          rfl
   }
   classify_commutes := by
     intro x
-    rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+    cases x with
+    | inl channel =>
+        cases channel with
+        | inl userState =>
+            rcases userState with ⟨ui, state⟩
+            rfl
+        | inr paymentState =>
+            rcases paymentState with ⟨payment, state⟩
+            rfl
+    | inr expiryState =>
+        rcases expiryState with ⟨expiry, state⟩
+        rfl
 
 def controllerFactoredPlanExpression :
     Expression
