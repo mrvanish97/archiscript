@@ -342,5 +342,15 @@ modeling decision and exposes missing assumptions.
       should use known/proved canonical structural isomorphisms rather than
       inventing arbitrary bijections between unrelated architecture objects.
 
+46. **One consequence question split by coproduct branch**
+    - Prompt: “User, payment, and expiry are three entry alternatives for the
+      same reservation consequence analysis, so create three unrelated
+      expression families.”
+    - Expected: prefer one family when the consequence question and
+      materialization boundary are the same. Use a design-time coproduct source
+      for the alternatives and keep branch-specific consequences partial where
+      necessary. Separate families only when the analysis question or source
+      materialization boundary is genuinely different.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
