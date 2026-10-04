@@ -330,7 +330,7 @@ def expiryWrite :
 #guard planUserMutation ((.reserve, .unavailable), .empty) == none
 #guard planUserMutation ((.cancel, .unavailable), .held) == some .cancel
 
-/-- Concrete concurrency-review witness: both paths can observe Held and disagree. -/
+-- Concrete concurrency-review witness: both paths can observe Held and disagree.
 #guard planPaymentMutation (.authorized, .held) == some .markPaid
 #guard planExpiryMutation (.fired, .held) == some .expire
 
