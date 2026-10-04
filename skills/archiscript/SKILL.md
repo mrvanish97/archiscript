@@ -352,6 +352,11 @@ family is the tagged sum of the factor members, and the source tag remains
 available. `Operation.coproductInl`, `Operation.coproductInr`, and
 `Operation.copair` implement the standard coproduct universal property.
 
+The public claim is **binary coproduct**. Because every `Partition` requires a
+nonempty carrier, ArchiScript has no empty/initial VDP in this calculus. Do not
+silently strengthen the API into arbitrary finite coproducts that include a
+nullary coproduct.
+
 The authoring discipline is intentionally stricter than the bare mathematical
 construction. **Use coproduct only when the set of summands is already fixed by
 the architecture before runtime values are materialized.**
@@ -398,6 +403,12 @@ aggregation. The result always has carrier `P.Carrier × Q.Carrier` and the full
 member product. Never prune a pair because it looks semantically inconvenient,
 never collapse `P.tensor P` to one carrier value, and never reinterpret tensor
 as same-carrier intersection or common refinement.
+
+This is a symmetric monoidal tensor, **not a categorical product** in the
+partial-map calculus. Do not invent canonical projections or a universal
+pairing operation: partial maps into two factors may have different domains of
+definition, and the tensor unit is not terminal because there are many partial
+maps into it.
 
 The mathematical tensor is permissive. `Account(A) ⊗ Payment(B)` is a valid
 VDP construction even when the architectural reason for considering those
