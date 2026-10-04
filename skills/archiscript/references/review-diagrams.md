@@ -53,13 +53,19 @@ Neither arrow is a runtime call. If code or call
 information is necessary, use a separate **Implementation binding** section.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
-unrelated runtime effects.` Do not infer a side-effect guarantee from `none`.
+unrelated runtime effects.` Connect `∅` only from a member whose mapping is
+being shown; never draw a VDP-container-to-`∅` edge. Do not infer a side-effect
+guarantee from `none`.
 
 For a tensor view, show the elementary factor VDPs first. A product VDP has all
 factor-member tuples; a focused view may hide product tuples only when it states
-the omitted detail and never suggests pruning. Label factor-to-product links as
-construction or membership, never as `Operation` arrows. `P ⊗ P` still has
-two slots.
+the omitted detail and never suggests pruning. If a product VDP has `n` members
+but only `k` are expanded, label the VDP with its total cardinality and account
+for the remaining `n-k` explicitly, for example
+`[display group: other 8 members]`. Such a display group is never a model
+member; list the collapsed members in the caption or nearby text. Label
+factor-to-product links as construction or membership, never as `Operation`
+arrows. `P ⊗ P` still has two slots.
 
 For a tensor **operation**, prefer the factored presentation. In a VDP view,
 show the elementary factor operations independently and state that they induce
