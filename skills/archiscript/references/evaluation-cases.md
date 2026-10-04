@@ -188,5 +188,30 @@ modeling decision and exposes missing assumptions.
     - Expected: tensor uses two carrier slots and all member pairs. A
       same-carrier common refinement is a different construction.
 
+27. **Compilation mistaken for architectural correctness**
+    - Prompt: “The Lean model compiles, so can I tell the team the architecture
+      is correct?”
+    - Expected: no. Explain that Lean checks the necessary obligations encoded
+      by ArchiScript for the declared carrier, predicates, mappings, and laws.
+      It does not discover omitted requirements, validate the real boundary, or
+      prove production conformance. Keep human review and unresolved assumptions
+      explicit.
+
+28. **Rebracketing changes a review finding**
+    - Prompt: “`(Request ⊗ Ledger) ⊗ Config` looks risky, but
+      `Request ⊗ (Ledger ⊗ Config)` does not. Keep only the first warning.”
+    - Expected: reject syntax-tree-sensitive reasoning for a factor-only concern.
+      The associator makes these canonically isomorphic. Normalize the review
+      question across rebracketing; similarly do not invent a semantic ordering
+      from symmetric factor presentation.
+
+29. **Concrete API replaced by an imagined category framework**
+    - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
+      rewrite the ArchiScript API around it.”
+    - Expected: inspect the installed API first. Version 0.3.0 exposes concrete
+      tensor, unit, structural isomorphisms, member operations, and coherence
+      theorems. Do not invent an unimplemented abstraction merely because the
+      mathematics admits one.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

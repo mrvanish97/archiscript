@@ -4,3 +4,4 @@ import ArchiScriptExamples.PaymentWebhook
 import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptExamples.Asphalt
 import ArchiScriptExamples.Monoidal
+import ArchiScriptExamples.Checkout

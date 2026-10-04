@@ -115,4 +115,59 @@ def acceptedBranchWitness := registry.resolveBranch acceptedBranch
 #guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
 #guard registry.branchesWithoutImplementation.length == 0
 
+/-- The smoke file also covers the structural monoidal API, not only tensor construction. -/
+#guard Partition.unit.memberIndices.length == 1
+
+example :
+    (Operation.symmetry requestPartition requestPartition).comp
+        (Operation.symmetry requestPartition requestPartition) =
+      Operation.id (requestPartition.tensor requestPartition) :=
+  Operation.symmetry_involutive requestPartition requestPartition
+
+example :
+    ((Operation.id requestPartition).tensor (Operation.leftUnitor requestPartition)).comp
+        (Operation.associator requestPartition Partition.unit requestPartition) =
+      (Operation.rightUnitor requestPartition).tensor (Operation.id requestPartition) :=
+  Operation.triangle requestPartition requestPartition
+
+/-- Architectural handoff remains separate from the low-level member map. -/
+def requestArchitecturalOperation : ArchitecturalOperation where
+  source := requestArchitecture
+  target := requestArchitecture
+  operation := accept
+
+def architecture : Architecture where
+  operations := [requestArchitecturalOperation]
+
+#guard architecture.operations.length == 1
+
+/-- A minimal routed family exercises the public parameterized-routing surface. -/
+def routedRequests : ParameterizedPartition.Routed requestPartition where
+  specialize := fun _ => requestPartition
+  registry := registry
+  Route := fun _ => Unit
+  routes := fun _ => [()]
+  routes_complete := by
+    intro _ route
+    cases route
+    simp
+  routeOperation := fun _ _ => .accept
+  routeSource := by
+    intro _ route
+    cases route
+    rfl
+
+def routedPositive := routedRequests.resolveOutbound .positive ()
+
+example : routedPositive.target = requestPartition := rfl
+example : ParameterizedPartition.HasOperation routedRequests .positive .accept := by
+  exact ⟨(), rfl⟩
+
+/-- Review approval is an explicit workflow predicate, not a consequence of compilation. -/
+private def smokeReview : ReviewRecord where
+  modelRevision := "smoke-v1"
+  decision := .approved "skill-reviewer" "smoke-v1"
+
+#guard smokeReview.implementationAllowed
+
 end SkillSmoke
