@@ -159,11 +159,9 @@ theorem coproductMap_comp
   intro ij
   cases ij with
   | inl i =>
-    simp only [coproductMap, comp_apply]
-    cases h₁ : f₁ i <;> rfl
+    cases h₁ : f₁ i <;> simp [coproductMap, comp, h₁]
   | inr j =>
-    simp only [coproductMap, comp_apply]
-    cases h₁ : g₁ j <;> rfl
+    cases h₁ : g₁ j <;> simp [coproductMap, comp, h₁]
 
 end Operation
 
