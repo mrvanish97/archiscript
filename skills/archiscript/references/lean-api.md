@@ -315,6 +315,23 @@ def factoredSourceIso :
 The isomorphism shows one shared structural right coordinate. It does not prove
 one physical read, cache lookup, transaction, or runtime instance.
 
+Structural isomorphisms compose directly:
+
+```lean
+#check Partition.PartitionIso.refl
+#check Partition.PartitionIso.symm
+#check Partition.PartitionIso.trans
+#check Partition.PartitionIso.tensor
+#check Partition.PartitionIso.coproduct
+```
+
+Use these combinators to assemble larger structural rewrites from already-proved
+pieces. For example, the ReservationController first factors the user/payment
+coproduct by right distributivity, lifts that isomorphism through the outer
+coproduct with expiry, then composes with a second right-distributivity witness.
+This avoids restating carrier and member-index bijections for the complete
+three-channel source.
+
 A normalizer should consume known/proved structural `PartitionIso` witnesses;
 it should not search for arbitrary carrier bijections simply because two VDPs
 happen to be mathematically isomorphic. Likewise, tensor does not acquire a
