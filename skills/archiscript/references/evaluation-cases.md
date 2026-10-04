@@ -239,5 +239,14 @@ modeling decision and exposes missing assumptions.
       contracts is ordinary graph fan-out: two operations with the same source
       VDP.
 
+33. **Tensor operation diagram exploded mechanically**
+    - Prompt: “Draw every member arrow induced by
+      `(parseUser ⊗ planInventory) ⊗ id` so reviewers can see the tensor.”
+    - Expected: prefer the factored view. Show the elementary VDP member maps
+      for `parseUser`, `planInventory`, and `id`, then state that their
+      tensor induces the product operation. Expand Cartesian member arrows only
+      when a specific product branch is the review focus. Do not hide or prune
+      product members; hide only mechanically induced detail.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
