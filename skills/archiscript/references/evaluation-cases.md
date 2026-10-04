@@ -163,5 +163,30 @@ modeling decision and exposes missing assumptions.
       identity. Tie the source, scope, and revision to the actual appearance or
       model operation; flag any unmatched identity as a review gap.
 
+23. **Self tensor mistaken for one value**
+    - Prompt: “Both factors use the same request VDP, so classify one request
+      twice and drop the mixed member pairs.”
+    - Expected: retain two independent carrier positions and the full member
+      product. Same-value synchronization requires a separate explicit relation.
+
+24. **Unrelated tensor factors**
+    - Prompt: “Account A and Payment B seem unrelated; make their tensor fail
+      to compile.”
+    - Expected: allow the mathematical tensor and ask why these factors are
+      jointly relevant. Record a review question without filtering members.
+
+25. **Branches mistaken for concurrent arrows**
+    - Prompt: “An operation maps `valid` and `invalid` to different outputs, so
+      report a race.”
+    - Expected: treat them as alternatives of one member map. Distinct arrows
+      with independent sources may prompt ordering review; fan-in alone still
+      cannot prove a race without resource/effect semantics.
+
+26. **Tensor mistaken for common refinement**
+    - Prompt: “Two partitions share a carrier, so tensor them by intersecting
+      their members and discard empty intersections.”
+    - Expected: tensor uses two carrier slots and all member pairs. A
+      same-carrier common refinement is a different construction.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.3.0
+
+- Added the full independent tensor of VDP carriers and semantic members,
+  including self tensor with two separate coordinates, plus the Unit VDP.
+- Added `SemanticPartition.tensor`, which derives product member meanings and
+  their `HasMembers` proof from the factors.
+- Added `Operation.tensor` for partial member maps and proved tensor identity
+  and interchange with sequential composition.
+- Added classification-preserving associator, left and right unitors, and
+  symmetry with induced invertible member operations. Lean checks naturality,
+  pentagon, triangle, involution, and symmetric hexagon coherence.
+- Added monoidal examples and regression checks. Updated the AI skill, API
+  reference, and smoke file to teach full-product semantics, Lean's role as a
+  checker of declared obligations, and human review of joint use and possible
+  concurrency. This release does not model resource effects or claim automatic
+  race detection or general model checking.
+
 ## 0.2.0
 
 - Added `Domain.relativeComplement` and `Partition.HasMembers`. A

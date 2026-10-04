@@ -63,3 +63,15 @@ design-sensitive assumptions.
   coarsening, and optional branch subsets. Add regression checks for reproduced
   failures rather than replacing the established model with a convenient new
   abstraction.
+- Preserve the symmetric monoidal VDP tensor: full independent carrier and
+  member products, including self tensor. Do not interpret tensor as common
+  refinement, filtered product, pullback, same-value observation, or runtime
+  parallelism. `Operation.tensor` maps member pairs and carries no resource
+  effects. Keep one operation's alternative branches distinct from separately
+  sourced operation arrows.
+- Describe Lean as checking explicit necessary model obligations. It does not
+  search for omitted requirements or certify a production architecture.
+  Concurrency conclusions require resource/effect semantics; keep unsupported
+  race or ordering claims as review questions or `UNKNOWN`.
+- When the public monoidal API changes, update the authoring skill, its API
+  reference and smoke example, and the monoidal regression checks together.

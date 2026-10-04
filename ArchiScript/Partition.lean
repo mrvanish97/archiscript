@@ -44,9 +44,48 @@ namespace Partition
 instance (P : Partition) : Nonempty P.Carrier := P.carrierNonempty
 instance (P : Partition) : DecidableEq P.MemberIndex := P.memberIndexDecidableEq
 
+/-- Independent aggregation: every pair of carrier values and every pair of
+members remains present, including when both factors are the same VDP. -/
+def tensor (P Q : Partition) : Partition where
+  Carrier := P.Carrier × Q.Carrier
+  MemberIndex := P.MemberIndex × Q.MemberIndex
+  carrierNonempty := ⟨Classical.choice P.carrierNonempty, Classical.choice Q.carrierNonempty⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := P.memberIndices.flatMap fun i => Q.memberIndices.map fun j => (i, j)
+  memberIndices_complete := by
+    intro ⟨i, j⟩
+    simp only [List.mem_flatMap, List.mem_map]
+    exact ⟨i, P.memberIndices_complete i, j, Q.memberIndices_complete j, rfl⟩
+  classify := fun xy => (P.classify xy.1, Q.classify xy.2)
+  member_inhabited := by
+    intro ⟨i, j⟩
+    obtain ⟨x, hx⟩ := P.member_inhabited i
+    obtain ⟨y, hy⟩ := Q.member_inhabited j
+    exact ⟨(x, y), Prod.ext hx hy⟩
+
+/-- The tensor unit has one value and one semantic member. -/
+def unit : Partition where
+  Carrier := Unit
+  MemberIndex := Unit
+  carrierNonempty := ⟨()⟩
+  memberIndexDecidableEq := inferInstance
+  memberIndices := [()]
+  memberIndices_complete := by intro i; cases i; simp
+  classify := fun _ => ()
+  member_inhabited := by intro i; cases i; exact ⟨(), rfl⟩
+
 /-- The actual semantic subdomain represented by a member index. -/
 def member (P : Partition) (i : P.MemberIndex) : Domain P.Carrier :=
   fun x => P.classify x = i
+
+@[simp] theorem tensor_member_iff (P Q : Partition)
+    (i : P.MemberIndex) (j : Q.MemberIndex)
+    (x : P.Carrier) (y : Q.Carrier) :
+    (P.tensor Q).member (i, j) (x, y) ↔ P.member i x ∧ Q.member j y := by
+  simp only [member, tensor, Prod.mk.injEq]
+
+@[simp] theorem tensor_classify (P Q : Partition) (x : P.Carrier) (y : Q.Carrier) :
+    (P.tensor Q).classify (x, y) = (P.classify x, Q.classify y) := rfl
 
 /--
 The selected semantic members agree with the classifier's actual fibers.
@@ -143,6 +182,21 @@ structure SemanticPartition where
   hasMembers : partition.HasMembers members
 
 namespace SemanticPartition
+
+/-- Product members inherit their independently stated meanings from the two
+factors; no product predicate needs to be supplied by an author. -/
+def tensor (P Q : SemanticPartition) : SemanticPartition where
+  partition := P.partition.tensor Q.partition
+  members := fun ij xy => P.members ij.1 xy.1 ∧ Q.members ij.2 xy.2
+  hasMembers := by
+    intro ⟨i, j⟩ ⟨x, y⟩
+    rw [Partition.tensor_member_iff]
+    exact and_congr (P.hasMembers i x) (Q.hasMembers j y)
+
+def unit : SemanticPartition where
+  partition := Partition.unit
+  members := fun _ _ => True
+  hasMembers := by intro i x; cases i; cases x; simp [Partition.member, Partition.unit]
 
 /-- The stated semantic members cover every value of the declared carrier. -/
 theorem members_cover (S : SemanticPartition) (x : S.partition.Carrier) :

@@ -1,4 +1,5 @@
 import ArchiScript.Partition
+import ArchiScript.Monoidal
 import ArchiScript.Boundary
 import ArchiScript.Operation.Declaration
 import ArchiScript.Review

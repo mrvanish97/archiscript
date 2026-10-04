@@ -132,6 +132,45 @@ possible explanatory view. Opaque-domain reasoning can take explicit predicate
 parameters and assumptions; the core has no symbolic provenance registry or
 automatic inference of those assumptions.
 
+## Independent tensor and the unit VDP
+
+`Partition.tensor P Q` has carrier `P.Carrier × Q.Carrier`, index type
+`P.MemberIndex × Q.MemberIndex`, and every pair in its member enumeration.
+Every pair is inhabited because both factors have inhabited members. It is
+never a same-carrier intersection or a compatibility-filtered product. The
+separately defined meanings tensor without another handwritten product proof:
+
+```lean
+def pairedRequests : SemanticPartition :=
+  requestSemanticPartition.tensor requestSemanticPartition
+
+example (i j : RequestIndex) (x y : Nat) :
+    pairedRequests.members (i, j) (x, y) ↔
+      requestMembers i x ∧ requestMembers j y := Iff.rfl
+```
+
+The self tensor has two `Nat` slots even though both factors use the same VDP.
+`Partition.unit` is the one-member Unit VDP. `Operation.tensor` takes the
+independent product of two partial member maps and returns `none` if either is
+undefined:
+
+```lean
+def pairedAccept : Operation (requestPartition.tensor requestPartition)
+    (requestPartition.tensor requestPartition) := accept.tensor accept
+
+example : pairedAccept (.zero, .positive) = none := rfl
+```
+
+`Operation.tensor_id` and `Operation.tensor_comp` establish bifunctoriality.
+`Partition.tensorAssociator`, `tensorLeftUnitor`, `tensorRightUnitor`, and
+`tensorSymmetry` preserve carrier classification and induce invertible member
+operations. `Operation.associator_natural`, `leftUnitor_natural`,
+`rightUnitor_natural`, `symmetry_natural`, `pentagon`, `triangle`, and `hexagon`
+check the concrete symmetric monoidal laws. These maps do not schedule runtime
+work, establish resource independence, or provide a categorical product.
+Architectural joint relevance remains a human review question; normalize
+factor-only findings across rebracketing and symmetry.
+
 ## Operations and canonical branch references
 
 An `Operation` is only a partial member map:

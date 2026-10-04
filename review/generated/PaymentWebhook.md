@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `a84e6928443e`
+Model revision: `a2d2b60650b1`
 
 Review state: **draft**
 

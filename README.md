@@ -3,8 +3,9 @@
 **Machine-checked software design for human review before AI writes code.**
 
 Use ArchiScript when an AI coding task has consequential cases: retries, stale
-state, failures, approvals, or several possible downstream actions. It makes
-the intended branches checkable and reviewable before implementation.
+state, failures, approvals, or several possible downstream actions. Agents
+propose the distinctions; Lean checks the stated obligations; engineers decide
+whether the model describes the actual problem before implementation.
 
 **Without ArchiScript: an unchecked shortcut.** “Successful webhook → fulfill”
 merges first and duplicate deliveries and leaves other inputs out of the plan.
@@ -478,11 +479,74 @@ the underlying subdomains, partitions, observation, and operation discipline.
 The older design uses TypeScript notation; the Lean source defines this
 repository's current API.
 
-## What is available in this unreleased version
+### Independent VDP composition in 0.3.0
+
+A VDP is a finite partition $P : C_P \twoheadrightarrow \mathcal M_P$ whose
+members are nonempty semantic subdomains of $C_P$. Lean represents members by
+finite indices and checks their classifier fibers against separately stated
+predicates with `HasMembers`. A carrier's fit to the real boundary still needs
+independent justification and engineering review.
+
+`Operation.comp` connects member maps in sequence. `Partition.tensor` combines
+two independent VDPs. Its carrier is `P.Carrier × Q.Carrier`, and its members
+are **every** pair of a member of `P` and a member of `Q`. Even `P.tensor P`
+has two separate carrier slots; it never classifies one value twice or removes
+an inconvenient pair.
+
+```mermaid
+flowchart LR
+  subgraph P["Request VDP"]
+    P0["invalid"]
+    P1["valid"]
+  end
+  subgraph Q["Ledger observation VDP"]
+    Q0["missing"]
+    Q1["recorded"]
+  end
+  subgraph PQ["Request ⊗ Ledger · all four members"]
+    A["invalid × missing"]
+    B["invalid × recorded"]
+    C["valid × missing"]
+    D["valid × recorded"]
+  end
+  P0 -.-> A
+  P0 -.-> B
+  P1 -.-> C
+  P1 -.-> D
+  Q0 -.-> A
+  Q0 -.-> C
+  Q1 -.-> B
+  Q1 -.-> D
+```
+
+The dotted links show how member pairs are formed. They are not operations.
+
+`SemanticPartition.tensor` derives product predicates and their correspondence
+proof from the two factors. `Operation.tensor` combines two partial member maps;
+the product map is defined only where both component maps are defined. Authors
+can state two local maps instead of manually listing every product branch.
+
+Lean proves identity and interchange for tensor, then checks the canonical
+associator, left and right unitors, symmetry, naturality, pentagon, triangle,
+and hexagon laws. These laws allow independent factors to be grouped or swapped
+through explicit isomorphisms. Tensor means independent aggregation in the
+calculus. It does not assert runtime parallelism, resource independence,
+same-value synchronization, or a categorical product universal property.
+
+A tensor such as `Account(A) ⊗ Payment(B)` is mathematically valid; reviewers
+should ask why those factors are considered together. Two branches of one
+operation are ordinary alternative member mappings. Distinct arrows from
+independent sources that converge on a mutable resource raise an ordering
+question, but this calculus does not prove a race. The
+[monoidal example](ArchiScriptExamples/Monoidal.lean) and
+[mathematical review](../archiscript-docs/chapter-1/stage-2/archiscript_monoidal_vdp_review.tex)
+give the checked API and full definition.
+
+## What is available in 0.3.0
 
 | Available now | Scope |
 | --- | --- |
-| Lean model checks | Partitions, supplied semantic correspondence, member maps, typed composition, branches, and finite routing. |
+| Lean model checks | Partitions, supplied semantic correspondence, member maps, typed composition, independent tensor and its coherence laws, branches, and finite routing. |
 | Canonical registry | Enumerable declared operations and branches, effective responsibility and implementation disposition, missing-metadata queries, and reverse navigation from a declared source identity. |
 | Review protocol | Object-addressed findings, revision-specific approval state, diagram guidance, and a generated PaymentWebhook PDF/Markdown review pack with semantic snapshot diff. |
 | Multi-VDP showcase | A second checked webhook model with seven VDPs, six operations, and generated topology, neighborhood, path, branch, semantic, and binding views. |

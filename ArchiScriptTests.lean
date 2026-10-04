@@ -3,6 +3,7 @@ import ArchiScriptExamples.UserRegistration
 import ArchiScriptExamples.PaymentWebhook
 import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptTests.Domains
+import ArchiScriptTests.Monoidal
 
 namespace ArchiScriptTests
 open ArchiScript

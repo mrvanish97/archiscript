@@ -60,6 +60,26 @@ def accept : Operation requestPartition requestPartition where
     | .zero => none
     | .positive => some .positive
 
+def pairedRequests : SemanticPartition :=
+  requestSemanticPartition.tensor requestSemanticPartition
+
+example : pairedRequests.partition = requestPartition.tensor requestPartition := rfl
+
+example (i j : RequestIndex) (x y : Nat) :
+    pairedRequests.members (i, j) (x, y) ↔
+      requestMembers i x ∧ requestMembers j y := Iff.rfl
+
+def pairedAccept : Operation (requestPartition.tensor requestPartition)
+    (requestPartition.tensor requestPartition) := accept.tensor accept
+
+example : pairedAccept (.zero, .positive) = none := rfl
+example : pairedAccept (.positive, .positive) = some (.positive, .positive) := rfl
+
+example : (Operation.associatorInv requestPartition requestPartition requestPartition).comp
+    (Operation.associator requestPartition requestPartition requestPartition) =
+      Operation.id ((requestPartition.tensor requestPartition).tensor requestPartition) :=
+  Operation.associator_left_inv _ _ _
+
 inductive OperationName where | accept deriving DecidableEq
 inductive BranchName where | positive deriving DecidableEq
 

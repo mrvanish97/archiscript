@@ -49,6 +49,23 @@ For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
 unrelated runtime effects.` Do not infer a side-effect guarantee from `none`.
 
+For a tensor view, show two factor VDP containers and a product VDP whose
+members are all factor-member pairs. Label the factor-to-product links as
+construction or membership, never as `Operation` arrows. `P ⊗ P` still shows
+two slots. A focused view may hide product pairs only when it states the omitted
+pairs in the caption; it must never suggest the tensor prunes them. A product
+operation `f ⊗ g` may be displayed as two independent member arrows with their
+induced product mapping. It does not claim runtime parallel execution.
+
+Normalize factor-only review questions across associator, unitors, and
+symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use
+findings merely because of parentheses. Swapped factors should preserve a
+question that has no explicit role or ordering dependence. For an odd-looking
+product, ask why the factors are jointly relevant; retain the mathematically
+valid tensor. Multiple branches of one operation are alternatives, while
+multiple arrows from independent sources can raise an ordering question.
+Neither graph fan-in nor a cycle proves a race without resource/effect evidence.
+
 Put epistemic status beneath the diagram, rather than adding nodes:
 
 ```text

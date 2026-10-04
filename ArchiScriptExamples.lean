@@ -3,3 +3,4 @@ import ArchiScriptExamples.UserRegistration
 import ArchiScriptExamples.PaymentWebhook
 import ArchiScriptExamples.PaymentWebhookNetwork
 import ArchiScriptExamples.Asphalt
+import ArchiScriptExamples.Monoidal

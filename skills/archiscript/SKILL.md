@@ -6,11 +6,12 @@ description: Author, review, or implement from ArchiScript architectural contrac
 # ArchiScript model authoring
 
 ArchiScript makes architectural intent into a checkable implementation contract.
-Use it to discover missing cases, incompatible paths, hidden assumptions, and
-unclear responsibility before writing the implementation. The deliverable is a
-design people and agents can reason from. Lean checks that declared design; it
-cannot discover requirements omitted from the carrier or prove conformance of
-production code that is not modeled.
+The AI agent explores the architecture and proposes carriers, semantic regions,
+VDP members, operations, independent factors, and open questions. Lean checks
+the explicit obligations of that proposed model. It cannot choose the right
+carrier, invent missing requirements, or establish unmodeled production behavior.
+Proof success is necessary evidence for the declared model and still needs human
+engineering review before implementation.
 
 **The wide carrier is the first and most important modeling obligation.** Begin
 with the full universe of values that can reach the chosen boundary, including
@@ -47,6 +48,31 @@ location proves code conformance.
   Identity and associativity are supplied by the library. The underlying
   calculus is partial functions between finite member sets,
   $\operatorname{Par}(\mathbf{FinSet})$; carrier values need not be finite.
+- **Tensor** is independent aggregation. `P.tensor Q` has carrier
+  `P.Carrier × Q.Carrier` and every pair of selected members. `f.tensor g`
+  combines partial member maps componentwise and is undefined if either side
+  is undefined. Tensor does not mean runtime parallel execution.
+
+The mathematical VDP comes first: $P:C_P\twoheadrightarrow\mathcal M_P$,
+where $\mathcal M_P$ is a finite family of nonempty semantic subdomains of
+$C_P$ that covers it without overlap. Lean's `MemberIndex` and `classify`
+represent this partition and make its obligations practical to check. A VDP is
+more than an index-valued function.
+
+Use `g.comp f` for sequential member transformation and `f.tensor g` for
+independent product transformation. The tensor is a full Cartesian product:
+never prune a pair because it seems irrelevant or impossible. `P.tensor P`
+still has two independently valued carrier slots. Equal carrier types do not
+imply equal values. Common refinement, a diagonal of one shared value, and
+correlated resources require separate explicit models. If the factors appear
+jointly without a clear reason, ask: **Why are they considered together, and
+is their independence intentional?** A mathematically valid tensor is not
+rejected because this review question is open.
+
+The associator, unitors, and symmetry change grouping and order through
+canonical isomorphisms; they do not change which product member pairs exist.
+State review questions about joint use in a way that survives rebracketing or
+swapping independent factors, unless explicit roles make order relevant.
 
 Start by asking what can enter from outside, what semantic distinctions affect
 the available transformations, and which paths must compose or agree. Derive
@@ -291,6 +317,20 @@ force a deterministic member map.
 “Quantum superposition” is at most a bounded teaching analogy for unresolved
 observer knowledge. It is not implemented ArchiScript semantics.
 
+## Review independent arrows carefully
+
+Several branches of one `Operation` are alternative cases of one partial map.
+An `if/else` distinction belongs in source VDP members and one arrow. It is
+not evidence of concurrent work.
+
+Distinct operation declarations with independently available sources can raise
+a concurrency question, especially when they later concern one mutable
+resource. A common target, graph fan-in, or cycle alone does not prove a race,
+deadlock, or commutativity result. Record ordering, atomicity, and repeated
+effect safety as `UNKNOWN` or review findings until an explicit resource/effect
+model or external analyzer supports a stronger claim. Tensor expresses
+independent semantic slots and member maps, not scheduling.
+
 ## Use the current Lean API
 
 Use the public vocabulary exactly:
@@ -309,6 +349,9 @@ Use the public vocabulary exactly:
   evidence for both endpoints;
 - `Operation` for partial member mappings, with scoped `Operation.id` and
   right-to-left `Operation.comp`;
+- `Partition.tensor`, `Partition.unit`, `SemanticPartition.tensor`, and
+  `Operation.tensor` for independent product composition, plus canonical
+  associator, unitors, and symmetry in `ArchiScript.Monoidal`;
 - `ParameterizedPartition` for specialization by finite parameter members.
 
 Before writing code, inspect the installed package's imports and source API.
