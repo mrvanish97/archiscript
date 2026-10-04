@@ -159,13 +159,11 @@ theorem coproductMap_comp
   intro ij
   cases ij with
   | inl i =>
-    change Option.map Sum.inl ((f₁ i).bind f₂.run) =
-      (Option.map Sum.inl (f₁ i)).bind (coproductMap f₂ g₂).run
-    cases h₁ : f₁ i <;> rw [h₁] <;> rfl
+    simp only [coproductMap, comp_apply]
+    cases h₁ : f₁ i <;> rfl
   | inr j =>
-    change Option.map Sum.inr ((g₁ j).bind g₂.run) =
-      (Option.map Sum.inr (g₁ j)).bind (coproductMap f₂ g₂).run
-    cases h₁ : g₁ j <;> rw [h₁] <;> rfl
+    simp only [coproductMap, comp_apply]
+    cases h₁ : g₁ j <;> rfl
 
 end Operation
 
