@@ -486,6 +486,11 @@ expressions from the common coproduct source. Use separate families when the
 analysis question or materialization boundary is genuinely different, not as a
 replacement for tensor/coproduct structure.
 
+The current Lean `Expression.Family` uses a `List` only as finite storage.
+Do not infer execution order, priority, or stable architectural identity from
+list position. Set-like versus explicitly indexed family identity remains an
+open presentation question; 0.5.0 assigns no semantics to list order.
+
 Architecture may contain cycles. Each selected expression remains finite.
 Never define a family as an enumeration of every finite traversal of a cycle,
 and never infer a runtime loop, retry schedule, or temporal recurrence merely
