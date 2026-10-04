@@ -600,6 +600,79 @@ example :
   userPaymentFactoringCertificate.commutes
 
 /--
+The complete three-channel controller source can be factored to one shared
+ReservationState coordinate:
+
+  ((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)
+    ≅
+  (((U ⊗ I) ⊕ P) ⊕ E) ⊗ R.
+
+This witness is the concrete nested-binary distributive shape used by the stress
+test. The target remains an anonymous structural representation: normalization
+does not create a replacement nominal VDP declaration.
+-/
+def controllerSourceFactoringIso :
+    Partition.PartitionIso controllerInputPartition
+      ((((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+          paymentTriggerPartition).coproduct expiryTriggerPartition).tensor
+            reservationStatePartition) where
+  carrier := {
+    toFun := fun
+      | .inl (.inl (ui, state)) => (.inl (.inl ui), state)
+      | .inl (.inr (payment, state)) => (.inl (.inr payment), state)
+      | .inr (expiry, state) => (.inr expiry, state)
+    invFun := fun
+      | (.inl (.inl ui), state) => .inl (.inl (ui, state))
+      | (.inl (.inr payment), state) => .inl (.inr (payment, state))
+      | (.inr expiry, state) => .inr (expiry, state)
+    left_inv := by
+      intro x
+      rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+    right_inv := by
+      intro x
+      rcases x with ⟨(⟨⟨ui⟩ | ⟨payment⟩⟩ | ⟨expiry⟩), state⟩ <;> rfl
+  }
+  memberIndex := {
+    toFun := fun
+      | .inl (.inl (ui, state)) => (.inl (.inl ui), state)
+      | .inl (.inr (payment, state)) => (.inl (.inr payment), state)
+      | .inr (expiry, state) => (.inr expiry, state)
+    invFun := fun
+      | (.inl (.inl ui), state) => .inl (.inl (ui, state))
+      | (.inl (.inr payment), state) => .inl (.inr (payment, state))
+      | (.inr expiry, state) => .inr (expiry, state)
+    left_inv := by
+      intro x
+      rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+    right_inv := by
+      intro x
+      rcases x with ⟨(⟨⟨ui⟩ | ⟨payment⟩⟩ | ⟨expiry⟩), state⟩ <;> rfl
+  }
+  classify_commutes := by
+    intro x
+    rcases x with (⟨⟨⟨ui, state⟩ | ⟨payment, state⟩⟩ | ⟨expiry, state⟩⟩) <;> rfl
+
+def controllerFactoredPlanExpression :
+    Expression
+      ((((userTriggerPartition.tensor inventoryObservationPartition).coproduct
+          paymentTriggerPartition).coproduct expiryTriggerPartition).tensor
+            reservationStatePartition)
+      reservationMutationPartition :=
+  .comp controllerPlanExpression (.iso controllerSourceFactoringIso.symm)
+
+def controllerFactoringCertificate :
+    Expression.Transport controllerPlanExpression
+      controllerFactoredPlanExpression :=
+  Expression.Transport.source controllerPlanExpression controllerSourceFactoringIso
+
+example :
+    controllerFactoringCertificate.targetIso.toOperation.comp
+        (Expression.denote controllerPlanExpression) =
+      (Expression.denote controllerFactoredPlanExpression).comp
+        controllerFactoringCertificate.sourceIso.toOperation :=
+  controllerFactoringCertificate.commutes
+
+/--
 Composition can denote an end-to-end controller result while the nominal
 ReservationMutation VDP still exists. A diagram that intentionally hides that
 intermediate VDP is an architecture projection of the view, not a normalization
