@@ -469,12 +469,100 @@ confused:
   inventory intent; a runtime implementation may execute such effects
   sequentially or in parallel unless additional semantics constrain it.
 
+### Normalization view: before and after
+
+The same controller source has a compact before/after normalization view. This
+is the structural rewrite certified by `controllerSourceFactoringIso` and
+`controllerFactoringCertificate`; it is not a second architecture.
+
+**Before normalization**
+
+```mermaid
+flowchart LR
+  UI["UserTrigger ⊗ InventoryObservation"]
+  P["PaymentTrigger"]
+  E["ExpiryTrigger"]
+  R["ReservationState"]
+
+  TU{{"⊗"}}
+  TP{{"⊗"}}
+  TE{{"⊗"}}
+
+  UR["(U ⊗ I) ⊗ R"]
+  PR["P ⊗ R"]
+  ER["E ⊗ R"]
+
+  C{{"⊕"}}
+  SRC["ControllerInput<br/>((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)"]
+  RM["ReservationMutation VDP"]
+
+  UI --- TU
+  R --- TU
+  TU --> UR
+
+  P --- TP
+  R --- TP
+  TP --> PR
+
+  E --- TE
+  R --- TE
+  TE --> ER
+
+  UR --- C
+  PR --- C
+  ER --- C
+  C --> SRC
+
+  SRC -->|"planControllerMutation"| RM
+```
+
+**After normalization**
+
+```mermaid
+flowchart LR
+  UI["UserTrigger ⊗ InventoryObservation"]
+  P["PaymentTrigger"]
+  E["ExpiryTrigger"]
+  R["ReservationState"]
+
+  C{{"⊕"}}
+  ALT["((U ⊗ I) ⊕ P) ⊕ E"]
+  T{{"⊗"}}
+  SRC["(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R"]
+  RM["ReservationMutation VDP"]
+
+  UI --- C
+  P --- C
+  E --- C
+  C --> ALT
+
+  ALT --- T
+  R --- T
+  T --> SRC
+
+  SRC -->|"controllerFactoredPlanExpression"| RM
+```
+
+The certified source transport is
+
+```text
+((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)
+  ≅
+(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R
+```
+
+The after-view exposes one shared structural `ReservationState` coordinate
+instead of three repeated occurrences. It does **not** assert one database read,
+cache lookup, transaction, runtime instance, or execution schedule. The target
+`ReservationMutation` remains the same nominal VDP. The factored source is an
+anonymous structural representation, not a replacement nominal declaration.
+
 The 0.5.0 stress layer also records the controller as typed expressions and
-one common-source expression family. It certifies a coproduct reachability
-rewrite and factors the shared `ReservationState` coordinate across the user
-and payment alternatives with the canonical distributivity isomorphism. The
-existing intermediate `ReservationMutation` VDP remains nominally present;
-an end-to-end view that hides it is explicitly an architecture projection.
+one common-source expression family. It certifies coproduct reachability
+rewrites, contextual local rewrites, and the full three-channel distributive
+factoring shown above. The existing intermediate `ReservationMutation` VDP
+remains nominally present; an end-to-end view that hides it is explicitly an
+architecture projection.
 
 The same model also exposes a concurrency review boundary:
 
