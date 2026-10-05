@@ -271,6 +271,13 @@ surjectivity of labels alone are insufficient: a coarse partition may cut
 through a fine semantic region. A proved refinement induces the ordinary total
 `Partition.coarseningOperation q`.
 
+Treat refinement/coarsening as a **derived semantic property of existing VDPs
+and maps**, not as a new architecture annotation or arrow kind. The architecture
+stores its VDPs and Operations; it need not store every semantic truth that Lean
+can derive about them. A future surface keyword such as "forget" would therefore
+be presentation metadata for an ordinary proved coarsening, not foundational
+ontology.
+
 For a consumer `f : Operation P Y`, use `Operation.ConstantOnFibers q f` and
 the factorization API to ask whether `f` can be expressed through the coarse
 view. A successful factorization gives the unique coarse consumer; a failed
@@ -593,6 +600,12 @@ just to force a simple set API.
 
 Identify that a family needs the current `S` before asking which family might
 have produced it. Producer provenance is a second, architecture-wide query.
+Do not store a direct family-to-family dependency merely because one family can
+produce a VDP another family consumes: several producer families may exist.
+A derived provenance view should preserve the shared VDP explicitly, for
+example `E_init → S → E_increment`, rather than collapsing it to a privileged
+`E_init → E_increment` edge.
+
 Because tensor is not a categorical product, an expression ending in
 `X ⊗ S` is not automatically a producer of `S`: there is no canonical
 projection onto the `S` coordinate.
@@ -628,9 +641,12 @@ not evidence of concurrent work.
 Distinct operation declarations with independently available sources can raise
 a concurrency question, especially when they later concern one mutable
 resource. Treat two independent source VDPs converging on one target as a
-candidate review boundary, not as proof of a race. Treat a cycle as an ordinary
-sequential feedback/retry path unless independent source provenance and shared
-mutable effects make interference possible.
+candidate review boundary, not as proof of a race. A categorical cycle is only
+structural compositional topology: it may support a feedback or retry
+interpretation in a particular architecture, but it does **not** by itself
+assert temporal recurrence, repeated execution, or a runtime loop. Only raise a
+stronger concurrency concern when independent source provenance and shared
+mutable effects make interference plausible.
 
 Use the following as **concurrency-review signals**, not automatic diagnostics:
 
@@ -928,9 +944,25 @@ coproduct, refinement/coarsening, successful factorization, failed
 factorization, partiality, expression syntax/denotation, one-source
 multi-target expression families, distributive source factoring, local
 normalization certificates, architecture projection boundaries, and
-independent-source review questions visible in one coherent model. New calculus
-features should be integrated into this stress test when they naturally apply,
-not demonstrated only in isolated toy files.
+independent-source review questions visible in one coherent model.
+
+For 0.5.0 specifically, keep the complete three-channel normalization visible,
+not only the first binary factoring step:
+
+```text
+((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)
+  ≅
+(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R
+```
+
+The stress example should show both the repeated-source presentation and the
+factored presentation while preserving the same nominal
+`ReservationMutation` target. This is the concrete regression case that
+guards the distinction between structural normalization and architecture
+projection.
+
+New calculus features should be integrated into this stress test when they
+naturally apply, not demonstrated only in isolated toy files.
 
 Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.
