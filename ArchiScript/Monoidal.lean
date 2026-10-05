@@ -26,6 +26,41 @@ def PartitionIso.inverseOperation {P Q : Partition} (e : PartitionIso P Q) :
   simp [PartitionIso.toOperation, PartitionIso.inverseOperation, Operation.comp,
     Operation.id, e.memberIndex.right_inv]
 
+/-- Tensor two VDP isomorphisms componentwise. -/
+def PartitionIso.tensor {P P' Q Q' : Partition}
+    (e : PartitionIso P P') (f : PartitionIso Q Q') :
+    PartitionIso (P.tensor Q) (P'.tensor Q') where
+  carrier := {
+    toFun := fun xy => (e.carrier.toFun xy.1, f.carrier.toFun xy.2)
+    invFun := fun xy => (e.carrier.invFun xy.1, f.carrier.invFun xy.2)
+    left_inv := by
+      intro ⟨x, y⟩
+      simp only
+      rw [e.carrier.left_inv, f.carrier.left_inv]
+    right_inv := by
+      intro ⟨x, y⟩
+      simp only
+      rw [e.carrier.right_inv, f.carrier.right_inv]
+  }
+  memberIndex := {
+    toFun := fun ij => (e.memberIndex.toFun ij.1, f.memberIndex.toFun ij.2)
+    invFun := fun ij => (e.memberIndex.invFun ij.1, f.memberIndex.invFun ij.2)
+    left_inv := by
+      intro ⟨i, j⟩
+      simp only
+      rw [e.memberIndex.left_inv, f.memberIndex.left_inv]
+    right_inv := by
+      intro ⟨i, j⟩
+      simp only
+      rw [e.memberIndex.right_inv, f.memberIndex.right_inv]
+  }
+  classify_commutes := by
+    intro ⟨x, y⟩
+    change
+      (P'.classify (e.carrier.toFun x), Q'.classify (f.carrier.toFun y)) =
+        (e.memberIndex.toFun (P.classify x), f.memberIndex.toFun (Q.classify y))
+    rw [e.classify_commutes, f.classify_commutes]
+
 /-- Rebracket both carrier positions and member indices. -/
 def tensorAssociator (P Q R : Partition) :
     PartitionIso ((P.tensor Q).tensor R) (P.tensor (Q.tensor R)) where

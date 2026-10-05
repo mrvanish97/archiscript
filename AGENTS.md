@@ -8,6 +8,9 @@ for the established design.
 
 Start with the sources relevant to the change:
 
+- [Stage 3 scope](../archiscript-docs/chapter-1/stage-3/scope.md): architecture
+  expressions, expression families, certified local normalization, distributivity,
+  dependency/provenance observations, and the normalization/projection boundary.
 - [Stage 2 scope](../archiscript-docs/chapter-1/stage-2/scope.md): subdomain
   discipline, deduction, architectural boundaries, observation, and parameterization.
 - [Stage 2 design](../archiscript-docs/chapter-1/stage-2/design/): concrete models
@@ -73,5 +76,29 @@ design-sensitive assumptions.
   search for omitted requirements or certify a production architecture.
   Concurrency conclusions require resource/effect semantics; keep unsupported
   race or ordering claims as review questions or `UNKNOWN`.
-- When the public monoidal API changes, update the authoring skill, its API
-  reference and smoke example, and the monoidal regression checks together.
+- Keep category semantics separate from presentation syntax. `Operation` is the
+  semantic morphism; `Expression` records one finite well-typed presentation
+  with exactly one source and one target. An `Expression.Family` is finite,
+  nonempty, and has one common source with possibly several targets.
+- Do not let composition erase nominal architecture objects conceptually.
+  `g.comp f : A -> C` exists while the intermediate VDP `B` remains in the
+  category. A view that deliberately hides `B` is an architecture projection,
+  not ordinary 0.5.0 normalization.
+- Require explicit local normalization evidence. For unchanged endpoints use
+  equality of denoted Operations; for structural endpoint changes use concrete
+  `PartitionIso` transport with a commuting square. Do not block local
+  normalization on a speculative whole-architecture isomorphism theory.
+- Treat tensor/coproduct distributivity as a proved canonical isomorphism, never
+  definitional equality. Factoring a shared tensor coordinate is structural and
+  says nothing about physical reads, transactions, caching, or scheduling.
+- Infer dependencies from required source structure, not from arbitrary VDP
+  occurrence in a codomain. Coproduct alternatives are tagged alternatives, not
+  simultaneous dependencies. Establish dependency before producer provenance;
+  `X tensor S` has no canonical projection to `S`.
+- Keep graphs derived. Cycles in the categorical/presentation structure do not
+  by themselves assert runtime loops or temporal recurrence, and expression
+  families never enumerate infinite cyclic closure.
+- When the public monoidal, coproduct, distributivity, or expression API changes,
+  update the authoring skill, its API reference, review-diagram guidance, smoke
+  example, dedicated regression tests, and the ReservationController stress
+  example together.

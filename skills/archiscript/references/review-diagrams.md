@@ -57,6 +57,13 @@ between those operations. They may be implemented sequentially or in parallel;
 the diagram proves neither. By contrast, a modeled sequential chain must pass
 through an intermediate VDP, such as `A -> B -> C`, making the target of the
 first operation the source of the next.
+
+In 0.5.0, an `Expression` may retain that composition syntax while denoting
+the single composite `Operation A C`. Composition does not remove `B` from
+the architecture category. If a diagram intentionally omits nominal `B` and
+shows only `A -> C`, label the view as an **architecture projection** and
+state that the intermediate VDP is hidden. Do not present that omission as a
+normalization theorem that deleted `B`.
 For partial operations, show relevant `∅` outcomes and include the legend:
 `∅ = operation undefined for this member; it does not assert absence of
 unrelated runtime effects.` Connect `∅` only from a member whose mapping is
@@ -116,6 +123,53 @@ Coproduct is appropriate only when those alternatives are closed by architecture
 at design time; do not use the diagram to imply that runtime-discovered cases
 form an exhaustive external boundary.
 
+For an **expression-family view**, show the common source once and draw each
+selected expression to its own target. This is the preferred presentation for
+fan-out consequences of one architectural question:
+
+```text
+                 ┌──e₁──▶ T₁
+S ───────────────┼──e₂──▶ T₂
+                 └──e₃──▶ T₃
+```
+
+Every `eᵢ` still has exactly one source and one target. The family does not
+create a multi-target morphism, does not tensor the targets, and does not impose
+order between sibling expressions.
+
+When a local normalization changes only expression syntax, it may be annotated
+with the law or certificate that justifies it. For example:
+
+```text
+A ──ι₁──▶ A ⊕ B ──[f,g]──▶ C
+          normalizes by [f,g] ∘ ι₁ = f
+A ─────────────f──────────▶ C
+```
+
+This is branch-relative expression simplification. Do not erase the nominal
+`A ⊕ B` VDP from a whole-architecture view merely because one selected
+expression simplifies through the left injection.
+
+For a **distributive normalization view**, show both structural source forms and
+the explicit isomorphism rather than drawing them as equal:
+
+```text
+(A ⊗ R) ⊕ (B ⊗ R)  ──≅──▶  (A ⊕ B) ⊗ R
+```
+
+Caption the factored form as one shared structural `R` coordinate across the
+two alternatives. Do not translate that fact into "one read", "one request",
+"one transaction", or "one runtime instance". Conversely, a source
+`A ⊗ R ⊗ R` contains two independent `R` slots and should remain visibly
+different.
+
+Dependency/provenance graphs are derived views. A tensor factor required in a
+materialized family source can be shown as an independent dependency, but a VDP
+merely appearing as another coproduct summand is not automatically a
+dependency. Ask "which family can produce S?" only after the view has
+established that the current family requires `S`; keep alternative producers
+visible rather than collapsing them into a direct family-to-family edge.
+
 For a **resolution view**, show the fine VDP and coarse VDP as distinct VDPs on
 the same carrier, with the coarsening map `q` labeled explicitly. If a consumer
 is drawn from the coarse VDP, the model must contain a factorization proof
@@ -127,9 +181,11 @@ For a comprehensive stress-test projection, it is acceptable to exceed the
 ordinary eight-node preference when one diagram is specifically intended to
 show how the calculus composes. Keep mechanically induced product members
 collapsed, but include the distinct algebraic structures that matter:
-sequential composition, tensor, coproduct, partiality, coarsening, and both
-successful and rejected factorization when the model supplies them. The
-repository's canonical example is `ArchiScriptExamples/ReservationController.lean`.
+sequential composition, tensor, coproduct, partiality, coarsening, successful
+and rejected factorization, expression-family fan-out, distributive source
+factoring, and the normalization/projection distinction when the model supplies
+them. The repository's canonical example is
+`ArchiScriptExamples/ReservationController.lean`.
 
 Normalize factor-only review questions across associator, unitors, and
 symmetry: `(P ⊗ Q) ⊗ R` and `P ⊗ (Q ⊗ R)` must not receive different joint-use

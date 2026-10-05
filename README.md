@@ -7,7 +7,7 @@ before implementation. An architect or AI proposes the semantic model; Lean
 checks the stated mathematical obligations; engineers review whether the model
 matches the real system.
 
-Current release: **0.4.0**.
+Current release: **0.5.0**.
 
 ArchiScript deliberately does **not** standardize a vocabulary of queues,
 timeouts, failures, services, retries, or cloud resources. Those are meanings
@@ -43,6 +43,10 @@ The basic vocabulary is:
 | **Coproduct** | lossless structural OR for design-time closed alternatives |
 | **Refinement / coarsening** | two semantic resolutions of the same carrier |
 | **Factorization** | proof that a consumer is insensitive to distinctions a coarsening removes |
+| **Expression** | finite typed presentation syntax for one morphism, with exactly one source and one target |
+| **Expression family** | finite nonempty family of selected expressions sharing one source |
+| **Local normalization** | semantics-preserving rewrite certified by Operation equality or structural transport |
+| **Architecture projection** | a derived view that intentionally hides selected nominal VDP boundaries |
 
 At member level, operations form partial maps between finite sets. Tensor and
 coproduct retain their conventional mathematical roles. Refinement is semantic
@@ -112,6 +116,51 @@ compatible with sequential, parallel, or otherwise coordinated runtime
 implementations. ArchiScript records the absence of an ordering edge; it does
 not infer a scheduler or prove concurrency.
 
+### Expressions and local normalization
+
+Version 0.5.0 separates semantic morphisms from the syntax used to present them.
+
+```text
+e : Expression X Y
+        │
+        │ denote
+        ▼
+Operation X Y
+```
+
+Every expression has exactly one source and one target. Its syntax may still
+branch internally through tensor or coproduct copairing. A linear operation
+sequence is therefore only one expression shape.
+
+An expression family records several selected consequences of one common source:
+
+```text
+       ┌──e₁──▶ T₁
+S ─────┼──e₂──▶ T₂
+       └──e₃──▶ T₃
+```
+
+These remain separate morphisms. The family does not tensor the targets and
+does not assert execution order or runtime parallelism.
+
+Local normalization is proof-carrying. With unchanged endpoints, ArchiScript
+requires equality of the denoted Operations. If a structural rewrite changes
+the chosen source or target representation, it requires explicit
+`PartitionIso` transport and a commuting square.
+
+Composition itself never deletes an intermediate VDP. Given:
+
+```text
+A ──f──▶ B ──g──▶ C
+```
+
+the composite `g.comp f : A → C` exists while `B` remains an architecture
+object. A view that deliberately hides `B` is an **architecture projection**,
+not ordinary 0.5.0 normalization.
+
+Whole-architecture equivalence is deliberately deferred until a future
+transformation actually needs to change nominal boundaries or family structure.
+
 ### Tensor: independent coordinates
 
 ```text
@@ -177,6 +226,24 @@ external boundary.
 
 The public API provides canonical injections and `Operation.copair`; the
 mediating operation is unique.
+
+### Distributive structural factoring
+
+Tensor distributes over the binary coproduct through explicit canonical
+`PartitionIso` witnesses. For example:
+
+```text
+(A ⊗ R) ⊕ (B ⊗ R)  ≅  (A ⊕ B) ⊗ R
+```
+
+This is an isomorphism, not definitional equality. Larger structural rewrites
+should be assembled from proved pieces with
+`Partition.PartitionIso.trans`, `.tensor`, and `.coproduct` instead of
+restating carrier/member bijections by hand. The factored form makes one shared
+structural `R` coordinate visible across both alternatives. It does
+**not** imply one physical read, one transaction, one cache lookup, or one
+runtime instance. By contrast, `A ⊗ R ⊗ R` still contains two independently
+valued `R` coordinates.
 
 ### Refinement and coarsening
 
@@ -402,6 +469,101 @@ confused:
   inventory intent; a runtime implementation may execute such effects
   sequentially or in parallel unless additional semantics constrain it.
 
+### Normalization view: before and after
+
+The same controller source has a compact before/after normalization view. This
+is the structural rewrite certified by `controllerSourceFactoringIso` and
+`controllerFactoringCertificate`; it is not a second architecture.
+
+**Before normalization**
+
+```mermaid
+flowchart LR
+  UI["UserTrigger ⊗ InventoryObservation"]
+  P["PaymentTrigger"]
+  E["ExpiryTrigger"]
+  R["ReservationState"]
+
+  TU{{"⊗"}}
+  TP{{"⊗"}}
+  TE{{"⊗"}}
+
+  UR["(U ⊗ I) ⊗ R"]
+  PR["P ⊗ R"]
+  ER["E ⊗ R"]
+
+  C{{"⊕"}}
+  SRC["ControllerInput<br/>((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)"]
+  RM["ReservationMutation VDP"]
+
+  UI --- TU
+  R --- TU
+  TU --> UR
+
+  P --- TP
+  R --- TP
+  TP --> PR
+
+  E --- TE
+  R --- TE
+  TE --> ER
+
+  UR --- C
+  PR --- C
+  ER --- C
+  C --> SRC
+
+  SRC -->|"planControllerMutation"| RM
+```
+
+**After normalization**
+
+```mermaid
+flowchart LR
+  UI["UserTrigger ⊗ InventoryObservation"]
+  P["PaymentTrigger"]
+  E["ExpiryTrigger"]
+  R["ReservationState"]
+
+  C{{"⊕"}}
+  ALT["((U ⊗ I) ⊕ P) ⊕ E"]
+  T{{"⊗"}}
+  SRC["(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R"]
+  RM["ReservationMutation VDP"]
+
+  UI --- C
+  P --- C
+  E --- C
+  C --> ALT
+
+  ALT --- T
+  R --- T
+  T --> SRC
+
+  SRC -->|"controllerFactoredPlanExpression"| RM
+```
+
+The certified source transport is
+
+```text
+((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)
+  ≅
+(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R
+```
+
+The after-view exposes one shared structural `ReservationState` coordinate
+instead of three repeated occurrences. It does **not** assert one database read,
+cache lookup, transaction, runtime instance, or execution schedule. The target
+`ReservationMutation` remains the same nominal VDP. The factored source is an
+anonymous structural representation, not a replacement nominal declaration.
+
+The 0.5.0 stress layer also records the controller as typed expressions and
+one common-source expression family. It certifies coproduct reachability
+rewrites, contextual local rewrites, and the full three-channel distributive
+factoring shown above. The existing intermediate `ReservationMutation` VDP
+remains nominally present; an end-to-end view that hides it is explicitly an
+architecture projection.
+
 The same model also exposes a concurrency review boundary:
 
 ```text
@@ -442,6 +604,9 @@ For the declared model, Lean can check things such as:
 - sequential composition;
 - tensor laws and symmetric monoidal coherence;
 - coproduct injections, copairing, and uniqueness;
+- typed expression denotation and finite common-source expression families;
+- same-endpoint normalization certificates and isomorphic endpoint transport;
+- tensor/coproduct distributivity and naturality;
 - semantic refinement/coarsening;
 - totality and surjectivity of proved coarsening maps;
 - positive consumer factorization;
@@ -477,6 +642,9 @@ graph shape.
 | Sequential calculus | `Operation.id`, `Operation.comp` |
 | Independent aggregation | `Partition.tensor`, `SemanticPartition.tensor`, `Operation.tensor` |
 | Alternative aggregation | `Partition.coproduct`, `SemanticPartition.coproduct`, injections, `Operation.copair` |
+| Structural distributivity | tensor/coproduct `PartitionIso` witnesses, induced Operations, naturality |
+| Expressions | `Expression`, `Expression.denote`, `Expression.Family` |
+| Local normalization | `Expression.Rewrite`, `Expression.Transport` |
 | Coherence | associator, unitors, symmetry, naturality, pentagon, triangle, hexagon |
 | Semantic resolution | `Partition.RefinesVia`, `Partition.Refines`, `Partition.coarseningOperation` |
 | Factorization | `ConstantOnFibers`, `FactorsThrough`, `firstFiberConflict`, `analyzeFactorization` |

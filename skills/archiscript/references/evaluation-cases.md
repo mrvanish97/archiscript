@@ -208,10 +208,11 @@ modeling decision and exposes missing assumptions.
 29. **Concrete API replaced by an imagined category framework**
     - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
       rewrite the ArchiScript API around it.”
-    - Expected: inspect the installed API first. Version 0.3.1 exposes concrete
-      tensor, unit, structural isomorphisms, member operations, and coherence
-      theorems. Do not invent an unimplemented abstraction merely because the
-      mathematics admits one.
+    - Expected: inspect the installed API first. The current public calculus
+      exposes concrete tensor, unit, structural isomorphisms, member operations,
+      coherence theorems, typed expressions, and local normalization
+      certificates. Do not invent an unimplemented abstraction merely because
+      the mathematics admits one.
 
 30. **Independent fan-in overclaimed as a race**
     - Prompt: “A manual trigger and a timer trigger both map into the same
@@ -264,6 +265,92 @@ modeling decision and exposes missing assumptions.
       actual VDPs. For operation algebra use operation-shaped nodes and label the
       view explicitly. Follow the established/default diagram theme; do not make
       hard-coded colors carry semantic meaning.
+
+36. **Expression mistaken for a multi-target arrow**
+    - Prompt: “`[f,g]` branches internally, so call it one expression with two
+      targets.”
+    - Expected: reject the typing claim. Every `Expression X Y` has exactly one
+      source and one target. Copairing may have branching syntax while denoting
+      one morphism. Use an expression family when one source has several selected
+      consequence expressions to distinct targets.
+
+37. **Fan-out family collapsed into tensor output**
+    - Prompt: “Persist, publish, and next-state all start from one mutation. Make
+      one expression from the mutation to
+      `Write ⊗ Outbox ⊗ State`.”
+    - Expected: do not infer such a tensor-valued arrow. Keep three expressions
+      with the same source in one family unless an actual operation produces all
+      three independent output coordinates. Sibling consequences have no modeled
+      order or runtime parallelism.
+
+38. **Composition sold as deletion of an intermediate VDP**
+    - Prompt: “`A -> B -> C` composes to `A -> C`, so normalization removes
+      `B` from the architecture.”
+    - Expected: reject the conclusion. The composite morphism exists while
+      nominal `B` remains an object. A view that intentionally hides `B` is
+      an architecture projection, not ordinary 0.5.0 normalization.
+
+39. **Whole-architecture isomorphism required too early**
+    - Prompt: “Do not simplify `[f,g] ∘ ι₁` until we have defined a complete
+      isomorphism relation for arbitrary architectures.”
+    - Expected: use the local coproduct law and a same-endpoint
+      `Expression.Rewrite` certificate. Whole-architecture equivalence is
+      deferred until transformations actually change family or nominal-boundary
+      structure.
+
+40. **Distributive factoring overclaimed as one database read**
+    - Prompt: “`(A ⊗ R) ⊕ (B ⊗ R) ≅ (A ⊕ B) ⊗ R`, therefore both alternatives
+      share exactly one runtime fetch of R.”
+    - Expected: state only the structural result: one common semantic
+      `R` coordinate after canonical distributive transport. Do not infer
+      physical reads, object identity, caching, transactions, or scheduling.
+
+41. **Coproduct summand mistaken for dependency**
+    - Prompt: “The expression enters `A ⊕ B` through `ι₁ : A -> A ⊕ B`, so
+      the analysis depends on a materialized B.”
+    - Expected: no. The injection needs only the A value. A coproduct summand is
+      an alternative, not a simultaneous coordinate. Use tensor source factors
+      when independent values must be materialized together.
+
+42. **Producer inferred through tensor projection**
+    - Prompt: “A family ends at `X ⊗ S`, so record it as a producer of S.”
+    - Expected: reject the automatic inference. Tensor is not a categorical
+      product in the partial-map calculus and supplies no canonical projection
+      to S. Record the actual target unless an explicit operation or other
+      justified relation produces S.
+
+43. **Cycle expanded into an infinite family**
+    - Prompt: “There is a cycle through State, so enumerate every finite number
+      of loop traversals in the expression family.”
+    - Expected: do not enumerate categorical closure. Each selected expression
+      is finite and a family contains finitely selected expressions. Cyclic
+      structure also does not by itself assert a runtime loop or schedule.
+
+44. **Independent context appears midway through an expression**
+    - Prompt: “Start the family at X, then tensor in external State later as
+      X -> X ⊗ State so the planner can use it.”
+    - Expected: reject the structural step. Tensor has no canonical injection
+      X -> X ⊗ State and cannot acquire an independent value. Put State in the
+      materialized family source, or use an explicit preceding ordinary
+      Operation only when that Operation genuinely produces the paired value.
+
+45. **Normalizer searches arbitrary carrier bijections**
+    - Prompt: “Two VDPs have the same number of members. Search for any carrier
+      bijection and use it to normalize one into the other.”
+    - Expected: reject this normalization policy. Mathematical VDP isomorphism
+      requires a full classified-carrier `PartitionIso`, and normalization
+      should use known/proved canonical structural isomorphisms rather than
+      inventing arbitrary bijections between unrelated architecture objects.
+
+46. **One consequence question split by coproduct branch**
+    - Prompt: “User, payment, and expiry are three entry alternatives for the
+      same reservation consequence analysis, so create three unrelated
+      expression families.”
+    - Expected: prefer one family when the consequence question and
+      materialization boundary are the same. Use a design-time coproduct source
+      for the alternatives and keep branch-specific consequences partial where
+      necessary. Separate families only when the analysis question or source
+      materialization boundary is genuinely different.
 
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

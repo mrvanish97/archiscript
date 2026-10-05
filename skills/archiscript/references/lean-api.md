@@ -164,6 +164,10 @@ Each summand still needs a complete VDP for its own runtime boundary. Coproduct
 proves exhaustiveness relative to `Sum P.Carrier Q.Carrier`; it never proves
 that this sum is the complete external universe.
 
+The public structure here is binary coproduct. Since `Partition` requires a
+nonempty carrier, this calculus has no empty/initial VDP; do not infer a
+nullary coproduct or claim full finite-coproduct structure including zero.
+
 See `ArchiScriptExamples.Coproduct` for the Browser/CLI example.
 
 ## Refinement, coarsening, and consumer factorization
@@ -233,8 +237,135 @@ operations. `Operation.associator_natural`, `leftUnitor_natural`,
 `rightUnitor_natural`, `symmetry_natural`, `pentagon`, `triangle`, and `hexagon`
 check the concrete symmetric monoidal laws. These maps do not schedule runtime
 work, establish resource independence, or provide a categorical product.
-Architectural joint relevance remains a human review question; normalize
+In particular, there are no canonical tensor projections in the partial-map
+calculus, and the tensor unit is not terminal because partial maps into it need
+not be unique. Architectural joint relevance remains a human review question; normalize
 factor-only findings across rebracketing and symmetry.
+
+## Expressions, distributivity, and local normalization
+
+Version 0.5.0 keeps presentation syntax separate from semantic Operations.
+`Expression X Y` is a finite well-typed syntax tree with exactly one source
+and one target. Interpret it with `Expression.denote`:
+
+```lean
+def acceptExpression : Expression requestPartition requestPartition :=
+  .atom accept
+
+example : Expression.denote acceptExpression = accept := rfl
+
+def acceptFamily : Expression.Family :=
+  Expression.Family.singleton acceptExpression
+```
+
+An expression can branch internally through tensor or copairing without becoming
+a multi-source or multi-target object:
+
+```lean
+def twoAlternativeAccept :
+    Expression (requestPartition.coproduct requestPartition) requestPartition :=
+  .copair (.atom accept) (.atom accept)
+```
+
+`Expression.Family` stores a finite nonempty list of `Expression.Entry` values.
+All entries share `family.source`; each entry carries its own target and typed
+expression. The list is storage, not an ordering relation: 0.5.0 assigns no
+execution order, priority, or architectural identity to an entry's position.
+The declaration naming the family is presentation identity. No name field is
+added to `Partition` or `Operation`.
+
+For unchanged endpoints, use `Expression.Rewrite before after`. Its
+`sound` field proves equality of the denoted Operations. The library supplies
+initial laws for identities, associativity, tensor identity, and coproduct
+injection/copairing:
+
+```lean
+#check Expression.Rewrite.id_left
+#check Expression.Rewrite.id_right
+#check Expression.Rewrite.comp_assoc
+#check Expression.Rewrite.copair_inl
+#check Expression.Rewrite.copair_inr
+#check Expression.Rewrite.tensor_identity
+#check Expression.Rewrite.comp
+#check Expression.Rewrite.tensor
+#check Expression.Rewrite.copair
+```
+
+The congruence helpers `Expression.Rewrite.comp`,
+`.tensor`, and `.copair` lift already-certified local rewrites through a
+larger expression context. This is the intended 0.5.0 pattern for local
+normalization: prove a small law once, then transport that equality through the
+surrounding syntax instead of reproving the whole end-to-end Operation.
+
+When endpoint representatives change through a structural isomorphism, use
+`Expression.Transport`. `Expression.Transport.source` precomposes with the
+inverse source isomorphism, while `Expression.Transport.target` postcomposes
+with a target isomorphism. Both return the commuting-square certificate.
+
+Binary tensor/coproduct distributivity is concrete, not definitional equality:
+
+```lean
+#check Partition.tensorCoproductRightDistributivity
+#check Partition.tensorCoproductLeftDistributivity
+#check Operation.distributeRight
+#check Operation.distributeRightInv
+#check Operation.distributeLeft
+#check Operation.distributeLeftInv
+#check Operation.distributeRight_natural
+#check Operation.distributeLeft_natural
+```
+
+For example,
+
+```lean
+def factoredSourceIso :
+    Partition.PartitionIso
+      ((requestPartition.tensor requestPartition).coproduct
+        (requestPartition.tensor requestPartition))
+      ((requestPartition.coproduct requestPartition).tensor requestPartition) :=
+  Partition.tensorCoproductRightDistributivity
+    requestPartition requestPartition requestPartition
+```
+
+The isomorphism shows one shared structural right coordinate. It does not prove
+one physical read, cache lookup, transaction, or runtime instance.
+
+Structural isomorphisms compose directly:
+
+```lean
+#check Partition.PartitionIso.refl
+#check Partition.PartitionIso.symm
+#check Partition.PartitionIso.trans
+#check Partition.PartitionIso.tensor
+#check Partition.PartitionIso.coproduct
+```
+
+Use these combinators to assemble larger structural rewrites from already-proved
+pieces. For example, the ReservationController first factors the user/payment
+coproduct by right distributivity, lifts that isomorphism through the outer
+coproduct with expiry, then composes with a second right-distributivity witness.
+This avoids restating carrier and member-index bijections for the complete
+three-channel source.
+
+A normalizer should consume known/proved structural `PartitionIso` witnesses;
+it should not search for arbitrary carrier bijections simply because two VDPs
+happen to be mathematically isomorphic. Likewise, tensor does not acquire a
+missing context value: there is no canonical `Operation X (X.tensor R)`.
+If `R` is independent external context, make it a source coordinate unless a
+preceding ordinary Operation explicitly produces the paired value.
+
+Composition also does not remove its intermediate VDP. If an expression denotes
+`g.comp f : Operation A C`, the intermediate `B` from
+`A -> B -> C` remains an object of the architecture category. A review view
+that intentionally hides that nominal VDP is an **architecture projection**,
+not ordinary 0.5.0 normalization. There is intentionally no foundational
+projection object in this release.
+
+The canonical integration example is
+`ArchiScriptExamples.ReservationController`: it combines one common-source
+multi-target family, coproduct reachability simplification, and distributive
+factoring of the common `ReservationState` source coordinate with the existing
+tensor, partiality, coarsening, and factorization stress cases.
 
 ## Operations and canonical branch references
 

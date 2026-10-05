@@ -7,6 +7,16 @@ open ArchiScript ArchiScriptExamples.Coproduct
 #guard entryPartition.classify (.inl ⟨"/"⟩) == Sum.inl BrowserMember.root
 #guard entryPartition.classify (.inr ⟨["status"]⟩) == Sum.inr CliMember.nonempty
 
+def identityEntryIso :
+    Partition.PartitionIso entryPartition entryPartition :=
+  (Partition.PartitionIso.refl browserPartition).coproduct
+    (Partition.PartitionIso.refl cliPartition)
+
+#guard identityEntryIso.memberIndex.toFun (Sum.inl BrowserMember.root) ==
+  Sum.inl BrowserMember.root
+#guard identityEntryIso.memberIndex.toFun (Sum.inr CliMember.nonempty) ==
+  Sum.inr CliMember.nonempty
+
 example :
     handleEntry.comp (Operation.coproductInl browserPartition cliPartition) =
       handleBrowser :=

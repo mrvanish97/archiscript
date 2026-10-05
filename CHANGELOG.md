@@ -1,5 +1,45 @@
 # Changelog
 
+## 0.5.0
+
+- Added typed architecture expressions. Every `Expression X Y` has exactly one
+  source and one target and denotes one ordinary `Operation X Y`; composition,
+  tensor, coproduct injections/copairing, and structural VDP isomorphisms remain
+  explicit in the finite presentation syntax.
+- Added finite nonempty `Expression.Family` values whose selected expressions
+  share one source and may have different targets. This models one
+  common-source consequence question without turning fan-out into a tensor
+  output or adding Trigger/Terminal VDP kinds.
+- Added proof-carrying local normalization. `Expression.Rewrite` certifies
+  same-endpoint rewrites by equality of denoted Operations;
+  `Expression.Transport` certifies rewrites across explicit structural
+  `PartitionIso` representatives with a commuting square.
+- Added canonical left and right distributivity isomorphisms between tensor and
+  binary coproduct, induced Operations and inverse laws, and naturality
+  theorems, plus compositional `PartitionIso.trans`, `.tensor`, and
+  `.coproduct` helpers so larger structural witnesses reuse proved pieces.
+  Distributive factoring is structural only and carries no runtime
+  read, caching, transaction, object-identity, or scheduling claim.
+- Distinguished normalization from architecture projection. Composition creates
+  composite morphisms without deleting intermediate VDP objects; a derived view
+  that intentionally hides a nominal intermediate VDP is a projection, not an
+  ordinary normalization step.
+- Extended the ReservationController stress model with expression denotation,
+  a one-source/multiple-target family, coproduct reachability simplification,
+  shared-`ReservationState` distributive source factoring, and a certified
+  source-transport example while retaining the existing partiality,
+  coarsening, successful factorization, and rejected factorization cases.
+- Updated the authoring skill, Lean API reference, review-diagram conventions,
+  evaluation cases, public API smoke test, repository guidance, README, and
+  regression suite to preserve the 0.5.0 observations: dependency before
+  provenance, coproduct alternatives are not simultaneous dependencies, cycles
+  do not imply runtime loops, graphs remain derived views, and
+  whole-architecture equivalence is intentionally deferred.
+- Kept several representation questions non-blocking: generator-versus-alias
+  metadata, structural dependency result shape, indexed versus set-like
+  families, shared-subexpression storage, member-level reachability, global
+  rewrite orientation, and future whole-architecture equivalence.
+
 ## 0.4.0
 
 - Added categorical coproducts of VDPs over tagged sum carriers, with canonical
