@@ -960,42 +960,47 @@ member mappings from runtime calls, render relevant `none` outcomes explicitly,
 and put assumptions, proved claims, and unknowns beneath the graph. State the
 diagram level, focus, and omissions.
 
-### Three distinct diagram types
+### Four independent diagram types
 
-Use the three views below as separate, explicitly titled panels when they
-answer different questions. The levels in
-[references/review-diagrams.md](references/review-diagrams.md) supply the
-associated review detail; do not interpret the three views as new
-architectural objects.
+Select a view by its question. For a deep review, keep the views in separate,
+explicitly titled panels rather than mixing their node and arrow meanings.
+The established review levels describe depth: both semantic views below belong
+to Level 3. Do not create new architectural objects for visualization.
 
-1. **VDP topology (Level 1):** nodes are entire VDPs, without their members.
-   Directed, operation-labeled arrows connect **VDP to VDP** and show the
-   architectural path/fan-out. These arrows summarize member-level Operations;
-   they are not runtime calls. Do not draw a VDP-to-`∅` arrow or suggest
-   operation totality merely because individual mappings are hidden.
-2. **VDP member mapping (Level 2):** show relevant VDP members inside their
-   real VDP containers. Draw **member-to-member** arrows for a specific
-   Operation, and source-member-to-`∅` arrows for undefined cases. Preserve
-   the complete member inventory in the model, disclose any visual grouping
-   or omitted detail, and never merge members merely to simplify a diagram.
-3. **Carrier/subdomain derivation (Level 3):** show the carrier and its origin,
-   supporting subdomains with their defining predicates and bases, then
-   selected VDP members with explicit construction formulas. One member may
-   be the **union, intersection, or relative complement** of multiple
-   subdomains. A subdomain can contribute to several formulas; supporting
-   subdomains may overlap and need not cover the carrier. Use a graph/DAG
-   where needed rather than forcing a tree or treating every subdomain as a
-   selected member. Derivation/containment edges are **not Operations**.
-   Show how the selected member formulas correspond to the checked
-   `Partition.HasMembers` contract; label opaque predicates and external
-   premises rather than inventing their definitions.
+1. **VDP topology (Level 1):** show entire VDPs as nodes, without member
+   expansion. Draw directed, operation-labeled **VDP → VDP** arrows. These
+   summarize typed Operations, not runtime calls, and do not assert totality.
+   Never draw a VDP-to-`∅` edge.
+2. **VDP member mapping (Level 2):** draw selected members inside actual
+   VDP containers and **member → member** arrows for a specific Operation.
+   Draw undefined cases as source-member → `∅`, with `∅` outside every
+   VDP. Account for any hidden members; never erase input combinations.
+3. **Subdomain derivation (Level 3, view A):** draw only supporting subdomains
+   and their intersections, unions, relative complements, and proved
+   containments. **Do not place a carrier or VDP node in this diagram.**
+   Identify the typed base/carrier, its provenance, and external assumptions
+   in the caption. Subdomains may overlap, have multiple parents, and be reused:
+   use a graph/DAG when appropriate, not a forced disjoint taxonomy or tree.
+   Label formula-dependency edges separately from proved `⊆` edges.
+4. **VDP member semantics (Level 3, view B):** draw one VDP with its actual
+   selected members alongside relevant supporting subdomains. Show the
+   concrete semantic formulas that define each member and only proved
+   relations such as equality of its region with a formula, or containment
+   in another subdomain. One member may combine several subdomains; the
+   same subdomain may contribute to multiple member formulas. Link member
+   meaning to the independently defined predicates and the checked
+   `Partition.HasMembers` correspondence. Do not treat arbitrary
+   subdomains as if they were selected VDP members.
 
-Choose the topology view for connectivity, the member mapping view for
-operation behavior, and the derivation view for semantic coverage and
-classification. For a substantial architecture review, make the applicable
-views separately inspectable; do not force all information into one graph.
-If a diagram combines constructions (`⊗`, `⊕`) with Operations, explicitly
-distinguish structural construction lines from actual operation arrows.
+The two Level 3 diagrams are independently useful: a subdomain graph does
+not need a selected VDP, and a VDP member-semantics view need not redraw the
+whole derivation graph. In both, semantic formula and inclusion edges are
+**not Operations**. Show `OPAQUE` definitions and trusted premises clearly.
+
+Choose topology for connectivity, member mapping for Operation behavior,
+subdomain derivation for predicate deductions, and member semantics for
+classification. If a separate structural constructor view also uses `⊗`
+or `⊕`, distinguish construction lines from typed Operations.
 
 Use one visual grammar consistently:
 
@@ -1021,8 +1026,9 @@ Use one visual grammar consistently:
   are actual Operations and should be drawn separately only when they are the
   review subject;
 - in a topology view, one VDP is one collapsed node; in a member-map
-  view, a VDP is a labeled container with its actual members inside it;
-  supporting subdomains in a derivation view are not VDP containers;
+  view, a VDP contains its actual members; in a subdomain-only view there
+  are no VDP/carrier nodes; in a member-semantics view, show selected
+  members inside the VDP and supporting subdomains outside it;
 - reserve VDP containers for actual VDPs only; do not use the same container
   grammar for "factor groups", stages, or collections of operations;
 - use the repository's established/default diagram theme. Do not assign
