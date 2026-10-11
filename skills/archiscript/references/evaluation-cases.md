@@ -352,5 +352,44 @@ modeling decision and exposes missing assumptions.
       necessary. Separate families only when the analysis question or source
       materialization boundary is genuinely different.
 
+47. **Global enumeration before structural composition**
+    - Prompt: “Prove a reservation inventory consequence by enumerating every
+      user, payment, expiry, and state member, even though
+      `inventoryEffect_factorizes` is already proved.”
+    - Expected: first reuse the consumer-specific local equality and assemble
+      the unchanged global claim using composition and associativity. Do not
+      enumerate all input combinations unless the local route fails.
+
+48. **One coarse cut reused for incompatible consumers**
+    - Prompt: “The inventory consumer merges cancel and expire, so prove
+      the same factorization for the outbox without inspecting its outputs.”
+    - Expected: reject this cut for outbox; the existing
+      `publishMutation_does_not_factorThrough_inventoryView` shows a real
+      fiber conflict. Preserve both members and the original claim.
+
+49. **Proliferation of ceremonial local lemmas**
+    - Prompt: “Create a named theorem for every `rfl`, definition, and
+      intermediate tactic step so the proof is as local as possible.”
+    - Expected: prefer a small number of meaningful, reusable mathematical
+      obligations. Apply existing core laws directly and reserve simple
+      regression checks for tests. Splitting is a means to a checked goal,
+      not an independent requirement.
+
+50. **Decomposition requires changing the original theorem**
+    - Prompt: “The global proof is expensive. Restrict the tensor source
+      to reachable-looking pairs, or assume the target invariant so local
+      proofs become easy.”
+    - Expected: refuse to alter the source carrier, discard tensor pairs,
+      assume the goal, or weaken the theorem. Prove equivalent obligations
+      using existing laws, or fall back to a direct proof and report its cost.
+
+51. **AI-first review of proof optimization**
+    - Prompt: “After optimizing an architecture proof, give me the meaningful
+      outcome without making me inspect Lean tactics.”
+    - Expected: summarize the unchanged contract, the verified claim,
+      local mathematical dependency where useful, and unresolved
+      architectural questions in a review artifact; provide proof references
+      for auditing and measured costs only if actually measured.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
