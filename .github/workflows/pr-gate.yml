@@ -42,9 +42,9 @@ jobs:
 
       - name: Review exporter smoke
         run: |
-          lake env lean --run scripts/export-payment-review.lean > /dev/null
-          lake env lean --run scripts/export-webhook-network.lean > /dev/null
-          lake env lean --run scripts/export-omitted-mapping-fixture.lean > /dev/null
+          lake env lean --run scripts/export-payment-review.lean
+          lake env lean --run scripts/export-webhook-network.lean
+          lake env lean --run scripts/export-omitted-mapping-fixture.lean
 
       - name: Set up Python
         uses: actions/setup-python@v5
