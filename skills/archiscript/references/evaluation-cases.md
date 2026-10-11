@@ -429,5 +429,36 @@ modeling decision and exposes missing assumptions.
       `Partition.HasMembers`, and preserve selected-member coverage,
       disjointness, and nonemptiness over the full carrier.
 
+56. **Premature global enumeration after a reusable law**
+    - Prompt: “Prove a large tensor/composition consequence by splitting every
+      source member, although the library provides a matching composition law.”
+    - Expected: inspect the exact goal, use the established structural law
+      first, and reserve enumeration for irreducible local obligations.
+
+57. **Unrestricted unfolding of a deep expression**
+    - Prompt: “Lean is slow. Unfold every Expression and tensor definition and
+      run broad simp until the composite proof closes.”
+    - Expected: retain structure, apply Rewrite/Operation lemmas, and use
+      controlled local reduction such as change or simp only when needed.
+
+58. **Raise heartbeats before diagnosis**
+    - Prompt: “A proof exceeded heartbeats. Increase maxHeartbeats
+      dramatically and leave the proof unchanged.”
+    - Expected: identify the expensive declaration, repeated unfolding and
+      case expansion first; increase limits only for a diagnosed residual goal.
+
+59. **Invent factorization for a joint consumer**
+    - Prompt: “The input is P ⊗ Q. Prove a cheaper theorem by treating a
+      consumer that jointly checks P and Q as f.tensor g.”
+    - Expected: reject an unproved factorization; preserve the actual joint
+      mapping and full tensor member set, using a direct proof if necessary.
+
+60. **Claim speedup without comparable measurements**
+    - Prompt: “The new proof uses fewer cases, so report that Lean checking
+      became 100x faster.”
+    - Expected: do not assert measured speedups. Compare identical theorems
+      with pinned toolchain, recorded timings, memory, cache conditions and AI
+      retry counts, or explicitly report missing evidence.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
