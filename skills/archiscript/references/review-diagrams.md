@@ -5,6 +5,36 @@ proofs, then project only facts established there. A Mermaid diagram is a
 read-only view, never another source of architectural semantics. State the
 view's **level**, **focus**, and **hidden detail** above or below the graph.
 
+## Three primary architectural diagram types
+
+Keep the following semantic layers distinct. The review levels below add
+scope and engineering context; they do not replace these diagram types.
+
+| Diagram type | Nodes | Arrows | Review question |
+| --- | --- | --- | --- |
+| **VDP topology** (Level 1) | Whole VDPs, members collapsed | Labeled `Operation` arrows **VDP → VDP** | Which architectural boundaries are connected? |
+| **VDP member mapping** (Level 2) | Members inside actual VDP containers; `∅` outside | An Operation's **member → member** mapping, or member → `∅` | How is each source member treated? |
+| **Carrier/subdomain derivation** (Level 3) | Carrier, supporting subdomains, formula nodes/selected VDP members | **Containment and formula-dependency** edges, not Operations | How are members deduced from the carrier and predicates? |
+
+In the carrier/subdomain derivation graph, do not impose a one-subdomain-to-
+one-member correspondence. One VDP member may be `A ∩ B`, `A ∪ B`, or a
+relative complement, and a formula may reuse several overlapping supporting
+subdomains. Show bases and formula operators, with distinct selected members
+attached to the actual VDP; use a DAG when sources are shared or a region has
+multiple parents. A global taxonomy or binary partition tree is not required.
+The selected members alone must cover the full declared carrier without
+overlap and must be nonempty. Show their independent meaning formulas and
+the checked classifier correspondence; neither a diagram nor a bare member
+name proves the external adequacy of that carrier.
+
+Do not draw an arrow from the *carrier* or a *subdomain* to a VDP member and
+label it as an `Operation` unless the model really contains such a typed
+member-level Operation. Similarly, topology arrows must not be rendered as
+if they were individual member mappings. Explicitly title every panel
+`VDP topology`, `VDP member mapping`, or `Carrier/subdomain derivation`.
+
+## Review levels and conventions
+
 | Level | Review question | Show | Hide |
 | --- | --- | --- | --- |
 | 0 — boundary | What enters the system? | External appearances, major VDPs and boundaries | Members, branches, proofs, source lines |
@@ -21,11 +51,13 @@ one screen. Prefer at most eight major nodes; split above twelve. A Level 2 map
 normally covers one operation. A Level 4 view normally covers one path or a
 comparison of two paths.
 
-Mermaid and TikZ conventions: draw each VDP as a labeled container box and
-its selected members as boxes inside it. Connect member boxes with arrows for
-semantic operation mappings. Draw `∅` outside every VDP, since it is not a
-member. At Level 1, a VDP may appear as one collapsed box because individual
-members are intentionally hidden. Reserve VDP containers/subgraphs for actual
+Mermaid and TikZ conventions: at Level 1, draw each VDP as one
+collapsed, labeled box and connect VDP boxes with Operation arrows; do not
+draw member nodes or partiality edges from those boxes. At Level 2, draw
+each VDP as a labeled container with selected members inside it and connect
+member boxes with Operation mapping arrows. Draw `∅` outside every VDP
+because it is not a member. At Level 3, show carrier/subdomain derivation
+separately and distinguish its non-Operation edges. Reserve VDP containers/subgraphs for actual
 VDPs; do not reuse that container grammar merely to group operations or tensor
 factors. For an operation-algebra view, use operation-shaped nodes and label the
 view explicitly so those nodes cannot be mistaken for VDPs or members. Use a
