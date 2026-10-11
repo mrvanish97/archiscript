@@ -1,5 +1,5 @@
 name = "archiscript"
-version = "0.5.2"
+version = "0.6.0"
 defaultTargets = ["ArchiScript", "ArchiScriptExamples", "ArchiScriptTests"]
 
 [[lean_lib]]

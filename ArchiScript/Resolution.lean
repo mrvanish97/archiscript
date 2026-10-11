@@ -187,6 +187,7 @@ private theorem findConflictWith_none {P Q Y : Partition}
         · exact ih h b hb hq
 
 private def scanConflicts {P Q Y : Partition}
+    [MemberEnumeration P.MemberIndex]
     (q : Operation P Q) (f : Operation P Y) :
     List P.MemberIndex → Option (FiberConflict q f)
   | [] => none
@@ -196,6 +197,7 @@ private def scanConflicts {P Q Y : Partition}
       | none => scanConflicts q f rest
 
 private theorem scanConflicts_none {P Q Y : Partition}
+    [MemberEnumeration P.MemberIndex]
     (q : Operation P Q) (f : Operation P Y)
     {xs : List P.MemberIndex}
     (h : scanConflicts q f xs = none) :
@@ -220,11 +222,13 @@ private theorem scanConflicts_none {P Q Y : Partition}
 
 /-- Executable finite search for a concrete obstruction to factorization. -/
 def firstFiberConflict {P Q Y : Partition}
+    [MemberEnumeration P.MemberIndex]
     (q : Operation P Q) (f : Operation P Y) :
     Option (FiberConflict q f) :=
   scanConflicts q f P.memberIndices
 
 theorem firstFiberConflict_none_constantOnFibers {P Q Y : Partition}
+    [MemberEnumeration P.MemberIndex]
     {q : Operation P Q} {f : Operation P Y}
     (h : firstFiberConflict q f = none) :
     ConstantOnFibers q f := by
@@ -304,6 +308,7 @@ inductive FactorizationAnalysis {P Q Y : Partition}
   | conflict (witness : FiberConflict q f)
 
 noncomputable def analyzeFactorization {P Q Y : Partition}
+    [MemberEnumeration P.MemberIndex]
     (q : Operation P Q) (f : Operation P Y)
     (total : IsTotal q) (surjective : IsSurjective q) :
     FactorizationAnalysis q f :=

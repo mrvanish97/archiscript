@@ -2,6 +2,50 @@ import Std
 
 namespace ArchiScript
 
+/--
+Computable enumeration for algorithms and presentation. Its order is not part
+of a VDP's identity; unlike the proof of finiteness, this is executable data.
+-/
+class MemberEnumeration (α : Type v) where
+  indices : List α
+  complete : ∀ i : α, i ∈ indices
+
+namespace MemberEnumeration
+
+instance : MemberEnumeration Bool where
+  indices := [false, true]
+  complete := by intro i; cases i <;> simp
+
+instance : MemberEnumeration Unit where
+  indices := [()]
+  complete := by intro i; cases i; simp
+
+instance [MemberEnumeration α] [MemberEnumeration β] :
+    MemberEnumeration (α × β) where
+  indices := (MemberEnumeration.indices (α := α)).flatMap fun a =>
+    (MemberEnumeration.indices (α := β)).map fun b => (a, b)
+  complete := by
+    intro ⟨a, b⟩
+    simp only [List.mem_flatMap, List.mem_map]
+    exact ⟨a, MemberEnumeration.complete a, b, MemberEnumeration.complete b, rfl⟩
+
+instance [MemberEnumeration α] [MemberEnumeration β] :
+    MemberEnumeration (Sum α β) where
+  indices := (MemberEnumeration.indices (α := α)).map Sum.inl ++
+    (MemberEnumeration.indices (α := β)).map Sum.inr
+  complete := by
+    intro i
+    cases i with
+    | inl a =>
+        simp only [List.mem_append, List.mem_map]
+        exact Or.inl ⟨a, MemberEnumeration.complete a, rfl⟩
+    | inr b =>
+        simp only [List.mem_append, List.mem_map]
+        exact Or.inr ⟨b, MemberEnumeration.complete b, rfl⟩
+
+end MemberEnumeration
+
+
 /-- A value domain is a predicate. It need not be a partition. -/
 abbrev Domain (α : Type u) := α → Prop
 
@@ -26,20 +70,28 @@ end Domain
 
 /--
 A partition (VDP) is a nonempty carrier classified by finitely many abstract
-member indices. `member_inhabited` rules out unused indices. The semantic
-member is the classifier fiber, not its index.
+member indices. A proof-irrelevant finiteness witness replaces ordered storage.
+`member_inhabited` rules out unused indices. The semantic member is the
+classifier fiber, not its index.
 -/
 structure Partition where
   Carrier : Type u
   MemberIndex : Type v
   carrierNonempty : Nonempty Carrier
   memberIndexDecidableEq : DecidableEq MemberIndex
-  memberIndices : List MemberIndex
-  memberIndices_complete : ∀ i, i ∈ memberIndices
+  memberIndexFinite : ∃ indices : List MemberIndex, ∀ i, i ∈ indices
   classify : Carrier → MemberIndex
   member_inhabited : ∀ i, ∃ x, classify x = i
 
 namespace Partition
+
+/-- A deliberately separate, computable enumeration of semantic member indices. -/
+def memberIndices (P : Partition) [MemberEnumeration P.MemberIndex] :
+    List P.MemberIndex := MemberEnumeration.indices
+
+theorem memberIndices_complete (P : Partition) [MemberEnumeration P.MemberIndex]
+    (i : P.MemberIndex) : i ∈ P.memberIndices :=
+  MemberEnumeration.complete i
 
 instance (P : Partition) : Nonempty P.Carrier := P.carrierNonempty
 instance (P : Partition) : DecidableEq P.MemberIndex := P.memberIndexDecidableEq
@@ -51,11 +103,13 @@ def tensor (P Q : Partition) : Partition where
   MemberIndex := P.MemberIndex × Q.MemberIndex
   carrierNonempty := ⟨Classical.choice P.carrierNonempty, Classical.choice Q.carrierNonempty⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := P.memberIndices.flatMap fun i => Q.memberIndices.map fun j => (i, j)
-  memberIndices_complete := by
+  memberIndexFinite := by
+    obtain ⟨is, his⟩ := P.memberIndexFinite
+    obtain ⟨js, hjs⟩ := Q.memberIndexFinite
+    refine ⟨is.flatMap (fun i => js.map fun j => (i, j)), ?_⟩
     intro ⟨i, j⟩
     simp only [List.mem_flatMap, List.mem_map]
-    exact ⟨i, P.memberIndices_complete i, j, Q.memberIndices_complete j, rfl⟩
+    exact ⟨i, his i, j, hjs j, rfl⟩
   classify := fun xy => (P.classify xy.1, Q.classify xy.2)
   member_inhabited := by
     intro ⟨i, j⟩
@@ -69,8 +123,7 @@ def unit : Partition where
   MemberIndex := Unit
   carrierNonempty := ⟨()⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [()]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[()], by intro i; cases i; simp⟩
   classify := fun _ => ()
   member_inhabited := by intro i; cases i; exact ⟨(), rfl⟩
 

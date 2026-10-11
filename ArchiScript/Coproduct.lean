@@ -17,16 +17,18 @@ def coproduct (P Q : Partition) : Partition where
   MemberIndex := Sum P.MemberIndex Q.MemberIndex
   carrierNonempty := ⟨Sum.inl (Classical.choice P.carrierNonempty)⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := P.memberIndices.map Sum.inl ++ Q.memberIndices.map Sum.inr
-  memberIndices_complete := by
+  memberIndexFinite := by
+    obtain ⟨is, his⟩ := P.memberIndexFinite
+    obtain ⟨js, hjs⟩ := Q.memberIndexFinite
+    refine ⟨is.map Sum.inl ++ js.map Sum.inr, ?_⟩
     intro i
     cases i with
     | inl i =>
       simp only [List.mem_append, List.mem_map]
-      exact Or.inl ⟨i, P.memberIndices_complete i, rfl⟩
+      exact Or.inl ⟨i, his i, rfl⟩
     | inr j =>
       simp only [List.mem_append, List.mem_map]
-      exact Or.inr ⟨j, Q.memberIndices_complete j, rfl⟩
+      exact Or.inr ⟨j, hjs j, rfl⟩
   classify
     | .inl x => .inl (P.classify x)
     | .inr y => .inr (Q.classify y)
