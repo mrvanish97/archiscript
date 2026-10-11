@@ -406,16 +406,28 @@ modeling decision and exposes missing assumptions.
       Account for hidden members if using a focused display; do not replace
       member arrows with a single VDP-to-VDP arrow.
 
-54. **Several overlapping subdomains define one VDP member**
-    - Prompt: “Show how carrier predicates A and B produce a VDP with
-      selected members A ∩ B and (C ∖ A) ∪ (A ∖ B).”
-    - Expected: use a carrier/subdomain derivation graph (possibly a DAG),
-      show the shared predicate inputs and exact formulas for both selected
-      members, and distinguish derivation edges from Operations. Do not
-      force one subdomain per member, a disjoint taxonomy of all
-      supporting subdomains, or a binary tree. Check member
-      nonemptiness, coverage, disjointness, and independent meaning
-      correspondence over the declared carrier.
+54. **Pure subdomain derivation incorrectly forced into a VDP**
+    - Prompt: “Draw the deductions among subdomains A, B, A ∩ B,
+      A ∖ B, and (C ∖ A) ∪ (A ∖ B). Do not draw a VDP or a carrier.”
+    - Expected: show only subdomains and formula dependencies/checked
+      containments, allowing overlapping regions and DAG structure.
+      Identify the typed base C and the meaning of each relative complement
+      in the caption, without drawing a carrier or selecting VDP members.
+      Do not claim that supporting subdomains form a complete partition
+      or that dependency arrows are Operations.
+
+55. **VDP member meanings incorrectly folded into subdomain graph**
+    - Prompt: “Show a two-member VDP on C with meanings accepted = A ∩ B
+      and other = (C ∖ A) ∪ (A ∖ B), plus the corresponding subdomains.
+      Keep this separate from the subdomain derivation diagram.”
+    - Expected: draw the actual VDP container with the two member nodes,
+      the named supporting regions outside it, and formula equality and
+      proved inclusion relations. A member may be a combination of multiple
+      subdomains. Do not draw Operation arrows, invent a binary subdomain
+      taxonomy, or identify members with subdomains merely by name.
+      Check independently stated member predicates with
+      `Partition.HasMembers`, and preserve selected-member coverage,
+      disjointness, and nonemptiness over the full carrier.
 
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
