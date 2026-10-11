@@ -576,6 +576,92 @@ same observed state. ArchiScript exposes the topology, but does not claim that a
 runtime race occurs. Ordering, atomicity, liveness, resource effects, and
 production conformance require additional semantics or evidence.
 
+## Three architecture diagram views
+
+ArchiScript supports three **distinct views of the same checked model**.
+Choose the view that answers the review question. Do not mix their edge
+meanings or mistake hidden visual detail for a change to the model.
+
+### 1. VDP topology — operations between whole VDPs
+
+Draw one node per VDP and labeled directed arrows **VDP → VDP** for
+`Operation`s. Do **not** expand members. This answers which boundaries and
+operations are connected, not how individual members map.
+
+```mermaid
+flowchart LR
+  P["Request VDP"] -->|"decide"| Q["Decision VDP"]
+```
+
+A VDP-level arrow summarizes an Operation on member indices. It is not a
+runtime call, nor does it imply that the Operation is total. Never draw an
+edge from a collapsed VDP node directly to `∅`.
+
+### 2. VDP member map — operations between members
+
+Draw each relevant VDP as a container with member nodes inside it; draw
+**member → member** arrows for the actual mappings of one Operation.
+If the Operation is undefined on a source member, connect that member to
+`∅` **outside** the target VDP. This answers what a particular operation
+does at the chosen semantic resolution.
+
+```mermaid
+flowchart LR
+  subgraph P["Request VDP"]
+    P1["valid"]
+    P2["invalid"]
+  end
+  subgraph Q["Decision VDP"]
+    Q1["accept"]
+    Q2["reject"]
+  end
+  P1 -->|"decide"| Q1
+  P2 -->|"decide"| Q2
+```
+
+The schematic mapping above is illustrative. For real models, preserve all
+source members; if a focused view collapses some, state how many are hidden
+and account for them. A display group is not a new VDP member.
+
+### 3. Carrier derivation — subdomains assembled into VDP members
+
+Draw the **carrier → supporting subdomains → selected member formulas**
+as a semantic derivation graph. It shows how semantic distinctions were
+defined, not architectural Operations. A selected member may combine
+**several** subdomains using intersection, union, or relative complement;
+supporting subdomains may overlap or be reused in several formulas.
+
+For example, on the illustrative carrier `C = Bool × Bool`, let `A`
+mean "first coordinate is true" and `B` mean "second coordinate is
+true". A two-member VDP can select `A ∩ B` and
+`(C \\ A) ∪ (A \\ B)`:
+
+```mermaid
+flowchart TD
+  C["Carrier C = Bool × Bool"]
+  A["Subdomain A: first = true"]
+  B["Subdomain B: second = true"]
+  subgraph V["Selected members of one VDP on C"]
+    M1["accepted = A ∩ B"]
+    M2["other = (C \\ A) ∪ (A \\ B)"]
+  end
+  C -.->|"base"| A
+  C -.->|"base"| B
+  A -.->|"formula input"| M1
+  B -.->|"formula input"| M1
+  C -.->|"formula input"| M2
+  A -.->|"formula input"| M2
+  B -.->|"formula input"| M2
+```
+
+Dashed arrows here mean **containment or formula dependency**, never
+`Operation` mappings. This is often a **DAG rather than a tree**:
+subdomains may overlap, have multiple parents, or participate in multiple
+member formulas. The VDP members, unlike arbitrary supporting subdomains,
+must be nonempty, pairwise disjoint, and exhaustive over the declared carrier.
+The independently stated predicates and `Partition.HasMembers` supply
+the checkable correspondence; the diagram alone supplies no proof.
+
 ## Diagram discipline
 
 ArchiScript diagrams are projections of the checked model, not an independent
