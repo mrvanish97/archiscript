@@ -27,10 +27,11 @@ overlap and must be nonempty. Show their independent meaning formulas and
 the checked classifier correspondence; neither a diagram nor a bare member
 name proves the external adequacy of that carrier.
 
-Do not draw an arrow from the *carrier* or a *subdomain* to a VDP member and
-label it as an `Operation` unless the model really contains such a typed
-member-level Operation. Similarly, topology arrows must not be rendered as
-if they were individual member mappings. Explicitly title every panel
+Edges from a carrier or supporting subdomain to selected member formulas
+are **never** `Operation` arrows. Operations connect VDP member indices;
+render them in the topology or member-map view instead. Similarly, topology
+arrows must not be rendered as if they were individual member mappings.
+Explicitly title every panel
 `VDP topology`, `VDP member mapping`, or `Carrier/subdomain derivation`.
 
 ## Review levels and conventions
@@ -57,8 +58,8 @@ draw member nodes or partiality edges from those boxes. At Level 2, draw
 each VDP as a labeled container with selected members inside it and connect
 member boxes with Operation mapping arrows. Draw `∅` outside every VDP
 because it is not a member. At Level 3, show carrier/subdomain derivation
-separately and distinguish its non-Operation edges. Reserve VDP containers/subgraphs for actual
-VDPs; do not reuse that container grammar merely to group operations or tensor
+separately and distinguish its non-Operation edges. Reserve VDP
+containers/subgraphs for actual VDPs; do not reuse that container grammar merely to group operations or tensor
 factors. For an operation-algebra view, use operation-shaped nodes and label the
 view explicitly so those nodes cannot be mistaken for VDPs or members. Use a
 distinct boundary shape for external appearances. Put long source locations and
