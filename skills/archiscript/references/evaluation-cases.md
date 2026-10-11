@@ -408,7 +408,7 @@ modeling decision and exposes missing assumptions.
 
 54. **Several overlapping subdomains define one VDP member**
     - Prompt: “Show how carrier predicates A and B produce a VDP with
-      selected members A ∩ B and (C \\ A) ∪ (A \\ B).”
+      selected members A ∩ B and (C ∖ A) ∪ (A ∖ B).”
     - Expected: use a carrier/subdomain derivation graph (possibly a DAG),
       show the shared predicate inputs and exact formulas for both selected
       members, and distinguish derivation edges from Operations. Do not
