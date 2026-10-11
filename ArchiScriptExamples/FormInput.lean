@@ -21,8 +21,7 @@ def fieldPartition : Partition where
   MemberIndex := Bool × Bool
   carrierNonempty := ⟨("", "")⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [(false, false), (false, true), (true, false), (true, true)]
-  memberIndices_complete := by intro ⟨e, n⟩; cases e <;> cases n <;> simp
+  memberIndexFinite := ⟨[(false, false), (false, true), (true, false), (true, true)], by intro ⟨e, n⟩; cases e <;> cases n <;> simp⟩
   classify x := (decide (emailProvided x), decide (nameProvided x))
   member_inhabited
     | (false, false) => ⟨("", ""), rfl⟩
@@ -54,8 +53,7 @@ def formPartition : Partition where
   MemberIndex := Bool
   carrierNonempty := ⟨("", "")⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [false, true]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[false, true], by intro i; cases i <;> simp⟩
   classify x := (fieldPartition.classify x).1 && (fieldPartition.classify x).2
   member_inhabited
     | false => ⟨("", ""), rfl⟩

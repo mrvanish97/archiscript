@@ -33,37 +33,46 @@ inductive EntryDisposition where
   | reject
   deriving DecidableEq
 
+instance : MemberEnumeration BrowserMember where
+  indices := [.root, .otherPath]
+  complete := by intro i; cases i <;> simp
+
 def browserPartition : Partition where
   Carrier := BrowserCall
   MemberIndex := BrowserMember
   carrierNonempty := ⟨⟨"/"⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.root, .otherPath]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.root, .otherPath], by intro i; cases i <;> simp⟩
   classify call := if call.path = "/" then .root else .otherPath
   member_inhabited
     | .root => ⟨⟨"/"⟩, by simp⟩
     | .otherPath => ⟨⟨"/health"⟩, by simp⟩
+
+instance : MemberEnumeration CliMember where
+  indices := [.empty, .nonempty]
+  complete := by intro i; cases i <;> simp
 
 def cliPartition : Partition where
   Carrier := CliInvocation
   MemberIndex := CliMember
   carrierNonempty := ⟨⟨[]⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.empty, .nonempty]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.empty, .nonempty], by intro i; cases i <;> simp⟩
   classify invocation := if invocation.args = [] then .empty else .nonempty
   member_inhabited
     | .empty => ⟨⟨[]⟩, by simp⟩
     | .nonempty => ⟨⟨["status"]⟩, by simp⟩
+
+instance : MemberEnumeration EntryDisposition where
+  indices := [.accept, .reject]
+  complete := by intro i; cases i <;> simp
 
 def dispositionPartition : Partition where
   Carrier := EntryDisposition
   MemberIndex := EntryDisposition
   carrierNonempty := ⟨.accept⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.accept, .reject]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.accept, .reject], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

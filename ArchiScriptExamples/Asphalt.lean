@@ -20,13 +20,16 @@ def countMembers : CountMember → Domain Int
   | .negative => fun x => x < 0
   | .nonnegative => fun x => 0 ≤ x
 
+instance : MemberEnumeration CountMember where
+  indices := [.negative, .nonnegative]
+  complete := by intro i; cases i <;> simp
+
 def countPartition : Partition where
   Carrier := Int
   MemberIndex := CountMember
   carrierNonempty := ⟨0⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.negative, .nonnegative]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.negative, .nonnegative], by intro i; cases i <;> simp⟩
   classify x := if x < 0 then .negative else .nonnegative
   member_inhabited
     | .negative => ⟨-1, by decide⟩
@@ -277,15 +280,20 @@ def classify (x : Input) : Admission :=
   else if ¬ evidenceAddressable x then .evidenceUnknown
   else .requestReservation
 
+instance : MemberEnumeration Admission where
+  indices := [.malformed, .satisfied, .superseded, .staleAuthority,
+    .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
+    .evidenceUnknown, .requestReservation]
+  complete := by intro i; cases i <;> simp
+
 def admissionPartition : Partition where
   Carrier := Input
   MemberIndex := Admission
   carrierNonempty := ⟨exampleInput⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.malformed, .satisfied, .superseded, .staleAuthority,
+  memberIndexFinite := ⟨[.malformed, .satisfied, .superseded, .staleAuthority,
     .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
-    .evidenceUnknown, .requestReservation]
-  memberIndices_complete := by intro i; cases i <;> simp
+    .evidenceUnknown, .requestReservation], by intro i; cases i <;> simp⟩
   classify := classify
   member_inhabited := by
     intro i
@@ -396,15 +404,20 @@ inductive NextAction where
   | obtainEvidence | attemptAtomicReservation
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration NextAction where
+  indices := [.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
+    .reacquireAuthority, .seekApproval, .requireMigrationReview, .stopRetry,
+    .waitRetry, .obtainEvidence, .attemptAtomicReservation]
+  complete := by intro i; cases i <;> simp
+
 def nextActionPartition : Partition where
   Carrier := NextAction
   MemberIndex := NextAction
   carrierNonempty := ⟨.rejectInput⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
+  memberIndexFinite := ⟨[.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
     .reacquireAuthority, .seekApproval, .requireMigrationReview, .stopRetry,
-    .waitRetry, .obtainEvidence, .attemptAtomicReservation]
-  memberIndices_complete := by intro i; cases i <;> simp
+    .waitRetry, .obtainEvidence, .attemptAtomicReservation], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

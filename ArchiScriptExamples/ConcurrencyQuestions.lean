@@ -19,13 +19,16 @@ inductive ManualTrigger where
   | force
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration ManualTrigger where
+  indices := [.reconcile, .force]
+  complete := by intro i; cases i <;> simp
+
 def manualTriggerPartition : Partition where
   Carrier := ManualTrigger
   MemberIndex := ManualTrigger
   carrierNonempty := ⟨.reconcile⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reconcile, .force]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reconcile, .force], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -38,13 +41,16 @@ inductive TimerTrigger where
   | due
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration TimerTrigger where
+  indices := [.due]
+  complete := by intro i; cases i; simp
+
 def timerTriggerPartition : Partition where
   Carrier := TimerTrigger
   MemberIndex := TimerTrigger
   carrierNonempty := ⟨.due⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.due]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[.due], by intro i; cases i; simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -63,13 +69,16 @@ inductive ReconcileMode where
   | forced
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration ReconcileMode where
+  indices := [.normal, .forced]
+  complete := by intro i; cases i <;> simp
+
 def reconcileModePartition : Partition where
   Carrier := ReconcileMode
   MemberIndex := ReconcileMode
   carrierNonempty := ⟨.normal⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.normal, .forced]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.normal, .forced], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -109,13 +118,16 @@ inductive ReconcileNext where
   | retry
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration ReconcileNext where
+  indices := [.stable, .retry]
+  complete := by intro i; cases i <;> simp
+
 def reconcileNextPartition : Partition where
   Carrier := ReconcileNext
   MemberIndex := ReconcileNext
   carrierNonempty := ⟨.stable⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.stable, .retry]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.stable, .retry], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

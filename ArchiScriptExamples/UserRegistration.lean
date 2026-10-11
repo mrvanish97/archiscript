@@ -17,13 +17,16 @@ inductive UserMemberIndex where
   | validExisting
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration UserMemberIndex where
+  indices := [.invalid, .validNew, .validExisting]
+  complete := by intro i; cases i <;> simp
+
 def userPartition : Partition where
   Carrier := PreclassifiedUserInput
   MemberIndex := UserMemberIndex
   carrierNonempty := ⟨.malformed⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalid, .validNew, .validExisting]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalid, .validNew, .validExisting], by intro i; cases i <;> simp⟩
   classify
     | .malformed => .invalid
     | .newUser _ => .validNew
@@ -44,13 +47,16 @@ inductive RegistrationResult where
   | created (id : Nat)
   | selected (id : Nat)
 
+instance : MemberEnumeration RegistrationMemberIndex where
+  indices := [.rejected, .created, .selected]
+  complete := by intro i; cases i <;> simp
+
 def registrationPartition : Partition where
   Carrier := RegistrationResult
   MemberIndex := RegistrationMemberIndex
   carrierNonempty := ⟨.rejected⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejected, .created, .selected]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejected, .created, .selected], by intro i; cases i <;> simp⟩
   classify
     | .rejected => .rejected
     | .created _ => .created
@@ -70,13 +76,16 @@ abbrev UserStore := Nat → Prop
 
 inductive Channel where | web | api deriving DecidableEq, Repr
 
+instance : MemberEnumeration Channel where
+  indices := [.web, .api]
+  complete := by intro i; cases i <;> simp
+
 def channelPartition : Partition where
   Carrier := Bool
   MemberIndex := Channel
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.web, .api]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.web, .api], by intro i; cases i <;> simp⟩
   classify | false => .web | true => .api
   member_inhabited | .web => ⟨false, rfl⟩ | .api => ⟨true, rfl⟩
 
@@ -273,13 +282,16 @@ theorem renamedRoutes_equivalent :
 
 inductive Region where | domestic | international deriving DecidableEq, Repr
 
+instance : MemberEnumeration Region where
+  indices := [.domestic, .international]
+  complete := by intro i; cases i <;> simp
+
 def regionPartition : Partition where
   Carrier := Bool
   MemberIndex := Region
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.domestic, .international]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.domestic, .international], by intro i; cases i <;> simp⟩
   classify | false => .domestic | true => .international
   member_inhabited | .domestic => ⟨false, rfl⟩ | .international => ⟨true, rfl⟩
 

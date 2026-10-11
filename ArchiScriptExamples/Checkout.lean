@@ -32,13 +32,16 @@ def missingToken : Domain PaymentRequest :=
 def eligiblePayment : Domain PaymentRequest :=
   fun x => x.amountCents ≠ 0 ∧ x.paymentToken ≠ ""
 
+instance : MemberEnumeration PaymentInputMember where
+  indices := [.invalidAmount, .missingToken, .eligible]
+  complete := by intro i; cases i <;> simp
+
 def paymentInputPartition : Partition where
   Carrier := PaymentRequest
   MemberIndex := PaymentInputMember
   carrierNonempty := ⟨⟨0, ""⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalidAmount, .missingToken, .eligible]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalidAmount, .missingToken, .eligible], by intro i; cases i <;> simp⟩
   classify x :=
     if x.amountCents = 0 then .invalidAmount
     else if x.paymentToken = "" then .missingToken
@@ -89,13 +92,16 @@ def inventoryShortfall : Domain InventoryObservation :=
 def inventorySufficient : Domain InventoryObservation :=
   fun x => x.requestedUnits ≠ 0 ∧ x.requestedUnits ≤ x.availableUnits
 
+instance : MemberEnumeration InventoryMember where
+  indices := [.invalidDemand, .shortfall, .sufficient]
+  complete := by intro i; cases i <;> simp
+
 def inventoryObservationPartition : Partition where
   Carrier := InventoryObservation
   MemberIndex := InventoryMember
   carrierNonempty := ⟨⟨0, 0⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalidDemand, .shortfall, .sufficient]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalidDemand, .shortfall, .sufficient], by intro i; cases i <;> simp⟩
   classify x :=
     if x.requestedUnits = 0 then .invalidDemand
     else if x.requestedUnits ≤ x.availableUnits then .sufficient
@@ -131,13 +137,16 @@ inductive PaymentPlan where
   | authorize
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration PaymentPlan where
+  indices := [.rejectAmount, .rejectToken, .authorize]
+  complete := by intro i; cases i <;> simp
+
 def paymentPlanPartition : Partition where
   Carrier := PaymentPlan
   MemberIndex := PaymentPlan
   carrierNonempty := ⟨.rejectAmount⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectAmount, .rejectToken, .authorize]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectAmount, .rejectToken, .authorize], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -152,13 +161,16 @@ inductive InventoryPlan where
   | reserve
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration InventoryPlan where
+  indices := [.rejectDemand, .backorder, .reserve]
+  complete := by intro i; cases i <;> simp
+
 def inventoryPlanPartition : Partition where
   Carrier := InventoryPlan
   MemberIndex := InventoryPlan
   carrierNonempty := ⟨.rejectDemand⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectDemand, .backorder, .reserve]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectDemand, .backorder, .reserve], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -195,13 +207,16 @@ inductive CheckoutAction where
   | placeOrder
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration CheckoutAction where
+  indices := [.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder]
+  complete := by intro i; cases i <;> simp
+
 def checkoutActionPartition : Partition where
   Carrier := CheckoutAction
   MemberIndex := CheckoutAction
   carrierNonempty := ⟨.rejectPayment⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -219,13 +234,16 @@ inductive FulfillmentView where
 A coarser view of the same CheckoutAction carrier for consumers that only care
 whether a fulfillment command exists.
 -/
+instance : MemberEnumeration FulfillmentView where
+  indices := [.noCommand, .submit]
+  complete := by intro i; cases i <;> simp
+
 def fulfillmentViewPartition : Partition where
   Carrier := CheckoutAction
   MemberIndex := FulfillmentView
   carrierNonempty := ⟨.rejectPayment⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.noCommand, .submit]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.noCommand, .submit], by intro i; cases i <;> simp⟩
   classify
     | .placeOrder => .submit
     | .rejectPayment | .rejectInventoryRequest | .waitForStock => .noCommand
@@ -271,13 +289,16 @@ inductive FulfillmentCommand where
   | submitOrder
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration FulfillmentCommand where
+  indices := [.submitOrder]
+  complete := by intro i; cases i; simp
+
 def fulfillmentCommandPartition : Partition where
   Carrier := FulfillmentCommand
   MemberIndex := FulfillmentCommand
   carrierNonempty := ⟨.submitOrder⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.submitOrder]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[.submitOrder], by intro i; cases i; simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

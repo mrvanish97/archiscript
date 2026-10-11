@@ -8,13 +8,16 @@ inductive ProviderResponse where
   | rejectRequest | acknowledge
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration ProviderResponse where
+  indices := [.rejectRequest, .acknowledge]
+  complete := by intro i; cases i <;> simp
+
 def responsePartition : Partition where
   Carrier := ProviderResponse
   MemberIndex := ProviderResponse
   carrierNonempty := ⟨.acknowledge⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectRequest, .acknowledge]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectRequest, .acknowledge], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -32,14 +35,18 @@ inductive AuditIntent where
   | firstSuccess | duplicateSuccess
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration AuditIntent where
+  indices := [.invalidDelivery, .unsupportedDelivery, .paymentFailed,
+                    .firstSuccess, .duplicateSuccess]
+  complete := by intro i; cases i <;> simp
+
 def auditPartition : Partition where
   Carrier := AuditIntent
   MemberIndex := AuditIntent
   carrierNonempty := ⟨.invalidDelivery⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalidDelivery, .unsupportedDelivery, .paymentFailed,
-                    .firstSuccess, .duplicateSuccess]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalidDelivery, .unsupportedDelivery, .paymentFailed,
+                    .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -57,13 +64,16 @@ inductive NotificationIntent where
   | paymentFailure | successReceipt
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration NotificationIntent where
+  indices := [.paymentFailure, .successReceipt]
+  complete := by intro i; cases i <;> simp
+
 def notificationPartition : Partition where
   Carrier := NotificationIntent
   MemberIndex := NotificationIntent
   carrierNonempty := ⟨.paymentFailure⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.paymentFailure, .successReceipt]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.paymentFailure, .successReceipt], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -80,13 +90,16 @@ inductive FulfillmentRequest where
   | enqueue
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration FulfillmentRequest where
+  indices := [.enqueue]
+  complete := by intro i; cases i <;> simp
+
 def fulfillmentPartition : Partition where
   Carrier := FulfillmentRequest
   MemberIndex := FulfillmentRequest
   carrierNonempty := ⟨.enqueue⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.enqueue]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.enqueue], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

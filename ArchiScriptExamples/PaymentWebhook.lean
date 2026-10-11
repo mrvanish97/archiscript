@@ -25,13 +25,16 @@ inductive InputMember where
   | malformed | unsupported | failed | firstSuccess | duplicateSuccess
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration InputMember where
+  indices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
+  complete := by intro i; cases i <;> simp
+
 def inputPartition : Partition where
   Carrier := Input
   MemberIndex := InputMember
   carrierNonempty := ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩
   classify x :=
     if x.payload.eventId = "" then .malformed
     else if x.payload.status = "success" then
@@ -102,13 +105,16 @@ inductive Decision where
   | reject | ignore | recordFailure | fulfill | acknowledgeDuplicate
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration Decision where
+  indices := [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
+  complete := by intro i; cases i <;> simp
+
 def decisionPartition : Partition where
   Carrier := Decision
   MemberIndex := Decision
   carrierNonempty := ⟨.reject⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -135,13 +141,16 @@ inductive LedgerCommand where
   | recordFailure | recordAndQueueFulfillment
   deriving DecidableEq, Repr
 
+instance : MemberEnumeration LedgerCommand where
+  indices := [.recordFailure, .recordAndQueueFulfillment]
+  complete := by intro i; cases i <;> simp
+
 def ledgerCommandPartition : Partition where
   Carrier := LedgerCommand
   MemberIndex := LedgerCommand
   carrierNonempty := ⟨.recordFailure⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.recordFailure, .recordAndQueueFulfillment]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.recordFailure, .recordAndQueueFulfillment], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 

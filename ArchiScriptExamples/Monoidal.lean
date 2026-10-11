@@ -9,8 +9,7 @@ def bit : Partition where
   MemberIndex := Bool
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [false, true]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[false, true], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
