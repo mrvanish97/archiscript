@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.1
+
+- Updated the AI authoring skill to reuse proven local lemmas when proving
+  complex architecture contracts, and to assemble unchanged global goals
+  through existing composition, tensor, coproduct, and rewrite laws.
+- Added a concrete ReservationController factorization example and negative
+  guidance for invalid consumer-specific coarsenings.
+- Extended the skill evaluation cases for proof decomposition, reuse, and
+  AI-first review. No changes to the Lean calculus or public API.
+
 ## 0.5.0
 
 - Added typed architecture expressions. Every `Expression X Y` has exactly one
