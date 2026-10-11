@@ -7,7 +7,7 @@ before implementation. An architect or AI proposes the semantic model; Lean
 checks the stated mathematical obligations; engineers review whether the model
 matches the real system.
 
-Current release: **0.5.0**.
+Current release: **0.5.1**.
 
 ArchiScript deliberately does **not** standardize a vocabulary of queues,
 timeouts, failures, services, retries, or cloud resources. Those are meanings
