@@ -52,10 +52,16 @@ private def bindingJson (id : String) (address : Operation.BranchAddress operati
   ]
 
 private def mappingCoverageJson (name : OperationName) : Json :=
-  let declaration := operationRegistry.resolve name
+  let missing := match name with
+    | .decide => PaymentWebhook.decideDeclaration.definedMappingsWithoutBranch.length
+    | .requestLedgerCommand => PaymentWebhook.ledgerDeclaration.definedMappingsWithoutBranch.length
+    | .planResponse => responseDeclaration.definedMappingsWithoutBranch.length
+    | .planAudit => auditDeclaration.definedMappingsWithoutBranch.length
+    | .planNotification => notificationDeclaration.definedMappingsWithoutBranch.length
+    | .planFulfillment => fulfillmentDeclaration.definedMappingsWithoutBranch.length
   Json.mkObj [
     ("id", toJson s!"PaymentWebhookNetwork.{shortName name}"),
-    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
+    ("missingDefinedMappings", toJson missing)
   ]
 
 private def duplicatePathJson : Json := Id.run do
