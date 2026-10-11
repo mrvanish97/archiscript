@@ -2,9 +2,9 @@
 
 ## 0.5.1
 
-- Updated the AI authoring skill to reuse proven local lemmas when proving
-  complex architecture contracts, and to assemble unchanged global goals
-  through existing composition, tensor, coproduct, and rewrite laws.
+- Made cumulative local proofs the primary authoring methodology in the AI
+  skill: fix the global contract, inspect its structure, choose meaningful local
+  lemmas, verify them, and assemble the unchanged theorem using existing laws.
 - Added a concrete ReservationController factorization example and negative
   guidance for invalid consumer-specific coarsenings.
 - Extended the skill evaluation cases for proof decomposition, reuse, and
