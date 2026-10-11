@@ -40,6 +40,12 @@ jobs:
       - name: Skill API smoke
         run: lake env lean skills/archiscript/examples/CurrentApi.lean
 
+      - name: Review exporter smoke
+        run: |
+          lake env lean --run scripts/export-payment-review.lean > /dev/null
+          lake env lean --run scripts/export-webhook-network.lean > /dev/null
+          lake env lean --run scripts/export-omitted-mapping-fixture.lean > /dev/null
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
