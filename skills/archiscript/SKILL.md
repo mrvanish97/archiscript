@@ -960,6 +960,43 @@ member mappings from runtime calls, render relevant `none` outcomes explicitly,
 and put assumptions, proved claims, and unknowns beneath the graph. State the
 diagram level, focus, and omissions.
 
+### Three distinct diagram types
+
+Use the three views below as separate, explicitly titled panels when they
+answer different questions. The levels in
+[references/review-diagrams.md](references/review-diagrams.md) supply the
+associated review detail; do not interpret the three views as new
+architectural objects.
+
+1. **VDP topology (Level 1):** nodes are entire VDPs, without their members.
+   Directed, operation-labeled arrows connect **VDP to VDP** and show the
+   architectural path/fan-out. These arrows summarize member-level Operations;
+   they are not runtime calls. Do not draw a VDP-to-`∅` arrow or suggest
+   operation totality merely because individual mappings are hidden.
+2. **VDP member mapping (Level 2):** show relevant VDP members inside their
+   real VDP containers. Draw **member-to-member** arrows for a specific
+   Operation, and source-member-to-`∅` arrows for undefined cases. Preserve
+   the complete member inventory in the model, disclose any visual grouping
+   or omitted detail, and never merge members merely to simplify a diagram.
+3. **Carrier/subdomain derivation (Level 3):** show the carrier and its origin,
+   supporting subdomains with their defining predicates and bases, then
+   selected VDP members with explicit construction formulas. One member may
+   be the **union, intersection, or relative complement** of multiple
+   subdomains. A subdomain can contribute to several formulas; supporting
+   subdomains may overlap and need not cover the carrier. Use a graph/DAG
+   where needed rather than forcing a tree or treating every subdomain as a
+   selected member. Derivation/containment edges are **not Operations**.
+   Show how the selected member formulas correspond to the checked
+   `Partition.HasMembers` contract; label opaque predicates and external
+   premises rather than inventing their definitions.
+
+Choose the topology view for connectivity, the member mapping view for
+operation behavior, and the derivation view for semantic coverage and
+classification. For a substantial architecture review, make the applicable
+views separately inspectable; do not force all information into one graph.
+If a diagram combines constructions (`⊗`, `⊕`) with Operations, explicitly
+distinguish structural construction lines from actual operation arrows.
+
 Use one visual grammar consistently:
 
 - define elementary VDPs before showing products built from them;
@@ -983,7 +1020,9 @@ Use one visual grammar consistently:
   coproduct construction lines as coproduct injections; canonical injections
   are actual Operations and should be drawn separately only when they are the
   review subject;
-- a VDP is a labeled container and its actual members are nodes inside it;
+- in a topology view, one VDP is one collapsed node; in a member-map
+  view, a VDP is a labeled container with its actual members inside it;
+  supporting subdomains in a derivation view are not VDP containers;
 - reserve VDP containers for actual VDPs only; do not use the same container
   grammar for "factor groups", stages, or collections of operations;
 - use the repository's established/default diagram theme. Do not assign
