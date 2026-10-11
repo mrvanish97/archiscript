@@ -8,7 +8,12 @@
 - Added a concrete ReservationController factorization example and negative
   guidance for invalid consumer-specific coarsenings.
 - Extended the skill evaluation cases for proof decomposition, reuse, and
-  AI-first review. No changes to the Lean calculus or public API.
+  AI-first review.
+- Distinguished three review-diagram types in the skill, README, and diagram
+  conventions: VDP-level operation topology, member-level operation mappings,
+  and carrier/subdomain derivation graphs showing how multiple subdomains
+  combine into selected VDP members. Added diagram-specific evaluation cases.
+  No changes to the Lean calculus or public API.
 
 ## 0.5.0
 
