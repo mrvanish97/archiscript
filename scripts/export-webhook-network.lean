@@ -9,8 +9,8 @@ open ArchiScriptExamples.PaymentWebhookNetwork
 private def shortName {α : Type} [Repr α] (value : α) : String :=
   (reprStr value).splitOn "." |>.getLast!
 
-private def operationJson {X Y : Partition} (id source target : String)
-    (op : Operation X Y) : Json :=
+private def operationJson {X Y : Partition} [MemberEnumeration X.MemberIndex]
+    (id source target : String) (op : Operation X Y) : Json :=
   Json.mkObj [
     ("id", toJson s!"PaymentWebhookNetwork.{id}"),
     ("operation", toJson id),
@@ -149,6 +149,7 @@ private def definitionJson {α : Type} {meaning : Domain α} :
       ("parts", toJson [definitionJson base, definitionJson removed])]
 
 private def architectureJson (id : String) (P : ArchitecturalPartition)
+    [MemberEnumeration P.partition.MemberIndex]
     (memberName : P.partition.MemberIndex → String) : Json :=
   Json.mkObj [
     ("id", toJson id), ("carrierProvenance", provenanceJson P.carrierOrigin),

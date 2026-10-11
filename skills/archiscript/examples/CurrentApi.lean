@@ -11,13 +11,16 @@ inductive RequestIndex where
 
 def positive : Domain Nat := fun n => 0 < n
 
+instance : MemberEnumeration RequestIndex where
+  indices := [.zero, .positive]
+  complete := by intro i; cases i <;> simp
+
 def requestPartition : Partition where
   Carrier := Nat
   MemberIndex := RequestIndex
   carrierNonempty := ⟨0⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.zero, .positive]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.zero, .positive], by intro i; cases i <;> simp⟩
   classify n := if n = 0 then .zero else .positive
   member_inhabited
     | .zero => ⟨0, rfl⟩

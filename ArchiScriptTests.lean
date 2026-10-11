@@ -10,6 +10,7 @@ import ArchiScriptTests.Expression
 import ArchiScriptTests.ExpressionStress
 import ArchiScriptTests.ProofEngineering
 import ArchiScriptTests.Resolution
+import ArchiScriptTests.MemberEnumeration
 
 namespace ArchiScriptTests
 open ArchiScript

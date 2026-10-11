@@ -125,6 +125,7 @@ private def definitionJson {α : Type} {meaning : Domain α} :
       ("parts", toJson [definitionJson base, definitionJson removed])]
 
 private def architectureJson (id : String) (P : ArchitecturalPartition)
+    [MemberEnumeration P.partition.MemberIndex]
     (memberName : P.partition.MemberIndex → String) : Json :=
   Json.mkObj [
     ("id", toJson id),
