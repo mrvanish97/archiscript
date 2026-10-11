@@ -21,7 +21,7 @@ instance : MemberEnumeration UserMemberIndex where
   indices := [.invalid, .validNew, .validExisting]
   complete := by intro i; cases i <;> simp
 
-def userPartition : Partition where
+abbrev userPartition : Partition where
   Carrier := PreclassifiedUserInput
   MemberIndex := UserMemberIndex
   carrierNonempty := ⟨.malformed⟩
@@ -51,7 +51,7 @@ instance : MemberEnumeration RegistrationMemberIndex where
   indices := [.rejected, .created, .selected]
   complete := by intro i; cases i <;> simp
 
-def registrationPartition : Partition where
+abbrev registrationPartition : Partition where
   Carrier := RegistrationResult
   MemberIndex := RegistrationMemberIndex
   carrierNonempty := ⟨.rejected⟩
@@ -80,7 +80,7 @@ instance : MemberEnumeration Channel where
   indices := [.web, .api]
   complete := by intro i; cases i <;> simp
 
-def channelPartition : Partition where
+abbrev channelPartition : Partition where
   Carrier := Bool
   MemberIndex := Channel
   carrierNonempty := ⟨false⟩
@@ -107,7 +107,7 @@ def returnToUser : Operation registrationPartition userPartition where
     | .created => some .validNew
     | .selected => some .validExisting
 
-def registerDeclaration : Operation.Declaration where
+abbrev registerDeclaration : Operation.Declaration where
   source := userPartition
   target := registrationPartition
   operation := register
@@ -131,7 +131,7 @@ def registerDeclaration : Operation.Declaration where
     | .invalid => some (.unimplemented "illustrative model; production handler not yet supplied")
     | _ => none
 
-def registrationIdentityDeclaration : Operation.Declaration where
+abbrev registrationIdentityDeclaration : Operation.Declaration where
   source := registrationPartition
   target := registrationPartition
   operation := Operation.id registrationPartition
@@ -145,7 +145,7 @@ def registrationIdentityDeclaration : Operation.Declaration where
     | .newUser => ⟨.created, .created, rfl⟩
     | .existingUser => ⟨.selected, .selected, rfl⟩
 
-def returnToUserDeclaration : Operation.Declaration where
+abbrev returnToUserDeclaration : Operation.Declaration where
   source := registrationPartition
   target := userPartition
   operation := returnToUser
@@ -286,7 +286,7 @@ instance : MemberEnumeration Region where
   indices := [.domestic, .international]
   complete := by intro i; cases i <;> simp
 
-def regionPartition : Partition where
+abbrev regionPartition : Partition where
   Carrier := Bool
   MemberIndex := Region
   carrierNonempty := ⟨false⟩

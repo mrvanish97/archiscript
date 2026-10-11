@@ -37,7 +37,7 @@ instance : MemberEnumeration BrowserMember where
   indices := [.root, .otherPath]
   complete := by intro i; cases i <;> simp
 
-def browserPartition : Partition where
+abbrev browserPartition : Partition where
   Carrier := BrowserCall
   MemberIndex := BrowserMember
   carrierNonempty := ⟨⟨"/"⟩⟩
@@ -52,7 +52,7 @@ instance : MemberEnumeration CliMember where
   indices := [.empty, .nonempty]
   complete := by intro i; cases i <;> simp
 
-def cliPartition : Partition where
+abbrev cliPartition : Partition where
   Carrier := CliInvocation
   MemberIndex := CliMember
   carrierNonempty := ⟨⟨[]⟩⟩
@@ -67,7 +67,7 @@ instance : MemberEnumeration EntryDisposition where
   indices := [.accept, .reject]
   complete := by intro i; cases i <;> simp
 
-def dispositionPartition : Partition where
+abbrev dispositionPartition : Partition where
   Carrier := EntryDisposition
   MemberIndex := EntryDisposition
   carrierNonempty := ⟨.accept⟩
@@ -80,7 +80,7 @@ def dispositionPartition : Partition where
 The dispatcher input is a lossless structural OR of two already established
 architectural entry channels.
 -/
-def entryPartition : Partition :=
+abbrev entryPartition : Partition :=
   browserPartition.coproduct cliPartition
 
 def handleBrowser : Operation browserPartition dispositionPartition where

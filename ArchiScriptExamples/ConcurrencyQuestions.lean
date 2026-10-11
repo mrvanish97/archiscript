@@ -23,7 +23,7 @@ instance : MemberEnumeration ManualTrigger where
   indices := [.reconcile, .force]
   complete := by intro i; cases i <;> simp
 
-def manualTriggerPartition : Partition where
+abbrev manualTriggerPartition : Partition where
   Carrier := ManualTrigger
   MemberIndex := ManualTrigger
   carrierNonempty := ⟨.reconcile⟩
@@ -32,7 +32,7 @@ def manualTriggerPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def manualTriggerSemantic : SemanticPartition where
+abbrev manualTriggerSemantic : SemanticPartition where
   partition := manualTriggerPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -45,7 +45,7 @@ instance : MemberEnumeration TimerTrigger where
   indices := [.due]
   complete := by intro i; cases i; simp
 
-def timerTriggerPartition : Partition where
+abbrev timerTriggerPartition : Partition where
   Carrier := TimerTrigger
   MemberIndex := TimerTrigger
   carrierNonempty := ⟨.due⟩
@@ -54,14 +54,14 @@ def timerTriggerPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def timerTriggerSemantic : SemanticPartition where
+abbrev timerTriggerSemantic : SemanticPartition where
   partition := timerTriggerPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
 /-- Optional product view showing that the trigger classifications are
 independent semantic slots. This does not claim simultaneous runtime arrival. -/
-def independentTriggerSpace : SemanticPartition :=
+abbrev independentTriggerSpace : SemanticPartition :=
   manualTriggerSemantic.tensor timerTriggerSemantic
 
 inductive ReconcileMode where
@@ -73,7 +73,7 @@ instance : MemberEnumeration ReconcileMode where
   indices := [.normal, .forced]
   complete := by intro i; cases i <;> simp
 
-def reconcileModePartition : Partition where
+abbrev reconcileModePartition : Partition where
   Carrier := ReconcileMode
   MemberIndex := ReconcileMode
   carrierNonempty := ⟨.normal⟩
@@ -82,7 +82,7 @@ def reconcileModePartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def reconcileModeSemantic : SemanticPartition where
+abbrev reconcileModeSemantic : SemanticPartition where
   partition := reconcileModePartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -103,10 +103,10 @@ The controller has exactly two design-time entry channels. Coproduct groups
 those channels losslessly; it does not classify runtime-discovered trigger
 variants.
 -/
-def triggerPartition : Partition :=
+abbrev triggerPartition : Partition :=
   manualTriggerPartition.coproduct timerTriggerPartition
 
-def triggerSemantic : SemanticPartition :=
+abbrev triggerSemantic : SemanticPartition :=
   manualTriggerSemantic.coproduct timerTriggerSemantic
 
 /-- Canonical fan-in through the coproduct universal property. -/
@@ -122,7 +122,7 @@ instance : MemberEnumeration ReconcileNext where
   indices := [.stable, .retry]
   complete := by intro i; cases i <;> simp
 
-def reconcileNextPartition : Partition where
+abbrev reconcileNextPartition : Partition where
   Carrier := ReconcileNext
   MemberIndex := ReconcileNext
   carrierNonempty := ⟨.stable⟩
@@ -131,7 +131,7 @@ def reconcileNextPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def reconcileNextSemantic : SemanticPartition where
+abbrev reconcileNextSemantic : SemanticPartition where
   partition := reconcileNextPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl

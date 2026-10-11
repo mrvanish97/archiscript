@@ -98,7 +98,7 @@ instance (P : Partition) : DecidableEq P.MemberIndex := P.memberIndexDecidableEq
 
 /-- Independent aggregation: every pair of carrier values and every pair of
 members remains present, including when both factors are the same VDP. -/
-def tensor (P Q : Partition) : Partition where
+abbrev tensor (P Q : Partition) : Partition where
   Carrier := P.Carrier × Q.Carrier
   MemberIndex := P.MemberIndex × Q.MemberIndex
   carrierNonempty := ⟨Classical.choice P.carrierNonempty, Classical.choice Q.carrierNonempty⟩
@@ -306,7 +306,7 @@ namespace SemanticPartition
 
 /-- Product members inherit their independently stated meanings from the two
 factors; no product predicate needs to be supplied by an author. -/
-def tensor (P Q : SemanticPartition) : SemanticPartition where
+abbrev tensor (P Q : SemanticPartition) : SemanticPartition where
   partition := P.partition.tensor Q.partition
   members := fun ij xy => P.members ij.1 xy.1 ∧ Q.members ij.2 xy.2
   hasMembers := by

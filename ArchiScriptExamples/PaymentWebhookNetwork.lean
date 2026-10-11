@@ -12,7 +12,7 @@ instance : MemberEnumeration ProviderResponse where
   indices := [.rejectRequest, .acknowledge]
   complete := by intro i; cases i <;> simp
 
-def responsePartition : Partition where
+abbrev responsePartition : Partition where
   Carrier := ProviderResponse
   MemberIndex := ProviderResponse
   carrierNonempty := ⟨.acknowledge⟩
@@ -21,7 +21,7 @@ def responsePartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def responseSemanticPartition : SemanticPartition where
+abbrev responseSemanticPartition : SemanticPartition where
   partition := responsePartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -40,7 +40,7 @@ instance : MemberEnumeration AuditIntent where
                     .firstSuccess, .duplicateSuccess]
   complete := by intro i; cases i <;> simp
 
-def auditPartition : Partition where
+abbrev auditPartition : Partition where
   Carrier := AuditIntent
   MemberIndex := AuditIntent
   carrierNonempty := ⟨.invalidDelivery⟩
@@ -50,7 +50,7 @@ def auditPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def auditSemanticPartition : SemanticPartition where
+abbrev auditSemanticPartition : SemanticPartition where
   partition := auditPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -68,7 +68,7 @@ instance : MemberEnumeration NotificationIntent where
   indices := [.paymentFailure, .successReceipt]
   complete := by intro i; cases i <;> simp
 
-def notificationPartition : Partition where
+abbrev notificationPartition : Partition where
   Carrier := NotificationIntent
   MemberIndex := NotificationIntent
   carrierNonempty := ⟨.paymentFailure⟩
@@ -77,7 +77,7 @@ def notificationPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def notificationSemanticPartition : SemanticPartition where
+abbrev notificationSemanticPartition : SemanticPartition where
   partition := notificationPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -94,7 +94,7 @@ instance : MemberEnumeration FulfillmentRequest where
   indices := [.enqueue]
   complete := by intro i; cases i <;> simp
 
-def fulfillmentPartition : Partition where
+abbrev fulfillmentPartition : Partition where
   Carrier := FulfillmentRequest
   MemberIndex := FulfillmentRequest
   carrierNonempty := ⟨.enqueue⟩
@@ -103,7 +103,7 @@ def fulfillmentPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def fulfillmentSemanticPartition : SemanticPartition where
+abbrev fulfillmentSemanticPartition : SemanticPartition where
   partition := fulfillmentPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -139,28 +139,28 @@ def planFulfillment : Operation PaymentWebhook.ledgerCommandPartition fulfillmen
     | .recordAndQueueFulfillment => some .enqueue
     | .recordFailure => none
 
-def responseArchitecture : ArchitecturalPartition where
+abbrev responseArchitecture : ArchitecturalPartition where
   partition := responsePartition
   carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planResponse" (by decide)
   carrierClosure := some responseCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
-def auditArchitecture : ArchitecturalPartition where
+abbrev auditArchitecture : ArchitecturalPartition where
   partition := auditPartition
   carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planAudit" (by decide)
   carrierClosure := some auditCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
-def notificationArchitecture : ArchitecturalPartition where
+abbrev notificationArchitecture : ArchitecturalPartition where
   partition := notificationPartition
   carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planNotification" (by decide)
   carrierClosure := some notificationCarrierClosure
   selectedMembers := fun i => ⟨fun x => x = i, .predicate (fun x => x = i)⟩
   hasMembers := by intro i x; rfl
 
-def fulfillmentArchitecture : ArchitecturalPartition where
+abbrev fulfillmentArchitecture : ArchitecturalPartition where
   partition := fulfillmentPartition
   carrierOrigin := .architecturalDomain "PaymentWebhookNetwork.planFulfillment" (by decide)
   carrierClosure := some fulfillmentCarrierClosure
@@ -182,7 +182,7 @@ private def plannedCode (symbol : String) : Operation.ImplementationDisposition 
     symbol := some symbol
   } }
 
-def responseDeclaration : Operation.Declaration where
+abbrev responseDeclaration : Operation.Declaration where
   source := PaymentWebhook.decisionPartition
   target := responsePartition
   operation := planResponse
@@ -200,7 +200,7 @@ def responseDeclaration : Operation.Declaration where
   responsibilityOwners := ["payments-api"]
   implementation := some (plannedCode "planResponse")
 
-def auditDeclaration : Operation.Declaration where
+abbrev auditDeclaration : Operation.Declaration where
   source := PaymentWebhook.decisionPartition
   target := auditPartition
   operation := planAudit
@@ -222,7 +222,7 @@ inductive NotificationBranch where
   | recordFailure | fulfill
   deriving DecidableEq, Repr
 
-def notificationDeclaration : Operation.Declaration where
+abbrev notificationDeclaration : Operation.Declaration where
   source := PaymentWebhook.decisionPartition
   target := notificationPartition
   operation := planNotification
@@ -241,7 +241,7 @@ inductive FulfillmentBranch where
   | recordAndQueueFulfillment
   deriving DecidableEq, Repr
 
-def fulfillmentDeclaration : Operation.Declaration where
+abbrev fulfillmentDeclaration : Operation.Declaration where
   source := PaymentWebhook.ledgerCommandPartition
   target := fulfillmentPartition
   operation := planFulfillment

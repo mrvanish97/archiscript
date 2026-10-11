@@ -33,7 +33,7 @@ instance : MemberEnumeration UserTrigger where
   indices := [.malformed, .reserve, .cancel]
   complete := by intro i; cases i <;> simp
 
-def userTriggerPartition : Partition where
+abbrev userTriggerPartition : Partition where
   Carrier := UserTrigger
   MemberIndex := UserTrigger
   carrierNonempty := ⟨.malformed⟩
@@ -51,7 +51,7 @@ instance : MemberEnumeration UserIntent where
   indices := [.reserve, .cancel]
   complete := by intro i; cases i <;> simp
 
-def userIntentPartition : Partition where
+abbrev userIntentPartition : Partition where
   Carrier := UserIntent
   MemberIndex := UserIntent
   carrierNonempty := ⟨.reserve⟩
@@ -76,7 +76,7 @@ instance : MemberEnumeration InventoryObservation where
   indices := [.unavailable, .available]
   complete := by intro i; cases i <;> simp
 
-def inventoryObservationPartition : Partition where
+abbrev inventoryObservationPartition : Partition where
   Carrier := InventoryObservation
   MemberIndex := InventoryObservation
   carrierNonempty := ⟨.unavailable⟩
@@ -94,7 +94,7 @@ instance : MemberEnumeration InventoryPlan where
   indices := [.blocked, .canHold]
   complete := by intro i; cases i <;> simp
 
-def inventoryPlanPartition : Partition where
+abbrev inventoryPlanPartition : Partition where
   Carrier := InventoryPlan
   MemberIndex := InventoryPlan
   carrierNonempty := ⟨.blocked⟩
@@ -121,7 +121,7 @@ instance : MemberEnumeration ReservationState where
   indices := [.empty, .held, .paid, .cancelled, .expired]
   complete := by intro i; cases i <;> simp
 
-def reservationStatePartition : Partition where
+abbrev reservationStatePartition : Partition where
   Carrier := ReservationState
   MemberIndex := ReservationState
   carrierNonempty := ⟨.empty⟩
@@ -141,7 +141,7 @@ instance : MemberEnumeration ReservationMutation where
   indices := [.hold, .markPaid, .cancel, .expire]
   complete := by intro i; cases i <;> simp
 
-def reservationMutationPartition : Partition where
+abbrev reservationMutationPartition : Partition where
   Carrier := ReservationMutation
   MemberIndex := ReservationMutation
   carrierNonempty := ⟨.hold⟩
@@ -151,12 +151,12 @@ def reservationMutationPartition : Partition where
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
 /-- Raw user/inventory/state observation context: 3 × 2 × 5 = 30 members. -/
-def userContextPartition : Partition :=
+abbrev userContextPartition : Partition :=
   (userTriggerPartition.tensor inventoryObservationPartition).tensor
     reservationStatePartition
 
 /-- The corresponding normalized local-plan context. -/
-def userDecisionContextPartition : Partition :=
+abbrev userDecisionContextPartition : Partition :=
   (userIntentPartition.tensor inventoryPlanPartition).tensor
     reservationStatePartition
 
@@ -186,7 +186,7 @@ instance : MemberEnumeration PaymentTrigger where
   indices := [.authorized, .failed]
   complete := by intro i; cases i <;> simp
 
-def paymentTriggerPartition : Partition where
+abbrev paymentTriggerPartition : Partition where
   Carrier := PaymentTrigger
   MemberIndex := PaymentTrigger
   carrierNonempty := ⟨.authorized⟩
@@ -195,7 +195,7 @@ def paymentTriggerPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def paymentContextPartition : Partition :=
+abbrev paymentContextPartition : Partition :=
   paymentTriggerPartition.tensor reservationStatePartition
 
 /-- Payment webhook decisions observe the same ReservationState VDP. -/
@@ -214,7 +214,7 @@ instance : MemberEnumeration ExpiryTrigger where
   indices := [.fired]
   complete := by intro i; cases i; simp
 
-def expiryTriggerPartition : Partition where
+abbrev expiryTriggerPartition : Partition where
   Carrier := ExpiryTrigger
   MemberIndex := ExpiryTrigger
   carrierNonempty := ⟨.fired⟩
@@ -223,7 +223,7 @@ def expiryTriggerPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def expiryContextPartition : Partition :=
+abbrev expiryContextPartition : Partition :=
   expiryTriggerPartition.tensor reservationStatePartition
 
 /-- Expiry is independently available from the payment webhook. -/
@@ -238,7 +238,7 @@ The controller has exactly three design-time entry channels. Their runtime
 carriers remain complete inside each summand; coproduct only aggregates the
 already-established architectural alternatives.
 -/
-def controllerInputPartition : Partition :=
+abbrev controllerInputPartition : Partition :=
   (userContextPartition.coproduct paymentContextPartition).coproduct
     expiryContextPartition
 
@@ -272,7 +272,7 @@ instance : MemberEnumeration ReservationWrite where
   indices := [.setHeld, .setPaid, .setCancelled, .setExpired]
   complete := by intro i; cases i <;> simp
 
-def reservationWritePartition : Partition where
+abbrev reservationWritePartition : Partition where
   Carrier := ReservationWrite
   MemberIndex := ReservationWrite
   carrierNonempty := ⟨.setHeld⟩
@@ -301,7 +301,7 @@ instance : MemberEnumeration OutboxMessage where
   indices := [.requestPayment, .reservationPaid, .reservationCancelled, .reservationExpired]
   complete := by intro i; cases i <;> simp
 
-def outboxMessagePartition : Partition where
+abbrev outboxMessagePartition : Partition where
   Carrier := OutboxMessage
   MemberIndex := OutboxMessage
   carrierNonempty := ⟨.requestPayment⟩
@@ -334,7 +334,7 @@ instance : MemberEnumeration InventoryCommand where
   indices := [.reserveUnits, .releaseUnits]
   complete := by intro i; cases i <;> simp
 
-def inventoryCommandPartition : Partition where
+abbrev inventoryCommandPartition : Partition where
   Carrier := InventoryCommand
   MemberIndex := InventoryCommand
   carrierNonempty := ⟨.reserveUnits⟩
@@ -365,7 +365,7 @@ instance : MemberEnumeration InventoryMutationView where
   indices := [.reserve, .noCommand, .release]
   complete := by intro i; cases i <;> simp
 
-def inventoryMutationViewPartition : Partition where
+abbrev inventoryMutationViewPartition : Partition where
   Carrier := ReservationMutation
   MemberIndex := InventoryMutationView
   carrierNonempty := ⟨.hold⟩

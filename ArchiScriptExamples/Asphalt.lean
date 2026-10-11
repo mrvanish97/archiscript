@@ -24,7 +24,7 @@ instance : MemberEnumeration CountMember where
   indices := [.negative, .nonnegative]
   complete := by intro i; cases i <;> simp
 
-def countPartition : Partition where
+abbrev countPartition : Partition where
   Carrier := Int
   MemberIndex := CountMember
   carrierNonempty := ⟨0⟩
@@ -35,7 +35,7 @@ def countPartition : Partition where
     | .negative => ⟨-1, by decide⟩
     | .nonnegative => ⟨0, by decide⟩
 
-def countSemanticPartition : SemanticPartition where
+abbrev countSemanticPartition : SemanticPartition where
   partition := countPartition
   members := countMembers
   hasMembers := by
@@ -286,7 +286,7 @@ instance : MemberEnumeration Admission where
     .evidenceUnknown, .requestReservation]
   complete := by intro i; cases i <;> simp
 
-def admissionPartition : Partition where
+abbrev admissionPartition : Partition where
   Carrier := Input
   MemberIndex := Admission
   carrierNonempty := ⟨exampleInput⟩
@@ -365,7 +365,7 @@ theorem admission_has_members : admissionPartition.HasMembers admissionMembers :
   · cases i <;> simp [Partition.member, admissionPartition, classify,
       admissionMembers, h₁]
 
-def admissionSemanticPartition : SemanticPartition where
+abbrev admissionSemanticPartition : SemanticPartition where
   partition := admissionPartition
   members := admissionMembers
   hasMembers := admission_has_members
@@ -375,7 +375,7 @@ This supporting subdomain is deliberately opaque and does not authorize a
 deployment. `scanResultId.isSome` remains only addressability. -/
 opaque externalScanPasses : Domain Input := fun _ => True
 
-def admissionArchitecture : ArchitecturalPartition where
+abbrev admissionArchitecture : ArchitecturalPartition where
   partition := admissionPartition
   carrierOrigin := .externalRoot {
     source := "Asphalt admission fixture"
@@ -410,7 +410,7 @@ instance : MemberEnumeration NextAction where
     .waitRetry, .obtainEvidence, .attemptAtomicReservation]
   complete := by intro i; cases i <;> simp
 
-def nextActionPartition : Partition where
+abbrev nextActionPartition : Partition where
   Carrier := NextAction
   MemberIndex := NextAction
   carrierNonempty := ⟨.rejectInput⟩
@@ -421,7 +421,7 @@ def nextActionPartition : Partition where
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def nextActionSemanticPartition : SemanticPartition where
+abbrev nextActionSemanticPartition : SemanticPartition where
   partition := nextActionPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -440,7 +440,7 @@ def decideAdmission : Operation admissionPartition nextActionPartition where
     | .requestReservation => some .attemptAtomicReservation
 
 /-- Canonical handoff identities exist even while implementation is unresolved. -/
-def admissionDeclaration : Operation.Declaration where
+abbrev admissionDeclaration : Operation.Declaration where
   source := admissionPartition
   target := nextActionPartition
   operation := decideAdmission

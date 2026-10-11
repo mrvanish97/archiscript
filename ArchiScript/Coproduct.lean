@@ -12,7 +12,7 @@ This construction is exhaustive only relative to the sum carrier. It is not
 evidence that the two summands exhaust an independently supplied external
 boundary.
 -/
-def coproduct (P Q : Partition) : Partition where
+abbrev coproduct (P Q : Partition) : Partition where
   Carrier := Sum P.Carrier Q.Carrier
   MemberIndex := Sum P.MemberIndex Q.MemberIndex
   carrierNonempty := ⟨Sum.inl (Classical.choice P.carrierNonempty)⟩
