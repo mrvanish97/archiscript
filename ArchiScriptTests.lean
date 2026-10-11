@@ -49,7 +49,7 @@ example : ParameterizedPartition.RoutesEquivalent renamedRoutes .web .api :=
 
 inductive EmptyBranchName deriving DecidableEq
 
-private def omittedRegisterBranches : Operation.Declaration where
+private abbrev omittedRegisterBranches : Operation.Declaration where
   source := userPartition
   target := registrationPartition
   operation := register
