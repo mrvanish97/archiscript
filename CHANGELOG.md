@@ -9,10 +9,11 @@
   guidance for invalid consumer-specific coarsenings.
 - Extended the skill evaluation cases for proof decomposition, reuse, and
   AI-first review.
-- Distinguished three review-diagram types in the skill, README, and diagram
-  conventions: VDP-level operation topology, member-level operation mappings,
-  and carrier/subdomain derivation graphs showing how multiple subdomains
-  combine into selected VDP members. Added diagram-specific evaluation cases.
+- Documented four independent diagram types in the skill, README, and
+  review guidance: VDP topology, member-to-member Operation mappings,
+  subdomain-only deduction graphs, and VDP member-to-subdomain semantic
+  correspondence. The two semantic views remain separate; supporting
+  subdomains need not form a partition. Added diagram-specific evaluations.
   No changes to the Lean calculus or public API.
 
 ## 0.5.0
