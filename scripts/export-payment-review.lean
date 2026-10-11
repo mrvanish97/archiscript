@@ -151,10 +151,12 @@ private def inputRegionJson (name : InputMember) : Json :=
   ]
 
 private def mappingCoverageJson (name : OperationName) : Json :=
-  let declaration := operationRegistry.resolve name
+  let missing := match name with
+    | .decide => decideDeclaration.definedMappingsWithoutBranch.length
+    | .requestLedgerCommand => ledgerDeclaration.definedMappingsWithoutBranch.length
   Json.mkObj [
     ("id", toJson s!"PaymentWebhook.{shortName name}"),
-    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
+    ("missingDefinedMappings", toJson missing)
   ]
 
 private def projection : Json := Json.mkObj [
