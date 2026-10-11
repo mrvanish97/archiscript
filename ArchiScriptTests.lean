@@ -8,6 +8,7 @@ import ArchiScriptTests.Coproduct
 import ArchiScriptTests.Distributive
 import ArchiScriptTests.Expression
 import ArchiScriptTests.ExpressionStress
+import ArchiScriptTests.ProofEngineering
 import ArchiScriptTests.Resolution
 
 namespace ArchiScriptTests

@@ -131,6 +131,12 @@ views and outstanding decisions. Do not make the architect resolve Lean goals.
   model revision. Measure real time to a checked result (including AI retries)
   and Lean check/build time separately. Never invent a speedup.
 
+When writing, repairing, or evaluating a nontrivial Lean proof, read
+[references/proof-engineering.md](references/proof-engineering.md) for tactic
+triage, controlled unfolding, expensive-proof diagnosis, and reproducible
+measurement. Preserve the six-step mathematical method above: tactic choices
+must not alter the original proposition or model.
+
 Use [references/compositional-proofs.md](references/compositional-proofs.md)
 for a concrete `ReservationController` example: a locally verified inventory
 factorization lifts through an arbitrary producer, while the same cut fails for

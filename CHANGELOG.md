@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.5.2
+
+- Extended the existing local-first AI proof methodology with a dedicated
+  proof-engineering reference: tactic selection, controlled reduction, diagnosis
+  of expensive Lean proofs, and resource-limit discipline.
+- Added a compiled `ProofEngineering` regression lifting checked inventory
+  factorization through an arbitrary producer, checking the concrete
+  ReservationController specialization, and retaining the incompatible outbox
+  consumer counterexample.
+- Added a reproducible same-theorem proof-authoring benchmark protocol for
+  direct, unstructured-AI, and local-first-AI proof approaches. No performance
+  gain is claimed without measured comparative results.
+- Added agent evaluation cases covering premature case enumeration,
+  uncontrolled unfolding, heartbeat-only fixes, invalid tensor factorization,
+  and unsupported performance claims.
+- No changes to the mathematical calculus, public Lean API, existing VDPs,
+  Operation semantics, or original proof obligations.
+
+
 ## 0.5.1
 
 - Made cumulative local proofs the primary authoring methodology in the AI
