@@ -9,8 +9,8 @@ open ArchiScriptExamples.PaymentWebhookNetwork
 private def shortName {α : Type} [Repr α] (value : α) : String :=
   (reprStr value).splitOn "." |>.getLast!
 
-private def operationJson {X Y : Partition} (id source target : String)
-    (op : Operation X Y) : Json :=
+private def operationJson {X Y : Partition} [MemberEnumeration X.MemberIndex]
+    (id source target : String) (op : Operation X Y) : Json :=
   Json.mkObj [
     ("id", toJson s!"PaymentWebhookNetwork.{id}"),
     ("operation", toJson id),
@@ -52,10 +52,16 @@ private def bindingJson (id : String) (address : Operation.BranchAddress operati
   ]
 
 private def mappingCoverageJson (name : OperationName) : Json :=
-  let declaration := operationRegistry.resolve name
+  let missing := match name with
+    | .decide => PaymentWebhook.decideDeclaration.definedMappingsWithoutBranch.length
+    | .requestLedgerCommand => PaymentWebhook.ledgerDeclaration.definedMappingsWithoutBranch.length
+    | .planResponse => responseDeclaration.definedMappingsWithoutBranch.length
+    | .planAudit => auditDeclaration.definedMappingsWithoutBranch.length
+    | .planNotification => notificationDeclaration.definedMappingsWithoutBranch.length
+    | .planFulfillment => fulfillmentDeclaration.definedMappingsWithoutBranch.length
   Json.mkObj [
     ("id", toJson s!"PaymentWebhookNetwork.{shortName name}"),
-    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
+    ("missingDefinedMappings", toJson missing)
   ]
 
 private def duplicatePathJson : Json := Id.run do
@@ -149,6 +155,7 @@ private def definitionJson {α : Type} {meaning : Domain α} :
       ("parts", toJson [definitionJson base, definitionJson removed])]
 
 private def architectureJson (id : String) (P : ArchitecturalPartition)
+    [MemberEnumeration P.partition.MemberIndex]
     (memberName : P.partition.MemberIndex → String) : Json :=
   Json.mkObj [
     ("id", toJson id), ("carrierProvenance", provenanceJson P.carrierOrigin),

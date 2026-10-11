@@ -78,7 +78,8 @@ structure Declaration where
 instance (d : Declaration) : DecidableEq d.BranchName := d.branchNameDecidableEq
 
 /-- Defined member mappings omitted by the optional named branch subset. -/
-def Declaration.definedMappingsWithoutBranch (d : Declaration) : List d.source.MemberIndex :=
+def Declaration.definedMappingsWithoutBranch (d : Declaration)
+    [MemberEnumeration d.source.MemberIndex] : List d.source.MemberIndex :=
   d.source.memberIndices.filter fun source =>
     match d.operation source with
     | none => false

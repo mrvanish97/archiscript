@@ -4,13 +4,12 @@ namespace ArchiScriptExamples.Monoidal
 open ArchiScript
 
 /-- A small VDP with semantic members stated separately from its classifier. -/
-def bit : Partition where
+abbrev bit : Partition where
   Carrier := Bool
   MemberIndex := Bool
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [false, true]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[false, true], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -18,7 +17,7 @@ def bitMembers : Bool → Domain Bool
   | false => fun x => x = false
   | true => fun x => x = true
 
-def semanticBit : SemanticPartition where
+abbrev semanticBit : SemanticPartition where
   partition := bit
   members := bitMembers
   hasMembers := by

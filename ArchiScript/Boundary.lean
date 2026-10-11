@@ -90,7 +90,8 @@ structure Architecture where
   operations : List ArchitecturalOperation
   standalonePartitions : List ArchitecturalPartition := []
 
-def ArchitecturalPartition.opaqueMembers (P : ArchitecturalPartition) :
+def ArchitecturalPartition.opaqueMembers (P : ArchitecturalPartition)
+    [MemberEnumeration P.partition.MemberIndex] :
     List P.partition.MemberIndex :=
   P.partition.memberIndices.filter fun i =>
     (P.selectedMembers i).definition.hasOpaque

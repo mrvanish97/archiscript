@@ -19,17 +19,20 @@ inductive ManualTrigger where
   | force
   deriving DecidableEq, Repr
 
-def manualTriggerPartition : Partition where
+instance : MemberEnumeration ManualTrigger where
+  indices := [.reconcile, .force]
+  complete := by intro i; cases i <;> simp
+
+abbrev manualTriggerPartition : Partition where
   Carrier := ManualTrigger
   MemberIndex := ManualTrigger
   carrierNonempty := ⟨.reconcile⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reconcile, .force]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reconcile, .force], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def manualTriggerSemantic : SemanticPartition where
+abbrev manualTriggerSemantic : SemanticPartition where
   partition := manualTriggerPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -38,24 +41,27 @@ inductive TimerTrigger where
   | due
   deriving DecidableEq, Repr
 
-def timerTriggerPartition : Partition where
+instance : MemberEnumeration TimerTrigger where
+  indices := [.due]
+  complete := by intro i; cases i; simp
+
+abbrev timerTriggerPartition : Partition where
   Carrier := TimerTrigger
   MemberIndex := TimerTrigger
   carrierNonempty := ⟨.due⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.due]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[.due], by intro i; cases i; simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def timerTriggerSemantic : SemanticPartition where
+abbrev timerTriggerSemantic : SemanticPartition where
   partition := timerTriggerPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
 
 /-- Optional product view showing that the trigger classifications are
 independent semantic slots. This does not claim simultaneous runtime arrival. -/
-def independentTriggerSpace : SemanticPartition :=
+abbrev independentTriggerSpace : SemanticPartition :=
   manualTriggerSemantic.tensor timerTriggerSemantic
 
 inductive ReconcileMode where
@@ -63,17 +69,20 @@ inductive ReconcileMode where
   | forced
   deriving DecidableEq, Repr
 
-def reconcileModePartition : Partition where
+instance : MemberEnumeration ReconcileMode where
+  indices := [.normal, .forced]
+  complete := by intro i; cases i <;> simp
+
+abbrev reconcileModePartition : Partition where
   Carrier := ReconcileMode
   MemberIndex := ReconcileMode
   carrierNonempty := ⟨.normal⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.normal, .forced]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.normal, .forced], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def reconcileModeSemantic : SemanticPartition where
+abbrev reconcileModeSemantic : SemanticPartition where
   partition := reconcileModePartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -94,10 +103,10 @@ The controller has exactly two design-time entry channels. Coproduct groups
 those channels losslessly; it does not classify runtime-discovered trigger
 variants.
 -/
-def triggerPartition : Partition :=
+abbrev triggerPartition : Partition :=
   manualTriggerPartition.coproduct timerTriggerPartition
 
-def triggerSemantic : SemanticPartition :=
+abbrev triggerSemantic : SemanticPartition :=
   manualTriggerSemantic.coproduct timerTriggerSemantic
 
 /-- Canonical fan-in through the coproduct universal property. -/
@@ -109,17 +118,20 @@ inductive ReconcileNext where
   | retry
   deriving DecidableEq, Repr
 
-def reconcileNextPartition : Partition where
+instance : MemberEnumeration ReconcileNext where
+  indices := [.stable, .retry]
+  complete := by intro i; cases i <;> simp
+
+abbrev reconcileNextPartition : Partition where
   Carrier := ReconcileNext
   MemberIndex := ReconcileNext
   carrierNonempty := ⟨.stable⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.stable, .retry]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.stable, .retry], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def reconcileNextSemantic : SemanticPartition where
+abbrev reconcileNextSemantic : SemanticPartition where
   partition := reconcileNextPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl

@@ -16,13 +16,12 @@ instance (x : Input) : Decidable (emailProvided x) := inferInstanceAs (Decidable
 instance (x : Input) : Decidable (nameProvided x) := inferInstanceAs (Decidable (x.2 ≠ ""))
 
 /-- Four distinctions for a consumer that needs field-specific failures. -/
-def fieldPartition : Partition where
+abbrev fieldPartition : Partition where
   Carrier := Input
   MemberIndex := Bool × Bool
   carrierNonempty := ⟨("", "")⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [(false, false), (false, true), (true, false), (true, true)]
-  memberIndices_complete := by intro ⟨e, n⟩; cases e <;> cases n <;> simp
+  memberIndexFinite := ⟨[(false, false), (false, true), (true, false), (true, true)], by intro ⟨e, n⟩; cases e <;> cases n <;> simp⟩
   classify x := (decide (emailProvided x), decide (nameProvided x))
   member_inhabited
     | (false, false) => ⟨("", ""), rfl⟩
@@ -43,19 +42,18 @@ theorem fieldPartition_has_members : fieldPartition.HasMembers fieldMembers := b
     simp [Partition.member, fieldPartition, fieldMembers, completeForm,
       Domain.relativeComplement, he, hn]
 
-def fieldSemanticPartition : SemanticPartition where
+abbrev fieldSemanticPartition : SemanticPartition where
   partition := fieldPartition
   members := fieldMembers
   hasMembers := fieldPartition_has_members
 
 /-- Three incomplete regions become one member; the carrier stays unchanged. -/
-def formPartition : Partition where
+abbrev formPartition : Partition where
   Carrier := Input
   MemberIndex := Bool
   carrierNonempty := ⟨("", "")⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [false, true]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[false, true], by intro i; cases i <;> simp⟩
   classify x := (fieldPartition.classify x).1 && (fieldPartition.classify x).2
   member_inhabited
     | false => ⟨("", ""), rfl⟩
@@ -71,7 +69,7 @@ theorem formPartition_has_members : formPartition.HasMembers formMembers := by
     simp [Partition.member, formPartition, fieldPartition, formMembers,
       completeForm, Domain.complement]
 
-def formSemanticPartition : SemanticPartition where
+abbrev formSemanticPartition : SemanticPartition where
   partition := formPartition
   members := formMembers
   hasMembers := formPartition_has_members

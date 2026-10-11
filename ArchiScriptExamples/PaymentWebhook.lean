@@ -25,13 +25,16 @@ inductive InputMember where
   | malformed | unsupported | failed | firstSuccess | duplicateSuccess
   deriving DecidableEq, Repr
 
-def inputPartition : Partition where
+instance : MemberEnumeration InputMember where
+  indices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
+  complete := by intro i; cases i <;> simp
+
+abbrev inputPartition : Partition where
   Carrier := Input
   MemberIndex := InputMember
   carrierNonempty := ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩
   classify x :=
     if x.payload.eventId = "" then .malformed
     else if x.payload.status = "success" then
@@ -76,14 +79,14 @@ theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := b
     hId, hSuccess, hFailed] at *
 
 /-- Review and handoff carry the semantic member correspondence with the VDP. -/
-def inputSemanticPartition : SemanticPartition where
+abbrev inputSemanticPartition : SemanticPartition where
   partition := inputPartition
   members := inputMembers
   hasMembers := inputPartition_has_members
 
 /-- The example starts after raw input decoding. This is an explicitly trusted
 fixture boundary, not evidence that an HTTP decoder enforces this shape. -/
-def inputArchitecture : ArchitecturalPartition where
+abbrev inputArchitecture : ArchitecturalPartition where
   partition := inputPartition
   carrierOrigin := .externalRoot {
     source := "PaymentWebhook preclassified fixture"
@@ -102,18 +105,21 @@ inductive Decision where
   | reject | ignore | recordFailure | fulfill | acknowledgeDuplicate
   deriving DecidableEq, Repr
 
-def decisionPartition : Partition where
+instance : MemberEnumeration Decision where
+  indices := [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
+  complete := by intro i; cases i <;> simp
+
+abbrev decisionPartition : Partition where
   Carrier := Decision
   MemberIndex := Decision
   carrierNonempty := ⟨.reject⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
 /-- Constructor equality states the members of this closed decision domain. -/
-def decisionSemanticPartition : SemanticPartition where
+abbrev decisionSemanticPartition : SemanticPartition where
   partition := decisionPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -135,18 +141,21 @@ inductive LedgerCommand where
   | recordFailure | recordAndQueueFulfillment
   deriving DecidableEq, Repr
 
-def ledgerCommandPartition : Partition where
+instance : MemberEnumeration LedgerCommand where
+  indices := [.recordFailure, .recordAndQueueFulfillment]
+  complete := by intro i; cases i <;> simp
+
+abbrev ledgerCommandPartition : Partition where
   Carrier := LedgerCommand
   MemberIndex := LedgerCommand
   carrierNonempty := ⟨.recordFailure⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.recordFailure, .recordAndQueueFulfillment]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.recordFailure, .recordAndQueueFulfillment], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
 /-- Constructor equality states the members of this closed command domain. -/
-def ledgerCommandSemanticPartition : SemanticPartition where
+abbrev ledgerCommandSemanticPartition : SemanticPartition where
   partition := ledgerCommandPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -161,7 +170,7 @@ def requestLedgerCommand : Operation decisionPartition ledgerCommandPartition wh
     | .fulfill => some .recordAndQueueFulfillment
     | .reject | .ignore | .acknowledgeDuplicate => none
 
-def decisionArchitecture : ArchitecturalPartition where
+abbrev decisionArchitecture : ArchitecturalPartition where
   partition := decisionPartition
   carrierOrigin := .architecturalDomain "PaymentWebhook.decide" (by decide)
   carrierClosure := some decisionCarrierClosure
@@ -171,7 +180,7 @@ def decisionArchitecture : ArchitecturalPartition where
   }
   hasMembers := by intro i x; rfl
 
-def ledgerCommandArchitecture : ArchitecturalPartition where
+abbrev ledgerCommandArchitecture : ArchitecturalPartition where
   partition := ledgerCommandPartition
   carrierOrigin := .architecturalDomain "PaymentWebhook.requestLedgerCommand" (by decide)
   carrierClosure := some ledgerCommandCarrierClosure
@@ -202,7 +211,7 @@ inductive LedgerBranch where
 private def code (symbol : String) : Operation.SourceRef :=
   { repository := "archiscript", path := "examples/payment-webhook.mjs", symbol := some symbol }
 
-def decideDeclaration : Operation.Declaration where
+abbrev decideDeclaration : Operation.Declaration where
   source := inputPartition
   target := decisionPartition
   operation := decide
@@ -236,7 +245,7 @@ def decideDeclaration : Operation.Declaration where
       })
     | _ => none
 
-def ledgerDeclaration : Operation.Declaration where
+abbrev ledgerDeclaration : Operation.Declaration where
   source := decisionPartition
   target := ledgerCommandPartition
   operation := requestLedgerCommand

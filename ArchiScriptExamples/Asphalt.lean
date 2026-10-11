@@ -20,19 +20,22 @@ def countMembers : CountMember → Domain Int
   | .negative => fun x => x < 0
   | .nonnegative => fun x => 0 ≤ x
 
-def countPartition : Partition where
+instance : MemberEnumeration CountMember where
+  indices := [.negative, .nonnegative]
+  complete := by intro i; cases i <;> simp
+
+abbrev countPartition : Partition where
   Carrier := Int
   MemberIndex := CountMember
   carrierNonempty := ⟨0⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.negative, .nonnegative]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.negative, .nonnegative], by intro i; cases i <;> simp⟩
   classify x := if x < 0 then .negative else .nonnegative
   member_inhabited
     | .negative => ⟨-1, by decide⟩
     | .nonnegative => ⟨0, by decide⟩
 
-def countSemanticPartition : SemanticPartition where
+abbrev countSemanticPartition : SemanticPartition where
   partition := countPartition
   members := countMembers
   hasMembers := by
@@ -40,7 +43,6 @@ def countSemanticPartition : SemanticPartition where
     cases i
     · simp [Partition.member, countPartition, countMembers]
     · simp [Partition.member, countPartition, countMembers]
-      omega
 
 def decodeNatural (x : Int) : Option Nat :=
   if 0 ≤ x then some x.toNat else none
@@ -277,15 +279,20 @@ def classify (x : Input) : Admission :=
   else if ¬ evidenceAddressable x then .evidenceUnknown
   else .requestReservation
 
-def admissionPartition : Partition where
+instance : MemberEnumeration Admission where
+  indices := [.malformed, .satisfied, .superseded, .staleAuthority,
+    .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
+    .evidenceUnknown, .requestReservation]
+  complete := by intro i; cases i <;> simp
+
+abbrev admissionPartition : Partition where
   Carrier := Input
   MemberIndex := Admission
   carrierNonempty := ⟨exampleInput⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.malformed, .satisfied, .superseded, .staleAuthority,
+  memberIndexFinite := ⟨[.malformed, .satisfied, .superseded, .staleAuthority,
     .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
-    .evidenceUnknown, .requestReservation]
-  memberIndices_complete := by intro i; cases i <;> simp
+    .evidenceUnknown, .requestReservation], by intro i; cases i <;> simp⟩
   classify := classify
   member_inhabited := by
     intro i
@@ -357,7 +364,7 @@ theorem admission_has_members : admissionPartition.HasMembers admissionMembers :
   · cases i <;> simp [Partition.member, admissionPartition, classify,
       admissionMembers, h₁]
 
-def admissionSemanticPartition : SemanticPartition where
+abbrev admissionSemanticPartition : SemanticPartition where
   partition := admissionPartition
   members := admissionMembers
   hasMembers := admission_has_members
@@ -367,7 +374,7 @@ This supporting subdomain is deliberately opaque and does not authorize a
 deployment. `scanResultId.isSome` remains only addressability. -/
 opaque externalScanPasses : Domain Input := fun _ => True
 
-def admissionArchitecture : ArchitecturalPartition where
+abbrev admissionArchitecture : ArchitecturalPartition where
   partition := admissionPartition
   carrierOrigin := .externalRoot {
     source := "Asphalt admission fixture"
@@ -396,19 +403,24 @@ inductive NextAction where
   | obtainEvidence | attemptAtomicReservation
   deriving DecidableEq, Repr
 
-def nextActionPartition : Partition where
+instance : MemberEnumeration NextAction where
+  indices := [.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
+    .reacquireAuthority, .seekApproval, .requireMigrationReview, .stopRetry,
+    .waitRetry, .obtainEvidence, .attemptAtomicReservation]
+  complete := by intro i; cases i <;> simp
+
+abbrev nextActionPartition : Partition where
   Carrier := NextAction
   MemberIndex := NextAction
   carrierNonempty := ⟨.rejectInput⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
+  memberIndexFinite := ⟨[.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
     .reacquireAuthority, .seekApproval, .requireMigrationReview, .stopRetry,
-    .waitRetry, .obtainEvidence, .attemptAtomicReservation]
-  memberIndices_complete := by intro i; cases i <;> simp
+    .waitRetry, .obtainEvidence, .attemptAtomicReservation], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def nextActionSemanticPartition : SemanticPartition where
+abbrev nextActionSemanticPartition : SemanticPartition where
   partition := nextActionPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -427,7 +439,7 @@ def decideAdmission : Operation admissionPartition nextActionPartition where
     | .requestReservation => some .attemptAtomicReservation
 
 /-- Canonical handoff identities exist even while implementation is unresolved. -/
-def admissionDeclaration : Operation.Declaration where
+abbrev admissionDeclaration : Operation.Declaration where
   source := admissionPartition
   target := nextActionPartition
   operation := decideAdmission

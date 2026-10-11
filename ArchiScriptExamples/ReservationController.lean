@@ -29,13 +29,16 @@ inductive UserTrigger where
   | cancel
   deriving DecidableEq, Repr
 
-def userTriggerPartition : Partition where
+instance : MemberEnumeration UserTrigger where
+  indices := [.malformed, .reserve, .cancel]
+  complete := by intro i; cases i <;> simp
+
+abbrev userTriggerPartition : Partition where
   Carrier := UserTrigger
   MemberIndex := UserTrigger
   carrierNonempty := ⟨.malformed⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.malformed, .reserve, .cancel]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.malformed, .reserve, .cancel], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -44,13 +47,16 @@ inductive UserIntent where
   | cancel
   deriving DecidableEq, Repr
 
-def userIntentPartition : Partition where
+instance : MemberEnumeration UserIntent where
+  indices := [.reserve, .cancel]
+  complete := by intro i; cases i <;> simp
+
+abbrev userIntentPartition : Partition where
   Carrier := UserIntent
   MemberIndex := UserIntent
   carrierNonempty := ⟨.reserve⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reserve, .cancel]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reserve, .cancel], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -66,13 +72,16 @@ inductive InventoryObservation where
   | available
   deriving DecidableEq, Repr
 
-def inventoryObservationPartition : Partition where
+instance : MemberEnumeration InventoryObservation where
+  indices := [.unavailable, .available]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryObservationPartition : Partition where
   Carrier := InventoryObservation
   MemberIndex := InventoryObservation
   carrierNonempty := ⟨.unavailable⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.unavailable, .available]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.unavailable, .available], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -81,13 +90,16 @@ inductive InventoryPlan where
   | canHold
   deriving DecidableEq, Repr
 
-def inventoryPlanPartition : Partition where
+instance : MemberEnumeration InventoryPlan where
+  indices := [.blocked, .canHold]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryPlanPartition : Partition where
   Carrier := InventoryPlan
   MemberIndex := InventoryPlan
   carrierNonempty := ⟨.blocked⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.blocked, .canHold]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.blocked, .canHold], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -105,13 +117,16 @@ inductive ReservationState where
   | expired
   deriving DecidableEq, Repr
 
-def reservationStatePartition : Partition where
+instance : MemberEnumeration ReservationState where
+  indices := [.empty, .held, .paid, .cancelled, .expired]
+  complete := by intro i; cases i <;> simp
+
+abbrev reservationStatePartition : Partition where
   Carrier := ReservationState
   MemberIndex := ReservationState
   carrierNonempty := ⟨.empty⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.empty, .held, .paid, .cancelled, .expired]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.empty, .held, .paid, .cancelled, .expired], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -122,23 +137,26 @@ inductive ReservationMutation where
   | expire
   deriving DecidableEq, Repr
 
-def reservationMutationPartition : Partition where
+instance : MemberEnumeration ReservationMutation where
+  indices := [.hold, .markPaid, .cancel, .expire]
+  complete := by intro i; cases i <;> simp
+
+abbrev reservationMutationPartition : Partition where
   Carrier := ReservationMutation
   MemberIndex := ReservationMutation
   carrierNonempty := ⟨.hold⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.hold, .markPaid, .cancel, .expire]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.hold, .markPaid, .cancel, .expire], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
 /-- Raw user/inventory/state observation context: 3 × 2 × 5 = 30 members. -/
-def userContextPartition : Partition :=
+abbrev userContextPartition : Partition :=
   (userTriggerPartition.tensor inventoryObservationPartition).tensor
     reservationStatePartition
 
 /-- The corresponding normalized local-plan context. -/
-def userDecisionContextPartition : Partition :=
+abbrev userDecisionContextPartition : Partition :=
   (userIntentPartition.tensor inventoryPlanPartition).tensor
     reservationStatePartition
 
@@ -164,17 +182,20 @@ inductive PaymentTrigger where
   | failed
   deriving DecidableEq, Repr
 
-def paymentTriggerPartition : Partition where
+instance : MemberEnumeration PaymentTrigger where
+  indices := [.authorized, .failed]
+  complete := by intro i; cases i <;> simp
+
+abbrev paymentTriggerPartition : Partition where
   Carrier := PaymentTrigger
   MemberIndex := PaymentTrigger
   carrierNonempty := ⟨.authorized⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.authorized, .failed]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.authorized, .failed], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def paymentContextPartition : Partition :=
+abbrev paymentContextPartition : Partition :=
   paymentTriggerPartition.tensor reservationStatePartition
 
 /-- Payment webhook decisions observe the same ReservationState VDP. -/
@@ -189,17 +210,20 @@ inductive ExpiryTrigger where
   | fired
   deriving DecidableEq, Repr
 
-def expiryTriggerPartition : Partition where
+instance : MemberEnumeration ExpiryTrigger where
+  indices := [.fired]
+  complete := by intro i; cases i; simp
+
+abbrev expiryTriggerPartition : Partition where
   Carrier := ExpiryTrigger
   MemberIndex := ExpiryTrigger
   carrierNonempty := ⟨.fired⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.fired]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[.fired], by intro i; cases i; simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def expiryContextPartition : Partition :=
+abbrev expiryContextPartition : Partition :=
   expiryTriggerPartition.tensor reservationStatePartition
 
 /-- Expiry is independently available from the payment webhook. -/
@@ -214,7 +238,7 @@ The controller has exactly three design-time entry channels. Their runtime
 carriers remain complete inside each summand; coproduct only aggregates the
 already-established architectural alternatives.
 -/
-def controllerInputPartition : Partition :=
+abbrev controllerInputPartition : Partition :=
   (userContextPartition.coproduct paymentContextPartition).coproduct
     expiryContextPartition
 
@@ -244,13 +268,16 @@ inductive ReservationWrite where
   | setExpired
   deriving DecidableEq, Repr
 
-def reservationWritePartition : Partition where
+instance : MemberEnumeration ReservationWrite where
+  indices := [.setHeld, .setPaid, .setCancelled, .setExpired]
+  complete := by intro i; cases i <;> simp
+
+abbrev reservationWritePartition : Partition where
   Carrier := ReservationWrite
   MemberIndex := ReservationWrite
   carrierNonempty := ⟨.setHeld⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.setHeld, .setPaid, .setCancelled, .setExpired]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.setHeld, .setPaid, .setCancelled, .setExpired], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -270,14 +297,16 @@ inductive OutboxMessage where
   | reservationExpired
   deriving DecidableEq, Repr
 
-def outboxMessagePartition : Partition where
+instance : MemberEnumeration OutboxMessage where
+  indices := [.requestPayment, .reservationPaid, .reservationCancelled, .reservationExpired]
+  complete := by intro i; cases i <;> simp
+
+abbrev outboxMessagePartition : Partition where
   Carrier := OutboxMessage
   MemberIndex := OutboxMessage
   carrierNonempty := ⟨.requestPayment⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices :=
-    [.requestPayment, .reservationPaid, .reservationCancelled, .reservationExpired]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.requestPayment, .reservationPaid, .reservationCancelled, .reservationExpired], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -301,13 +330,16 @@ inductive InventoryCommand where
   | releaseUnits
   deriving DecidableEq, Repr
 
-def inventoryCommandPartition : Partition where
+instance : MemberEnumeration InventoryCommand where
+  indices := [.reserveUnits, .releaseUnits]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryCommandPartition : Partition where
   Carrier := InventoryCommand
   MemberIndex := InventoryCommand
   carrierNonempty := ⟨.reserveUnits⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reserveUnits, .releaseUnits]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reserveUnits, .releaseUnits], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -329,13 +361,16 @@ inductive InventoryMutationView where
 A lower-resolution view of the same ReservationMutation carrier. It forgets
 distinctions that are irrelevant to the inventory consumer only.
 -/
-def inventoryMutationViewPartition : Partition where
+instance : MemberEnumeration InventoryMutationView where
+  indices := [.reserve, .noCommand, .release]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryMutationViewPartition : Partition where
   Carrier := ReservationMutation
   MemberIndex := InventoryMutationView
   carrierNonempty := ⟨.hold⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.reserve, .noCommand, .release]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.reserve, .noCommand, .release], by intro i; cases i <;> simp⟩
   classify
     | .hold => .reserve
     | .markPaid => .noCommand

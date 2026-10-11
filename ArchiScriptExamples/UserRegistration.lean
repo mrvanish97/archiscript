@@ -17,13 +17,16 @@ inductive UserMemberIndex where
   | validExisting
   deriving DecidableEq, Repr
 
-def userPartition : Partition where
+instance : MemberEnumeration UserMemberIndex where
+  indices := [.invalid, .validNew, .validExisting]
+  complete := by intro i; cases i <;> simp
+
+abbrev userPartition : Partition where
   Carrier := PreclassifiedUserInput
   MemberIndex := UserMemberIndex
   carrierNonempty := ⟨.malformed⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalid, .validNew, .validExisting]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalid, .validNew, .validExisting], by intro i; cases i <;> simp⟩
   classify
     | .malformed => .invalid
     | .newUser _ => .validNew
@@ -44,13 +47,16 @@ inductive RegistrationResult where
   | created (id : Nat)
   | selected (id : Nat)
 
-def registrationPartition : Partition where
+instance : MemberEnumeration RegistrationMemberIndex where
+  indices := [.rejected, .created, .selected]
+  complete := by intro i; cases i <;> simp
+
+abbrev registrationPartition : Partition where
   Carrier := RegistrationResult
   MemberIndex := RegistrationMemberIndex
   carrierNonempty := ⟨.rejected⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejected, .created, .selected]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejected, .created, .selected], by intro i; cases i <;> simp⟩
   classify
     | .rejected => .rejected
     | .created _ => .created
@@ -70,13 +76,16 @@ abbrev UserStore := Nat → Prop
 
 inductive Channel where | web | api deriving DecidableEq, Repr
 
-def channelPartition : Partition where
+instance : MemberEnumeration Channel where
+  indices := [.web, .api]
+  complete := by intro i; cases i <;> simp
+
+abbrev channelPartition : Partition where
   Carrier := Bool
   MemberIndex := Channel
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.web, .api]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.web, .api], by intro i; cases i <;> simp⟩
   classify | false => .web | true => .api
   member_inhabited | .web => ⟨false, rfl⟩ | .api => ⟨true, rfl⟩
 
@@ -98,7 +107,7 @@ def returnToUser : Operation registrationPartition userPartition where
     | .created => some .validNew
     | .selected => some .validExisting
 
-def registerDeclaration : Operation.Declaration where
+abbrev registerDeclaration : Operation.Declaration where
   source := userPartition
   target := registrationPartition
   operation := register
@@ -122,7 +131,7 @@ def registerDeclaration : Operation.Declaration where
     | .invalid => some (.unimplemented "illustrative model; production handler not yet supplied")
     | _ => none
 
-def registrationIdentityDeclaration : Operation.Declaration where
+abbrev registrationIdentityDeclaration : Operation.Declaration where
   source := registrationPartition
   target := registrationPartition
   operation := Operation.id registrationPartition
@@ -136,7 +145,7 @@ def registrationIdentityDeclaration : Operation.Declaration where
     | .newUser => ⟨.created, .created, rfl⟩
     | .existingUser => ⟨.selected, .selected, rfl⟩
 
-def returnToUserDeclaration : Operation.Declaration where
+abbrev returnToUserDeclaration : Operation.Declaration where
   source := registrationPartition
   target := userPartition
   operation := returnToUser
@@ -273,13 +282,16 @@ theorem renamedRoutes_equivalent :
 
 inductive Region where | domestic | international deriving DecidableEq, Repr
 
-def regionPartition : Partition where
+instance : MemberEnumeration Region where
+  indices := [.domestic, .international]
+  complete := by intro i; cases i <;> simp
+
+abbrev regionPartition : Partition where
   Carrier := Bool
   MemberIndex := Region
   carrierNonempty := ⟨false⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.domestic, .international]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.domestic, .international], by intro i; cases i <;> simp⟩
   classify | false => .domestic | true => .international
   member_inhabited | .domestic => ⟨false, rfl⟩ | .international => ⟨true, rfl⟩
 

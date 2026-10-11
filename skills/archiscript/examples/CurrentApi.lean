@@ -11,13 +11,16 @@ inductive RequestIndex where
 
 def positive : Domain Nat := fun n => 0 < n
 
-def requestPartition : Partition where
+instance : MemberEnumeration RequestIndex where
+  indices := [.zero, .positive]
+  complete := by intro i; cases i <;> simp
+
+abbrev requestPartition : Partition where
   Carrier := Nat
   MemberIndex := RequestIndex
   carrierNonempty := ⟨0⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.zero, .positive]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.zero, .positive], by intro i; cases i <;> simp⟩
   classify n := if n = 0 then .zero else .positive
   member_inhabited
     | .zero => ⟨0, rfl⟩
@@ -32,7 +35,7 @@ example : requestPartition.HasMembers requestMembers := by
   cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
     Domain.complement, positive]
 
-def requestSemanticPartition : SemanticPartition where
+abbrev requestSemanticPartition : SemanticPartition where
   partition := requestPartition
   members := requestMembers
   hasMembers := by
@@ -40,7 +43,7 @@ def requestSemanticPartition : SemanticPartition where
     cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
       Domain.complement, positive]
 
-def requestArchitecture : ArchitecturalPartition where
+abbrev requestArchitecture : ArchitecturalPartition where
   partition := requestPartition
   carrierOrigin := .externalRoot {
     source := "request protocol"
@@ -103,11 +106,11 @@ example :
       acceptExpression :=
   Expression.Rewrite.id_left acceptExpression
 
-def requestSelfTensorCoproduct : Partition :=
+abbrev requestSelfTensorCoproduct : Partition :=
   (requestPartition.tensor requestPartition).coproduct
     (requestPartition.tensor requestPartition)
 
-def requestFactoredCoproductTensor : Partition :=
+abbrev requestFactoredCoproductTensor : Partition :=
   (requestPartition.coproduct requestPartition).tensor requestPartition
 
 def requestDistributivityIso :
@@ -116,7 +119,7 @@ def requestDistributivityIso :
   Partition.tensorCoproductRightDistributivity
     requestPartition requestPartition requestPartition
 
-def pairedRequests : SemanticPartition :=
+abbrev pairedRequests : SemanticPartition :=
   requestSemanticPartition.tensor requestSemanticPartition
 
 example : pairedRequests.partition = requestPartition.tensor requestPartition := rfl
@@ -139,7 +142,7 @@ example : (Operation.associatorInv requestPartition requestPartition requestPart
 inductive OperationName where | accept deriving DecidableEq
 inductive BranchName where | positive deriving DecidableEq
 
-def acceptDeclaration : Operation.Declaration where
+abbrev acceptDeclaration : Operation.Declaration where
   source := requestPartition
   target := requestPartition
   operation := accept

@@ -32,13 +32,16 @@ def missingToken : Domain PaymentRequest :=
 def eligiblePayment : Domain PaymentRequest :=
   fun x => x.amountCents ≠ 0 ∧ x.paymentToken ≠ ""
 
-def paymentInputPartition : Partition where
+instance : MemberEnumeration PaymentInputMember where
+  indices := [.invalidAmount, .missingToken, .eligible]
+  complete := by intro i; cases i <;> simp
+
+abbrev paymentInputPartition : Partition where
   Carrier := PaymentRequest
   MemberIndex := PaymentInputMember
   carrierNonempty := ⟨⟨0, ""⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalidAmount, .missingToken, .eligible]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalidAmount, .missingToken, .eligible], by intro i; cases i <;> simp⟩
   classify x :=
     if x.amountCents = 0 then .invalidAmount
     else if x.paymentToken = "" then .missingToken
@@ -63,7 +66,7 @@ theorem paymentInput_has_members :
     simp [Partition.member, paymentInputPartition, paymentInputMembers,
       invalidAmount, missingToken, eligiblePayment, ha, ht] at *
 
-def paymentInputSemantic : SemanticPartition where
+abbrev paymentInputSemantic : SemanticPartition where
   partition := paymentInputPartition
   members := paymentInputMembers
   hasMembers := paymentInput_has_members
@@ -89,13 +92,16 @@ def inventoryShortfall : Domain InventoryObservation :=
 def inventorySufficient : Domain InventoryObservation :=
   fun x => x.requestedUnits ≠ 0 ∧ x.requestedUnits ≤ x.availableUnits
 
-def inventoryObservationPartition : Partition where
+instance : MemberEnumeration InventoryMember where
+  indices := [.invalidDemand, .shortfall, .sufficient]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryObservationPartition : Partition where
   Carrier := InventoryObservation
   MemberIndex := InventoryMember
   carrierNonempty := ⟨⟨0, 0⟩⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.invalidDemand, .shortfall, .sufficient]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.invalidDemand, .shortfall, .sufficient], by intro i; cases i <;> simp⟩
   classify x :=
     if x.requestedUnits = 0 then .invalidDemand
     else if x.requestedUnits ≤ x.availableUnits then .sufficient
@@ -120,7 +126,7 @@ theorem inventoryObservation_has_members :
     simp [Partition.member, inventoryObservationPartition, inventoryMembers,
       invalidDemand, inventoryShortfall, inventorySufficient, hz, hle] at *
 
-def inventoryObservationSemantic : SemanticPartition where
+abbrev inventoryObservationSemantic : SemanticPartition where
   partition := inventoryObservationPartition
   members := inventoryMembers
   hasMembers := inventoryObservation_has_members
@@ -131,17 +137,20 @@ inductive PaymentPlan where
   | authorize
   deriving DecidableEq, Repr
 
-def paymentPlanPartition : Partition where
+instance : MemberEnumeration PaymentPlan where
+  indices := [.rejectAmount, .rejectToken, .authorize]
+  complete := by intro i; cases i <;> simp
+
+abbrev paymentPlanPartition : Partition where
   Carrier := PaymentPlan
   MemberIndex := PaymentPlan
   carrierNonempty := ⟨.rejectAmount⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectAmount, .rejectToken, .authorize]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectAmount, .rejectToken, .authorize], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def paymentPlanSemantic : SemanticPartition where
+abbrev paymentPlanSemantic : SemanticPartition where
   partition := paymentPlanPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -152,17 +161,20 @@ inductive InventoryPlan where
   | reserve
   deriving DecidableEq, Repr
 
-def inventoryPlanPartition : Partition where
+instance : MemberEnumeration InventoryPlan where
+  indices := [.rejectDemand, .backorder, .reserve]
+  complete := by intro i; cases i <;> simp
+
+abbrev inventoryPlanPartition : Partition where
   Carrier := InventoryPlan
   MemberIndex := InventoryPlan
   carrierNonempty := ⟨.rejectDemand⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectDemand, .backorder, .reserve]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectDemand, .backorder, .reserve], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def inventoryPlanSemantic : SemanticPartition where
+abbrev inventoryPlanSemantic : SemanticPartition where
   partition := inventoryPlanPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -195,17 +207,20 @@ inductive CheckoutAction where
   | placeOrder
   deriving DecidableEq, Repr
 
-def checkoutActionPartition : Partition where
+instance : MemberEnumeration CheckoutAction where
+  indices := [.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder]
+  complete := by intro i; cases i <;> simp
+
+abbrev checkoutActionPartition : Partition where
   Carrier := CheckoutAction
   MemberIndex := CheckoutAction
   carrierNonempty := ⟨.rejectPayment⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder], by intro i; cases i <;> simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
-def checkoutActionSemantic : SemanticPartition where
+abbrev checkoutActionSemantic : SemanticPartition where
   partition := checkoutActionPartition
   members := fun i x => x = i
   hasMembers := by intro i x; rfl
@@ -219,13 +234,16 @@ inductive FulfillmentView where
 A coarser view of the same CheckoutAction carrier for consumers that only care
 whether a fulfillment command exists.
 -/
-def fulfillmentViewPartition : Partition where
+instance : MemberEnumeration FulfillmentView where
+  indices := [.noCommand, .submit]
+  complete := by intro i; cases i <;> simp
+
+abbrev fulfillmentViewPartition : Partition where
   Carrier := CheckoutAction
   MemberIndex := FulfillmentView
   carrierNonempty := ⟨.rejectPayment⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.noCommand, .submit]
-  memberIndices_complete := by intro i; cases i <;> simp
+  memberIndexFinite := ⟨[.noCommand, .submit], by intro i; cases i <;> simp⟩
   classify
     | .placeOrder => .submit
     | .rejectPayment | .rejectInventoryRequest | .waitForStock => .noCommand
@@ -271,13 +289,16 @@ inductive FulfillmentCommand where
   | submitOrder
   deriving DecidableEq, Repr
 
-def fulfillmentCommandPartition : Partition where
+instance : MemberEnumeration FulfillmentCommand where
+  indices := [.submitOrder]
+  complete := by intro i; cases i; simp
+
+abbrev fulfillmentCommandPartition : Partition where
   Carrier := FulfillmentCommand
   MemberIndex := FulfillmentCommand
   carrierNonempty := ⟨.submitOrder⟩
   memberIndexDecidableEq := inferInstance
-  memberIndices := [.submitOrder]
-  memberIndices_complete := by intro i; cases i; simp
+  memberIndexFinite := ⟨[.submitOrder], by intro i; cases i; simp⟩
   classify := id
   member_inhabited := by intro i; exact ⟨i, rfl⟩
 
@@ -311,10 +332,10 @@ def checkoutToFulfillment :
       fulfillmentCommandPartition :=
   requestFulfillment.comp decideCheckout
 
-def checkoutInputSemantic : SemanticPartition :=
+abbrev checkoutInputSemantic : SemanticPartition :=
   paymentInputSemantic.tensor inventoryObservationSemantic
 
-def checkoutPlanSemantic : SemanticPartition :=
+abbrev checkoutPlanSemantic : SemanticPartition :=
   paymentPlanSemantic.tensor inventoryPlanSemantic
 
 #guard (paymentInputPartition.tensor inventoryObservationPartition).memberIndices.length == 9

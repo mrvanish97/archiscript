@@ -125,6 +125,7 @@ private def definitionJson {α : Type} {meaning : Domain α} :
       ("parts", toJson [definitionJson base, definitionJson removed])]
 
 private def architectureJson (id : String) (P : ArchitecturalPartition)
+    [MemberEnumeration P.partition.MemberIndex]
     (memberName : P.partition.MemberIndex → String) : Json :=
   Json.mkObj [
     ("id", toJson id),
@@ -150,10 +151,12 @@ private def inputRegionJson (name : InputMember) : Json :=
   ]
 
 private def mappingCoverageJson (name : OperationName) : Json :=
-  let declaration := operationRegistry.resolve name
+  let missing := match name with
+    | .decide => decideDeclaration.definedMappingsWithoutBranch.length
+    | .requestLedgerCommand => ledgerDeclaration.definedMappingsWithoutBranch.length
   Json.mkObj [
     ("id", toJson s!"PaymentWebhook.{shortName name}"),
-    ("missingDefinedMappings", toJson declaration.definedMappingsWithoutBranch.length)
+    ("missingDefinedMappings", toJson missing)
   ]
 
 private def projection : Json := Json.mkObj [

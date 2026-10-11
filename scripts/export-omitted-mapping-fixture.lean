@@ -5,7 +5,7 @@ open Lean ArchiScript ArchiScriptExamples.UserRegistration
 
 inductive NoBranch deriving DecidableEq
 
-private def unnamedRegister : Operation.Declaration where
+private abbrev unnamedRegister : Operation.Declaration where
   source := userPartition
   target := registrationPartition
   operation := register

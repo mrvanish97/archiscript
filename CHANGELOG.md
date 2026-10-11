@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.6.0
+
+- Removed ordered `memberIndices : List MemberIndex` and its completeness
+  proof from the `Partition` record. Member-index finiteness is now
+  represented by the proposition `memberIndexFinite`; list order no longer
+  affects VDP record identity.
+- Introduced a separate executable `MemberEnumeration` typeclass for
+  algorithms and presentation, including complete enumerations for built-in
+  unit, Boolean, tensor-product, and coproduct member-index types. Concrete
+  models provide their own enumerations outside `Partition`.
+- Updated conflict search, opaque-member and missing-mapping diagnostics,
+  review exporters, model fixtures, and AI skill API examples to use external
+  member enumerations. Existing example export order is retained.
+- Added a Lean regression demonstrating that two complete enumerations in
+  different orders refer to the same VDP and preserve conflict-search results.
+  The order of a *reported first* conflict may still depend on enumeration.
+- **Breaking Lean API change:** constructors no longer accept
+  `memberIndices` / `memberIndices_complete`; executable member scans now
+  require a `MemberEnumeration` instance for the source index type.
+- No change to VDP member classification, `Operation` semantics, full tensor
+  and coproduct products, or factorization obligations. This release does not
+  infer domain compatibility or prune tensor members.
+
 ## 0.5.2
 
 - Extended the existing local-first AI proof methodology with a dedicated
