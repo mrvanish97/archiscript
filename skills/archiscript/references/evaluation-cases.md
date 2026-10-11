@@ -391,5 +391,31 @@ modeling decision and exposes missing assumptions.
       architectural questions in a review artifact; provide proof references
       for auditing and measured costs only if actually measured.
 
+52. **VDP topology mistaken for member diagram**
+    - Prompt: “Draw only the architecture topology. Show one node per VDP
+      and arrows for the Operations; do not open the VDP members.”
+    - Expected: draw VDP-to-VDP labeled Operation arrows with members
+      collapsed. Do not invent member mappings or connect a VDP container
+      to `∅`; no arrow asserts totality or a runtime call.
+
+53. **Member diagram mistaken for VDP topology**
+    - Prompt: “For this one Operation, show which input members map to
+      which output members and which inputs map to `none`.”
+    - Expected: show source/target members within their corresponding VDP
+      containers and mapped member-to-member edges, with `∅` outside.
+      Account for hidden members if using a focused display; do not replace
+      member arrows with a single VDP-to-VDP arrow.
+
+54. **Several overlapping subdomains define one VDP member**
+    - Prompt: “Show how carrier predicates A and B produce a VDP with
+      selected members A ∩ B and (C \\ A) ∪ (A \\ B).”
+    - Expected: use a carrier/subdomain derivation graph (possibly a DAG),
+      show the shared predicate inputs and exact formulas for both selected
+      members, and distinguish derivation edges from Operations. Do not
+      force one subdomain per member, a disjoint taxonomy of all
+      supporting subdomains, or a binary tree. Check member
+      nonemptiness, coverage, disjointness, and independent meaning
+      correspondence over the declared carrier.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.
