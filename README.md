@@ -576,11 +576,11 @@ same observed state. ArchiScript exposes the topology, but does not claim that a
 runtime race occurs. Ordering, atomicity, liveness, resource effects, and
 production conformance require additional semantics or evidence.
 
-## Three architecture diagram views
+## Four architecture diagram views
 
-ArchiScript supports three **distinct views of the same checked model**.
-Choose the view that answers the review question. Do not mix their edge
-meanings or mistake hidden visual detail for a change to the model.
+ArchiScript supports four **independent views of the same checked model**.
+Choose a view by its review question. Different views have different node
+and edge meanings; hiding detail in one view never changes the model.
 
 ### 1. VDP topology — operations between whole VDPs
 
@@ -597,7 +597,7 @@ A VDP-level arrow summarizes an Operation on member indices. It is not a
 runtime call, nor does it imply that the Operation is total. Never draw an
 edge from a collapsed VDP node directly to `∅`.
 
-### 2. VDP member map — operations between members
+### 2. VDP member mapping — operations between members
 
 Draw each relevant VDP as a container with member nodes inside it; draw
 **member → member** arrows for the actual mappings of one Operation.
@@ -619,48 +619,85 @@ flowchart LR
   P2 -->|"decide"| Q2
 ```
 
-The schematic mapping above is illustrative. For real models, preserve all
-source members; if a focused view collapses some, state how many are hidden
-and account for them. A display group is not a new VDP member.
+The mapping above is illustrative. In real models, account for every source
+member; if a focused diagram collapses some, state which members are hidden.
+A display group is not a new VDP member.
 
-### 3. Carrier derivation — subdomains assembled into VDP members
+### 3. Subdomain derivation — relationships among semantic regions
 
-Draw the **carrier → supporting subdomains → selected member formulas**
-as a semantic derivation graph. It shows how semantic distinctions were
-defined, not architectural Operations. A selected member may combine
-**several** subdomains using intersection, union, or relative complement;
-supporting subdomains may overlap or be reused in several formulas.
+Draw **only subdomains and their deductions**. Do not draw a carrier node,
+a VDP, or selected VDP members in this view. Show intersections, unions,
+relative complements, and proved containment relationships. Supporting
+subdomains may overlap, and a region may be used by multiple derivations;
+the result is often a DAG, not a mandatory partition tree.
 
-For example, on the illustrative carrier `C = Bool × Bool`, let `A`
-mean "first coordinate is true" and `B` mean "second coordinate is
-true". A two-member VDP can select `A ∩ B` and
-`(C ∖ A) ∪ (A ∖ B)`:
+For this illustrative example the *declared base*, recorded in the caption
+rather than drawn as a node, is `C = Bool × Bool`. Subdomain `A` means
+"first coordinate is true" and subdomain `B` means "second coordinate is
+true". Both are subsets of `C`.
 
 ```mermaid
 flowchart TD
-  C["Carrier C = Bool × Bool"]
   A["Subdomain A: first = true"]
   B["Subdomain B: second = true"]
-  subgraph V["Selected members of one VDP on C"]
-    M1["accepted = A ∩ B"]
-    M2["other = (C ∖ A) ∪ (A ∖ B)"]
-  end
-  C -.->|"base"| A
-  C -.->|"base"| B
-  A -.->|"formula input"| M1
-  B -.->|"formula input"| M1
-  C -.->|"formula input"| M2
-  A -.->|"formula input"| M2
-  B -.->|"formula input"| M2
+  D["Subdomain D = A ∩ B"]
+  E["Subdomain E = C ∖ A"]
+  F["Subdomain F = A ∖ B"]
+  G["Subdomain G = E ∪ F"]
+  A -.->|"operand"| D
+  B -.->|"operand"| D
+  A -.->|"excluded from base C"| E
+  A -.->|"included operand"| F
+  B -.->|"excluded operand"| F
+  E -.->|"union operand"| G
+  F -.->|"union operand"| G
 ```
 
-Dashed arrows here mean **containment or formula dependency**, never
-`Operation` mappings. This is often a **DAG rather than a tree**:
-subdomains may overlap, have multiple parents, or participate in multiple
-member formulas. The VDP members, unlike arbitrary supporting subdomains,
-must be nonempty, pairwise disjoint, and exhaustive over the declared carrier.
-The independently stated predicates and `Partition.HasMembers` supply
-the checkable correspondence; the diagram alone supplies no proof.
+Every dashed edge above is a **formula dependency**, not an `Operation`
+or automatically a subset relation. When the intended relation is proven
+containment, label it explicitly as `⊆`. Although the carrier is omitted
+*visually*, predicates remain typed over the correct base, and the diagram
+caption must identify that base, its provenance, and any opaque or externally
+assumed predicates. Supporting subdomains are not required to be disjoint
+or exhaustive.
+
+### 4. VDP member semantics — how members relate to subdomains
+
+Draw **one actual VDP and its selected members**, along with the relevant
+subdomains. Use formula equality or proved inclusion to show how each
+selected member is defined by or relates to particular subdomains. A member
+can have a meaning composed from several subdomains; a supporting subdomain
+can appear in several member formulas. These are **semantic relations,
+not arrows between Operations**.
+
+Continuing the example above, choose a two-member VDP on the *same*
+declared carrier `C`. The selected meanings are `D = A ∩ B` and
+`G = (C ∖ A) ∪ (A ∖ B)`:
+
+```mermaid
+flowchart LR
+  D["Subdomain D = A ∩ B"]
+  G["Subdomain G = E ∪ F"]
+  A["Subdomain A"]
+  B["Subdomain B"]
+  subgraph V["VDP on C"]
+    M1["Member: accepted"]
+    M2["Member: other"]
+  end
+  D -.->|"meaning = "| M1
+  G -.->|"meaning = "| M2
+  M1 -.->|"region ⊆"| A
+  M1 -.->|"region ⊆"| B
+```
+
+For this illustrative carrier, `D` and `G` are nonempty, disjoint, and
+cover `C`. In an actual model, the VDP's selected members must be
+nonempty, pairwise disjoint, and exhaustive over the declared carrier,
+and their separately stated semantic formulas must correspond to
+`Partition.classify` through a checked `Partition.HasMembers` proof.
+Only show a semantic equality or inclusion when the definitions or a
+proved theorem support it. Do not equate a subdomain with a member merely
+because they have similar names.
 
 ## Diagram discipline
 
