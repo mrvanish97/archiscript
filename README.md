@@ -634,7 +634,7 @@ supporting subdomains may overlap or be reused in several formulas.
 For example, on the illustrative carrier `C = Bool × Bool`, let `A`
 mean "first coordinate is true" and `B` mean "second coordinate is
 true". A two-member VDP can select `A ∩ B` and
-`(C \\ A) ∪ (A \\ B)`:
+`(C ∖ A) ∪ (A ∖ B)`:
 
 ```mermaid
 flowchart TD
@@ -643,7 +643,7 @@ flowchart TD
   B["Subdomain B: second = true"]
   subgraph V["Selected members of one VDP on C"]
     M1["accepted = A ∩ B"]
-    M2["other = (C \\ A) ∪ (A \\ B)"]
+    M2["other = (C ∖ A) ∪ (A ∖ B)"]
   end
   C -.->|"base"| A
   C -.->|"base"| B
