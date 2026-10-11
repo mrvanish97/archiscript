@@ -982,6 +982,48 @@ A short proof can still protect an important boundary; judge its architectural
 value, not its length. Keep simple API regression checks in tests rather than
 presenting them as new guarantees about the system.
 
+## Stage 3: Build difficult proofs from local results
+
+For nontrivial architecture theorems, **plan the mathematical proof before
+choosing tactics**. Inspect the existing VDPs, intermediate Operations,
+Expression structure, and reusable theorems. Prefer a small number of useful,
+named local lemmas followed by composition of those lemmas into the **original,
+unchanged global goal**. The AI agent selects the meaningful decomposition;
+Lean checks both the local claims and the final assembly.
+
+- Search first for a reusable existing theorem and a natural intermediate VDP
+  or Operation. Look for genuine independent tensor factors, tagged coproduct
+  alternatives, and already-proved consumer factorization through coarsening.
+  A local lemma is useful if it discharges a specific global obligation or is
+  likely to be reused; do not create ceremonial `rfl` wrappers.
+- Prove the smallest meaningful claim, then lift it through existing laws:
+  `Operation.comp_assoc`, `Operation.tensor_comp`, coproduct equations,
+  `Expression.Rewrite.comp`, `.tensor`, `.copair`, and `.trans` as applicable.
+  Use `Expression.Transport` and explicit `PartitionIso` when endpoint
+  representatives genuinely change; never equate them by appearance.
+- Preserve all source/target types, carrier values, tensor member pairs, and
+  the meaning of `none`. A candidate coarsening is usable for a consumer only
+  when its factorization or required constancy is proved. It may work for one
+  consumer and fail for another.
+- Do not unfold a large tensor or enumerate all member combinations before
+  checking whether the goal follows compositionally. If no correct useful
+  decomposition exists, fall back to a direct finite proof; **never** invent a
+  VDP, trusted assumption, axiom, or weakened goal merely to make a split work.
+- Run Lean after each nontrivial local lemma and after the assembled global
+  theorem. Reuse named proved declarations across files; do not duplicate their
+  proofs in downstream models. Preserve existing architectural review evidence
+  and negative checks.
+- Report to the human reviewer the unchanged contract, newly established
+  guarantee, open assumptions, and any architectural decisions; keep tactical
+  Lean detail in source or optional technical artifacts. A passing proof is not
+  human approval or implementation conformance.
+
+Read [references/compositional-proofs.md](references/compositional-proofs.md)
+when authoring a difficult or slow Lean proof, revisiting a failing proof,
+or evaluating Stage 3 proof-authoring quality. No new core calculus, Lean
+tactic, proof-planner object, BDD, or tensor-network backend is required
+by this authoring policy.
+
 ## Verification and scope
 
 - Run `lake build` and meaningful negative checks.
