@@ -5,34 +5,52 @@ proofs, then project only facts established there. A Mermaid diagram is a
 read-only view, never another source of architectural semantics. State the
 view's **level**, **focus**, and **hidden detail** above or below the graph.
 
-## Three primary architectural diagram types
+## Four primary architectural diagram types
 
-Keep the following semantic layers distinct. The review levels below add
-scope and engineering context; they do not replace these diagram types.
+Diagram types define the semantics of nodes and arrows. Review levels below
+describe the depth of information and do not force the two Level 3 views into
+one picture.
 
-| Diagram type | Nodes | Arrows | Review question |
+| Diagram type | Nodes | Edges | Question |
 | --- | --- | --- | --- |
-| **VDP topology** (Level 1) | Whole VDPs, members collapsed | Labeled `Operation` arrows **VDP → VDP** | Which architectural boundaries are connected? |
-| **VDP member mapping** (Level 2) | Members inside actual VDP containers; `∅` outside | An Operation's **member → member** mapping, or member → `∅` | How is each source member treated? |
-| **Carrier/subdomain derivation** (Level 3) | Carrier, supporting subdomains, formula nodes/selected VDP members | **Containment and formula-dependency** edges, not Operations | How are members deduced from the carrier and predicates? |
+| **VDP topology** (Level 1) | Whole VDPs | Labeled `Operation` arrows **VDP → VDP** | Which VDPs connect? |
+| **VDP member mapping** (Level 2) | Selected members inside VDPs, `∅` outside | Operation mapping **member → member** or member → `∅` | What does one Operation do? |
+| **Subdomain derivation** (Level 3A) | Supporting subdomains and derived regions **only** | Formula operands / proved subset relations, **not Operations** | How do subdomains relate and combine? |
+| **VDP member semantics** (Level 3B) | A VDP with selected members, plus relevant supporting subdomains | Formula correspondence and proved equality/containment, **not Operations** | Which precise semantic regions define each VDP member? |
 
-In the carrier/subdomain derivation graph, do not impose a one-subdomain-to-
-one-member correspondence. One VDP member may be `A ∩ B`, `A ∪ B`, or a
-relative complement, and a formula may reuse several overlapping supporting
-subdomains. Show bases and formula operators, with distinct selected members
-attached to the actual VDP; use a DAG when sources are shared or a region has
-multiple parents. A global taxonomy or binary partition tree is not required.
-The selected members alone must cover the full declared carrier without
-overlap and must be nonempty. Show their independent meaning formulas and
-the checked classifier correspondence; neither a diagram nor a bare member
-name proves the external adequacy of that carrier.
+### Subdomain derivation — independent from VDP selection
 
-Edges from a carrier or supporting subdomain to selected member formulas
-are **never** `Operation` arrows. Operations connect VDP member indices;
-render them in the topology or member-map view instead. Similarly, topology
-arrows must not be rendered as if they were individual member mappings.
-Explicitly title every panel
-`VDP topology`, `VDP member mapping`, or `Carrier/subdomain derivation`.
+Do not show a carrier node or a VDP in this diagram. Show primitive and
+derived subdomains with their mathematical relations: intersection, union,
+relative complement, or proved containment. Subdomains may overlap,
+contribute to several deductions, or be derived from multiple parents;
+use a DAG, not a forced binary/disjoint taxonomy. **Do not** infer from
+the graph alone that its subdomains exhaust a carrier.
+
+Although the carrier is visually absent, give the typed base and its
+provenance in the caption, including the parent for every relative
+complement. Formula-dependency arrows do not claim containment; use
+an explicit `⊆` label only for a supported containment fact. Do not
+invent predicates for opaque or externally assumed regions.
+
+### VDP member semantics — independent from subdomain derivation
+
+Show one actual VDP with its selected members and only the subdomains
+needed to explain their formulas. A selected member can be defined by
+`A ∩ B`, `A ∪ B`, or `A ∖ B`; several subdomains may feed one member.
+Show the exact meaning formula and any proved `⊆` or equality relation
+between the member's region and a named subdomain. Do not equate a
+supporting subdomain with a selected member without justification.
+
+The chosen VDP members must be nonempty, exhaustive, and pairwise
+disjoint over its full declared carrier; supporting subdomains need not
+satisfy any of those partition properties. Include `Partition.HasMembers`
+proof references for classifier-to-meaning correspondence and label
+opaque semantic atoms and external premises. **No** arrow here denotes
+`Operation`.
+
+Explicitly title panels `VDP topology`, `VDP member mapping`,
+`Subdomain derivation`, or `VDP member semantics`.
 
 ## Review levels and conventions
 
@@ -41,12 +59,12 @@ Explicitly title every panel
 | 0 — boundary | What enters the system? | External appearances, major VDPs and boundaries | Members, branches, proofs, source lines |
 | 1 — topology | Which VDPs are connected? | VDPs and canonical operation names; partial nature, responsibility and primary code in nearby text | Individual members |
 | 2 — branch map | What does one operation do? | Every relevant source member and its target or `∅`; selective branch metadata | Unrelated operations and supporting predicates |
-| 3 — partition | Are distinctions sound? | Carrier provenance; supporting subdomain bases and formulas or opaque status; selected members and any coarsening | Operation flow and code |
+| 3 — semantics | How are regions derived and selected as members? | Two independent views: subdomain-only deduction (3A) and VDP member meanings (3B); carrier provenance in captions; coarsening when relevant | Operation flow and code |
 | 4 — implementation | Where is one path implemented, and what is established? | Selected branch/path, primary and supporting code, evidence and unknowns | Entire registry |
 
-Use Level 0 for scope/product review, Level 1 for architecture review, Level 2
-for one operation, Level 3 for carrier or partition review, and Level 4 for
-implementation review. For path equality or composition questions, draw the
+Use Level 0 for scope/product review, Level 1 for architecture review,
+Level 2 for one operation, Level 3A for subdomain deductions, Level 3B for
+VDP member meanings, and Level 4 for implementation review. For path equality or composition questions, draw the
 focused path or two-path comparison at the needed level. Level 0 should fit on
 one screen. Prefer at most eight major nodes; split above twelve. A Level 2 map
 normally covers one operation. A Level 4 view normally covers one path or a
@@ -57,10 +75,11 @@ collapsed, labeled box and connect VDP boxes with Operation arrows; do not
 draw member nodes or partiality edges from those boxes. At Level 2, draw
 each VDP as a labeled container with selected members inside it and connect
 member boxes with Operation mapping arrows. Draw `∅` outside every VDP
-because it is not a member. At Level 3, show carrier/subdomain derivation
-separately and distinguish its non-Operation edges. Reserve VDP
-containers/subgraphs for actual VDPs; do not reuse that container grammar merely to group operations or tensor
-factors. For an operation-algebra view, use operation-shaped nodes and label the
+because it is not a member. At Level 3A, draw subdomains only and keep
+the typed base in the caption; at Level 3B, show the selected VDP members
+and their meaning relations to supporting subdomains. None of those
+edges are Operations. Reserve VDP containers/subgraphs for actual VDPs;
+do not reuse that grammar for collections of subdomains or tensor factors. For an operation-algebra view, use operation-shaped nodes and label the
 view explicitly so those nodes cannot be mistaken for VDPs or members. Use a
 distinct boundary shape for external appearances. Put long source locations and
 evidence outside the graph. Follow the repository's established/default diagram
@@ -71,14 +90,16 @@ several members are collapsed, label the aggregate
 `[display group: ...]` and list its members in the caption; never treat the
 group as a new model member.
 
-At Level 3, show supporting subdomains beside the VDP, with their base,
-containment relationship, and defining formula when available. Label an opaque
-subdomain `OPAQUE` and give its reason. Supporting subdomains may overlap and
-need not exhaust the carrier; do not draw them as selected member boxes unless
-the VDP actually selects them. Show whether carrier provenance is an
-architecture-defined domain or a trusted external premise. Constructor closure
-is separate evidence inside a carrier. Neither a formula label
-nor a diagram proves that an external predicate is enforced at runtime.
+At Level 3A, show only supporting subdomains, derivation formulas,
+and their dependency/containment relations. The carrier/base and its
+provenance belong in the caption, not as diagram nodes. At Level 3B,
+draw the selected members of one VDP and show how supporting subdomains
+define or contain their independently stated meanings. Label an opaque
+subdomain `OPAQUE` and give its reason. Supporting subdomains may overlap
+and need not exhaust the carrier; do not draw them as selected member boxes
+unless the VDP actually selects them. Constructor closure remains separate
+evidence inside the specified carrier. Neither diagram establishes that
+external predicates are enforced at runtime.
 
 At Level 1, a VDP-to-VDP arrow summarizes one canonical operation on member
 sets. At Level 2, an arrow connects one source member to its mapped target.
