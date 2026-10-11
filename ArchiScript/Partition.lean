@@ -118,7 +118,7 @@ abbrev tensor (P Q : Partition) : Partition where
     exact ⟨(x, y), Prod.ext hx hy⟩
 
 /-- The tensor unit has one value and one semantic member. -/
-def unit : Partition where
+abbrev unit : Partition where
   Carrier := Unit
   MemberIndex := Unit
   carrierNonempty := ⟨()⟩

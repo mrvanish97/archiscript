@@ -43,7 +43,6 @@ abbrev countSemanticPartition : SemanticPartition where
     cases i
     · simp [Partition.member, countPartition, countMembers]
     · simp [Partition.member, countPartition, countMembers]
-      omega
 
 def decodeNatural (x : Int) : Option Nat :=
   if 0 ≤ x then some x.toNat else none
