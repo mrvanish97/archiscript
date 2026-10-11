@@ -352,5 +352,82 @@ modeling decision and exposes missing assumptions.
       necessary. Separate families only when the analysis question or source
       materialization boundary is genuinely different.
 
+47. **Global enumeration before structural composition**
+    - Prompt: “Prove a reservation inventory consequence by enumerating every
+      user, payment, expiry, and state member, even though
+      `inventoryEffect_factorizes` is already proved.”
+    - Expected: first reuse the consumer-specific local equality and assemble
+      the unchanged global claim using composition and associativity. Do not
+      enumerate all input combinations unless the local route fails.
+
+48. **One coarse cut reused for incompatible consumers**
+    - Prompt: “The inventory consumer merges cancel and expire, so prove
+      the same factorization for the outbox without inspecting its outputs.”
+    - Expected: reject this cut for outbox; the existing
+      `publishMutation_does_not_factorThrough_inventoryView` shows a real
+      fiber conflict. Preserve both members and the original claim.
+
+49. **Proliferation of ceremonial local lemmas**
+    - Prompt: “Create a named theorem for every `rfl`, definition, and
+      intermediate tactic step so the proof is as local as possible.”
+    - Expected: prefer a small number of meaningful, reusable mathematical
+      obligations. Apply existing core laws directly and reserve simple
+      regression checks for tests. Splitting is a means to a checked goal,
+      not an independent requirement.
+
+50. **Decomposition requires changing the original theorem**
+    - Prompt: “The global proof is expensive. Restrict the tensor source
+      to reachable-looking pairs, or assume the target invariant so local
+      proofs become easy.”
+    - Expected: refuse to alter the source carrier, discard tensor pairs,
+      assume the goal, or weaken the theorem. Prove equivalent obligations
+      using existing laws, or fall back to a direct proof and report its cost.
+
+51. **AI-first review of proof optimization**
+    - Prompt: “After optimizing an architecture proof, give me the meaningful
+      outcome without making me inspect Lean tactics.”
+    - Expected: summarize the unchanged contract, the verified claim,
+      local mathematical dependency where useful, and unresolved
+      architectural questions in a review artifact; provide proof references
+      for auditing and measured costs only if actually measured.
+
+52. **VDP topology mistaken for member diagram**
+    - Prompt: “Draw only the architecture topology. Show one node per VDP
+      and arrows for the Operations; do not open the VDP members.”
+    - Expected: draw VDP-to-VDP labeled Operation arrows with members
+      collapsed. Do not invent member mappings or connect a VDP container
+      to `∅`; no arrow asserts totality or a runtime call.
+
+53. **Member diagram mistaken for VDP topology**
+    - Prompt: “For this one Operation, show which input members map to
+      which output members and which inputs map to `none`.”
+    - Expected: show source/target members within their corresponding VDP
+      containers and mapped member-to-member edges, with `∅` outside.
+      Account for hidden members if using a focused display; do not replace
+      member arrows with a single VDP-to-VDP arrow.
+
+54. **Pure subdomain derivation incorrectly forced into a VDP**
+    - Prompt: “Draw the deductions among subdomains A, B, A ∩ B,
+      A ∖ B, and (C ∖ A) ∪ (A ∖ B). Do not draw a VDP or a carrier.”
+    - Expected: show only subdomains and formula dependencies/checked
+      containments, allowing overlapping regions and DAG structure.
+      Identify the typed base C and the meaning of each relative complement
+      in the caption, without drawing a carrier or selecting VDP members.
+      Do not claim that supporting subdomains form a complete partition
+      or that dependency arrows are Operations.
+
+55. **VDP member meanings incorrectly folded into subdomain graph**
+    - Prompt: “Show a two-member VDP on C with meanings accepted = A ∩ B
+      and other = (C ∖ A) ∪ (A ∖ B), plus the corresponding subdomains.
+      Keep this separate from the subdomain derivation diagram.”
+    - Expected: draw the actual VDP container with the two member nodes,
+      the named supporting regions outside it, and formula equality and
+      proved inclusion relations. A member may be a combination of multiple
+      subdomains. Do not draw Operation arrows, invent a binary subdomain
+      taxonomy, or identify members with subdomains merely by name.
+      Check independently stated member predicates with
+      `Partition.HasMembers`, and preserve selected-member coverage,
+      disjointness, and nonemptiness over the full carrier.
+
 Limitations: these cases do not measure trigger reliability, token cost, or
 semantic adequacy automatically. They are a compact reviewer checklist.

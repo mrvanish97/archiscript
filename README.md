@@ -7,7 +7,7 @@ before implementation. An architect or AI proposes the semantic model; Lean
 checks the stated mathematical obligations; engineers review whether the model
 matches the real system.
 
-Current release: **0.5.0**.
+Current release: **0.5.1**.
 
 ArchiScript deliberately does **not** standardize a vocabulary of queues,
 timeouts, failures, services, retries, or cloud resources. Those are meanings
@@ -575,6 +575,129 @@ Those independently sourced paths can request incompatible updates from the
 same observed state. ArchiScript exposes the topology, but does not claim that a
 runtime race occurs. Ordering, atomicity, liveness, resource effects, and
 production conformance require additional semantics or evidence.
+
+## Four architecture diagram views
+
+ArchiScript supports four **independent views of the same checked model**.
+Choose a view by its review question. Different views have different node
+and edge meanings; hiding detail in one view never changes the model.
+
+### 1. VDP topology — operations between whole VDPs
+
+Draw one node per VDP and labeled directed arrows **VDP → VDP** for
+`Operation`s. Do **not** expand members. This answers which boundaries and
+operations are connected, not how individual members map.
+
+```mermaid
+flowchart LR
+  P["Request VDP"] -->|"decide"| Q["Decision VDP"]
+```
+
+A VDP-level arrow summarizes an Operation on member indices. It is not a
+runtime call, nor does it imply that the Operation is total. Never draw an
+edge from a collapsed VDP node directly to `∅`.
+
+### 2. VDP member mapping — operations between members
+
+Draw each relevant VDP as a container with member nodes inside it; draw
+**member → member** arrows for the actual mappings of one Operation.
+If the Operation is undefined on a source member, connect that member to
+`∅` **outside** the target VDP. This answers what a particular operation
+does at the chosen semantic resolution.
+
+```mermaid
+flowchart LR
+  subgraph P["Request VDP"]
+    P1["valid"]
+    P2["invalid"]
+  end
+  subgraph Q["Decision VDP"]
+    Q1["accept"]
+    Q2["reject"]
+  end
+  P1 -->|"decide"| Q1
+  P2 -->|"decide"| Q2
+```
+
+The mapping above is illustrative. In real models, account for every source
+member; if a focused diagram collapses some, state which members are hidden.
+A display group is not a new VDP member.
+
+### 3. Subdomain derivation — relationships among semantic regions
+
+Draw **only subdomains and their deductions**. Do not draw a carrier node,
+a VDP, or selected VDP members in this view. Show intersections, unions,
+relative complements, and proved containment relationships. Supporting
+subdomains may overlap, and a region may be used by multiple derivations;
+the result is often a DAG, not a mandatory partition tree.
+
+For this illustrative example the *declared base*, recorded in the caption
+rather than drawn as a node, is `C = Bool × Bool`. Subdomain `A` means
+"first coordinate is true" and subdomain `B` means "second coordinate is
+true". Both are subsets of `C`.
+
+```mermaid
+flowchart TD
+  A["Subdomain A: first = true"]
+  B["Subdomain B: second = true"]
+  D["Subdomain D = A ∩ B"]
+  E["Subdomain E = C ∖ A"]
+  F["Subdomain F = A ∖ B"]
+  G["Subdomain G = E ∪ F"]
+  A -.->|"operand"| D
+  B -.->|"operand"| D
+  A -.->|"excluded from base C"| E
+  A -.->|"included operand"| F
+  B -.->|"excluded operand"| F
+  E -.->|"union operand"| G
+  F -.->|"union operand"| G
+```
+
+Every dashed edge above is a **formula dependency**, not an `Operation`
+or automatically a subset relation. When the intended relation is proven
+containment, label it explicitly as `⊆`. Although the carrier is omitted
+*visually*, predicates remain typed over the correct base, and the diagram
+caption must identify that base, its provenance, and any opaque or externally
+assumed predicates. Supporting subdomains are not required to be disjoint
+or exhaustive.
+
+### 4. VDP member semantics — how members relate to subdomains
+
+Draw **one actual VDP and its selected members**, along with the relevant
+subdomains. Use formula equality or proved inclusion to show how each
+selected member is defined by or relates to particular subdomains. A member
+can have a meaning composed from several subdomains; a supporting subdomain
+can appear in several member formulas. These are **semantic relations,
+not arrows between Operations**.
+
+Continuing the example above, choose a two-member VDP on the *same*
+declared carrier `C`. The selected meanings are `D = A ∩ B` and
+`G = (C ∖ A) ∪ (A ∖ B)`:
+
+```mermaid
+flowchart LR
+  D["Subdomain D = A ∩ B"]
+  G["Subdomain G = E ∪ F"]
+  A["Subdomain A"]
+  B["Subdomain B"]
+  subgraph V["VDP on C"]
+    M1["Member: accepted"]
+    M2["Member: other"]
+  end
+  D -.->|"meaning = "| M1
+  G -.->|"meaning = "| M2
+  M1 -.->|"region ⊆"| A
+  M1 -.->|"region ⊆"| B
+```
+
+For this illustrative carrier, `D` and `G` are nonempty, disjoint, and
+cover `C`. In an actual model, the VDP's selected members must be
+nonempty, pairwise disjoint, and exhaustive over the declared carrier,
+and their separately stated semantic formulas must correspond to
+`Partition.classify` through a checked `Partition.HasMembers` proof.
+Only show a semantic equality or inclusion when the definitions or a
+proved theorem support it. Do not equate a subdomain with a member merely
+because they have similar names.
 
 ## Diagram discipline
 

@@ -38,6 +38,104 @@ of the model for people, and implementation bindings navigate to production
 code. A compiling model is not an approved model. Neither a diagram nor a source
 location proves code conformance.
 
+## Authoring method: local proofs, cumulative guarantees
+
+Follow this method for every nontrivial architectural contract. The agent
+authors the Lean model and proofs; the architect reviews generated semantic
+views and outstanding decisions. Do not make the architect resolve Lean goals.
+
+### 1. State the architecture before optimizing proofs
+
+- Establish the actual input boundary, full carrier, VDP member meanings,
+  and required Operations before selecting a proof strategy. Keep external
+  premises and unmodeled behavior visible.
+- State the exact architectural guarantee to prove. Preserve the proposition,
+  its types, its assumptions, and all source member combinations throughout
+  proof optimization. If the model or requirement must change, record that as
+  an architectural revision, **not** as a proof optimization.
+- Prove obligations that protect design constraints: meaningful coverage,
+  operation behavior, necessary path equalities, routing, factorization, or
+  checked handoff contracts. Required constructor fields are not automatically
+  new design guarantees.
+
+### 2. Inspect the goal's structure before trying tactics
+
+- Search imported theorems and local declarations before writing a new proof.
+  Inspect the actual `Operation` composition, intermediate VDPs, `Expression`
+  constructors, tensor factors, coproduct alternatives, and consumer-specific
+  resolution maps.
+- Work backward from the *property being proved*: identify which distinctions
+  its consumer uses. A coarsening useful to one consumer need not be valid for
+  another. Require a proof of the relevant factorization before using it.
+- Consider a candidate cut only if you can name (a) its local proof obligations
+  and (b) the established law or additional lemma that will reassemble **the
+  unchanged global theorem**. A visually smaller diagram is not evidence of a
+  valid mathematical cut.
+
+### 3. Choose a small set of useful local lemmas
+
+- Prefer proof boundaries already present in the architecture: intermediate
+  Operation codomains, independent tensor components, tagged coproduct
+  branches, and proved refinement/coarsening maps. Avoid inventing a VDP
+  solely to make a tactic succeed.
+- Formulate a reusable lemma at the narrowest relevant interface. When valid,
+  quantify over an arbitrary upstream producer rather than naming one large
+  controller, so the same result works in other composed paths.
+- Name a local lemma when it carries a design constraint, closes a nontrivial
+  obligation, or will be used more than once. Do not manufacture theorem names
+  for every `rfl`, copied structure field, or trivial rewrite.
+- If two candidate cuts both work, prefer the one using established theorems,
+  smaller genuine obligations, and fewer repeated case splits. Do not assume
+  that more lemmas or fewer source lines imply a cheaper proof.
+
+### 4. Prove locally, then compose the checked results
+
+- Prove and Lean-check each substantive local claim before using it globally.
+  Import existing named theorems; never re-enumerate a large source just to
+  reprove a downstream consumer's previously checked behavior.
+- Assemble Operation claims with existing laws such as
+  `Operation.comp_assoc`, `Operation.tensor_comp`, and coproduct equations.
+  For expression normalization use `Expression.Rewrite.comp`, `.tensor`,
+  `.copair`, and `.trans`. If endpoint representatives change, require a
+  proved `PartitionIso` and `Expression.Transport`; do not treat an
+  isomorphism as an equality.
+- Delay unfolding and exhaustive member enumeration until the remaining
+  *local* obligations require them. Do not use independent tensor composition
+  to duplicate one shared input. `none` means an undefined operation, not an
+  impossible input.
+- Finish by proving the original global theorem verbatim. Lean must check the
+  whole derivation. No `sorry`, `admit`, invented axioms, added goal assumptions,
+  removed carrier cases, or discarded tensor member pairs.
+
+### 5. Diagnose failed decompositions; use a direct proof when appropriate
+
+- If the chosen cut cannot be assembled, inspect the missing law or a
+  counterexample before changing any statement. For a proposed coarsening,
+  consult `Operation.ConstantOnFibers`, `Operation.FactorsThrough`, or
+  `Operation.firstFiberConflict` as applicable; a conflict rejects that cut
+  rather than excluding the disagreeing members.
+- If no mathematically valid and useful split exists, prove the unchanged goal
+  directly. Do not create a generic proof-planning subsystem or force every
+  theorem into the same tree shape.
+
+### 6. Verify and hand off the architectural result
+
+- Run `lake build` after substantive proof changes; run the repository's
+  additional checks when relevant. Do not report an attempted or uncompiled
+  lemma as verified.
+- In the review pack, report what contract was proved, the relevant named
+  proof references, the important architectural assumptions, and unresolved
+  decisions. Keep tactic traces in source or technical artifacts, not as the
+  main human-facing explanation.
+- When evaluating an optimization, compare proofs of the *same* theorem and
+  model revision. Measure real time to a checked result (including AI retries)
+  and Lean check/build time separately. Never invent a speedup.
+
+Use [references/compositional-proofs.md](references/compositional-proofs.md)
+for a concrete `ReservationController` example: a locally verified inventory
+factorization lifts through an arbitrary producer, while the same cut fails for
+the outbox consumer.
+
 ## Think in objects, arrows, and composition
 
 - **Objects** are VDPs: complete classifications of an independently given value
@@ -862,6 +960,48 @@ member mappings from runtime calls, render relevant `none` outcomes explicitly,
 and put assumptions, proved claims, and unknowns beneath the graph. State the
 diagram level, focus, and omissions.
 
+### Four independent diagram types
+
+Select a view by its question. For a deep review, keep the views in separate,
+explicitly titled panels rather than mixing their node and arrow meanings.
+The established review levels describe depth: both semantic views below belong
+to Level 3. Do not create new architectural objects for visualization.
+
+1. **VDP topology (Level 1):** show entire VDPs as nodes, without member
+   expansion. Draw directed, operation-labeled **VDP → VDP** arrows. These
+   summarize typed Operations, not runtime calls, and do not assert totality.
+   Never draw a VDP-to-`∅` edge.
+2. **VDP member mapping (Level 2):** draw selected members inside actual
+   VDP containers and **member → member** arrows for a specific Operation.
+   Draw undefined cases as source-member → `∅`, with `∅` outside every
+   VDP. Account for any hidden members; never erase input combinations.
+3. **Subdomain derivation (Level 3, view A):** draw only supporting subdomains
+   and their intersections, unions, relative complements, and proved
+   containments. **Do not place a carrier or VDP node in this diagram.**
+   Identify the typed base/carrier, its provenance, and external assumptions
+   in the caption. Subdomains may overlap, have multiple parents, and be reused:
+   use a graph/DAG when appropriate, not a forced disjoint taxonomy or tree.
+   Label formula-dependency edges separately from proved `⊆` edges.
+4. **VDP member semantics (Level 3, view B):** draw one VDP with its actual
+   selected members alongside relevant supporting subdomains. Show the
+   concrete semantic formulas that define each member and only proved
+   relations such as equality of its region with a formula, or containment
+   in another subdomain. One member may combine several subdomains; the
+   same subdomain may contribute to multiple member formulas. Link member
+   meaning to the independently defined predicates and the checked
+   `Partition.HasMembers` correspondence. Do not treat arbitrary
+   subdomains as if they were selected VDP members.
+
+The two Level 3 diagrams are independently useful: a subdomain graph does
+not need a selected VDP, and a VDP member-semantics view need not redraw the
+whole derivation graph. In both, semantic formula and inclusion edges are
+**not Operations**. Show `OPAQUE` definitions and trusted premises clearly.
+
+Choose topology for connectivity, member mapping for Operation behavior,
+subdomain derivation for predicate deductions, and member semantics for
+classification. If a separate structural constructor view also uses `⊗`
+or `⊕`, distinguish construction lines from typed Operations.
+
 Use one visual grammar consistently:
 
 - define elementary VDPs before showing products built from them;
@@ -885,7 +1025,10 @@ Use one visual grammar consistently:
   coproduct construction lines as coproduct injections; canonical injections
   are actual Operations and should be drawn separately only when they are the
   review subject;
-- a VDP is a labeled container and its actual members are nodes inside it;
+- in a topology view, one VDP is one collapsed node; in a member-map
+  view, a VDP contains its actual members; in a subdomain-only view there
+  are no VDP/carrier nodes; in a member-semantics view, show selected
+  members inside the VDP and supporting subdomains outside it;
 - reserve VDP containers for actual VDPs only; do not use the same container
   grammar for "factor groups", stages, or collections of operations;
 - use the repository's established/default diagram theme. Do not assign
@@ -968,19 +1111,6 @@ Read [references/review-diagrams.md](references/review-diagrams.md) when drawing
 or reviewing diagrams. It defines Levels 0–4 and Mermaid conventions.
 Read [references/review-packs.md](references/review-packs.md) when creating or
 revising a review pack or processing engineering findings.
-
-## Spend proofs on design constraints
-
-Supply fields Lean requires to construct valid partitions, branches, routes, and
-other checked structures. Add named theorems when they harden a requirement:
-preserved invariants, meaningful path equivalence, routing relevance, or an
-effect-contract consequence needed downstream. Use existing core laws directly.
-
-Do not turn each definition into an `rfl` theorem, restate structure fields, or
-package assumptions into near-tautological conclusions merely to look verified.
-A short proof can still protect an important boundary; judge its architectural
-value, not its length. Keep simple API regression checks in tests rather than
-presenting them as new guarantees about the system.
 
 ## Verification and scope
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1
+
+- Made cumulative local proofs the primary authoring methodology in the AI
+  skill: fix the global contract, inspect its structure, choose meaningful local
+  lemmas, verify them, and assemble the unchanged theorem using existing laws.
+- Added a concrete ReservationController factorization example and negative
+  guidance for invalid consumer-specific coarsenings.
+- Extended the skill evaluation cases for proof decomposition, reuse, and
+  AI-first review.
+- Documented four independent diagram types in the skill, README, and
+  review guidance: VDP topology, member-to-member Operation mappings,
+  subdomain-only deduction graphs, and VDP member-to-subdomain semantic
+  correspondence. The two semantic views remain separate; supporting
+  subdomains need not form a partition. Added diagram-specific evaluations.
+  No changes to the Lean calculus or public API.
+
 ## 0.5.0
 
 - Added typed architecture expressions. Every `Expression X Y` has exactly one
