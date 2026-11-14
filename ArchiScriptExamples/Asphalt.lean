@@ -1,3 +1,6 @@
+import ArchiScript.Boundary
+import ArchiScript.Operation.Declaration
+import ArchiScriptExamples.ProofSupport
 import ArchiScript
 
 /-!
@@ -24,25 +27,31 @@ instance : MemberEnumeration CountMember where
   indices := [.negative, .nonnegative]
   complete := by intro i; cases i <;> simp
 
-abbrev countPartition : Partition where
-  Carrier := Int
-  MemberIndex := CountMember
-  carrierNonempty := ⟨0⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.negative, .nonnegative], by intro i; cases i <;> simp⟩
-  classify x := if x < 0 then .negative else .nonnegative
-  member_inhabited
+def countPartitionLookup (x : Int) : CountMember := if x < 0 then .negative else .nonnegative
+
+theorem countPartitionLookup_correct : ∀ i x, countPartitionLookup x = i ↔ countMembers i x := by
+  intro i x
+  cases i <;> simp [countPartitionLookup, countMembers]
+
+theorem countPartitionLookup_inhabited : ∀ i : CountMember, ∃ x : Int, countPartitionLookup x = i := fun
     | .negative => ⟨-1, by decide⟩
     | .nonnegative => ⟨0, by decide⟩
+
+abbrev countPartition : Partition :=
+  partitionOfRegions Int CountMember "countPartition" countMembers
+    (⟨[.negative, .nonnegative], by intro i; cases i <;> simp⟩) countPartitionLookup countPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := countPartitionLookup_inhabited i
+      exact ⟨x, (countPartitionLookup_correct i x).mp hx⟩)
+    ⟨.negative⟩
 
 abbrev countSemanticPartition : SemanticPartition where
   partition := countPartition
   members := countMembers
   hasMembers := by
     intro i x
-    cases i
-    · simp [Partition.member, countPartition, countMembers]
-    · simp [Partition.member, countPartition, countMembers]
+    rfl
 
 def decodeNatural (x : Int) : Option Nat :=
   if 0 ≤ x then some x.toNat else none
@@ -285,28 +294,7 @@ instance : MemberEnumeration Admission where
     .evidenceUnknown, .requestReservation]
   complete := by intro i; cases i <;> simp
 
-abbrev admissionPartition : Partition where
-  Carrier := Input
-  MemberIndex := Admission
-  carrierNonempty := ⟨exampleInput⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.malformed, .satisfied, .superseded, .staleAuthority,
-    .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
-    .evidenceUnknown, .requestReservation], by intro i; cases i <;> simp⟩
-  classify := classify
-  member_inhabited := by
-    intro i
-    cases i
-    · exact ⟨{ exampleInput with identity := { exampleInput.identity with requestId := "" } }, by decide⟩
-    · exact ⟨{ exampleInput with currentlyDeployedDigest := "sha256:a" }, by decide⟩
-    · exact ⟨{ exampleInput with superseded := true }, by decide⟩
-    · exact ⟨{ exampleInput with lease := { exampleInput.lease with resourceEpoch := 12 } }, by decide⟩
-    · exact ⟨{ exampleInput with revisions := { exampleInput.revisions with policy := 3 } }, by decide⟩
-    · exact ⟨{ exampleInput with rollbackCompatible := false }, by decide⟩
-    · exact ⟨{ exampleInput with retry := { exampleInput.retry with budgetRemaining := 0 } }, by decide⟩
-    · exact ⟨{ exampleInput with retry := { exampleInput.retry with nextRetryAt := 20 } }, by decide⟩
-    · exact ⟨{ exampleInput with scanResultId := none }, by decide⟩
-    · exact ⟨exampleInput, by decide⟩
+def admissionPartitionLookup : Input → Admission := classify
 
 /-! Independent predicates state the precedence used by this consumer. -/
 def admissionMembers : Admission → Domain Input
@@ -332,11 +320,11 @@ def admissionMembers : Admission → Domain Input
       x.superseded = false ∧ fenced x ∧ approvalMatches x ∧ migrationCompatible x ∧
       retryPermitted x ∧ retryDue x ∧ evidenceAddressable x
 
-theorem admission_has_members : admissionPartition.HasMembers admissionMembers := by
+theorem admissionPartitionLookup_correct : ∀ i x, admissionPartitionLookup x = i ↔ admissionMembers i x := by
   intro i x
   by_cases h₁ : validIdentity x
   · by_cases h₂ : alreadySatisfied x
-    · cases i <;> simp [Partition.member, admissionPartition, classify,
+    · cases i <;> simp [admissionPartitionLookup, classify,
         admissionMembers, h₁, h₂]
     · cases h₃ : x.superseded
       · by_cases h₄ : fenced x
@@ -345,33 +333,65 @@ theorem admission_has_members : admissionPartition.HasMembers admissionMembers :
             · by_cases h₇ : retryPermitted x
               · by_cases h₈ : retryDue x
                 · by_cases h₉ : evidenceAddressable x
-                  · cases i <;> simp [Partition.member, admissionPartition, classify,
+                  · cases i <;> simp [admissionPartitionLookup, classify,
                       admissionMembers, h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈, h₉]
-                  · cases i <;> simp [Partition.member, admissionPartition, classify,
+                  · cases i <;> simp [admissionPartitionLookup, classify,
                       admissionMembers, h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈, h₉]
-                · cases i <;> simp [Partition.member, admissionPartition, classify,
+                · cases i <;> simp [admissionPartitionLookup, classify,
                     admissionMembers, h₁, h₂, h₃, h₄, h₅, h₆, h₇, h₈]
-              · cases i <;> simp [Partition.member, admissionPartition, classify,
+              · cases i <;> simp [admissionPartitionLookup, classify,
                   admissionMembers, h₁, h₂, h₃, h₄, h₅, h₆, h₇]
-            · cases i <;> simp [Partition.member, admissionPartition, classify,
+            · cases i <;> simp [admissionPartitionLookup, classify,
                 admissionMembers, h₁, h₂, h₃, h₄, h₅, h₆]
-          · cases i <;> simp [Partition.member, admissionPartition, classify,
+          · cases i <;> simp [admissionPartitionLookup, classify,
               admissionMembers, h₁, h₂, h₃, h₄, h₅]
-        · cases i <;> simp [Partition.member, admissionPartition, classify,
+        · cases i <;> simp [admissionPartitionLookup, classify,
             admissionMembers, h₁, h₂, h₃, h₄]
-      · cases i <;> simp [Partition.member, admissionPartition, classify,
+      · cases i <;> simp [admissionPartitionLookup, classify,
           admissionMembers, h₁, h₂, h₃]
-  · cases i <;> simp [Partition.member, admissionPartition, classify,
+  · cases i <;> simp [admissionPartitionLookup, classify,
       admissionMembers, h₁]
+
+
+theorem admissionPartitionLookup_inhabited : ∀ i : Admission, ∃ x : Input, admissionPartitionLookup x = i := by
+    intro i
+    cases i
+    · exact ⟨{ exampleInput with identity := { exampleInput.identity with requestId := "" } }, by decide⟩
+    · exact ⟨{ exampleInput with currentlyDeployedDigest := "sha256:a" }, by decide⟩
+    · exact ⟨{ exampleInput with superseded := true }, by decide⟩
+    · exact ⟨{ exampleInput with lease := { exampleInput.lease with resourceEpoch := 12 } }, by decide⟩
+    · exact ⟨{ exampleInput with revisions := { exampleInput.revisions with policy := 3 } }, by decide⟩
+    · exact ⟨{ exampleInput with rollbackCompatible := false }, by decide⟩
+    · exact ⟨{ exampleInput with retry := { exampleInput.retry with budgetRemaining := 0 } }, by decide⟩
+    · exact ⟨{ exampleInput with retry := { exampleInput.retry with nextRetryAt := 20 } }, by decide⟩
+    · exact ⟨{ exampleInput with scanResultId := none }, by decide⟩
+    · exact ⟨exampleInput, by decide⟩
+
+abbrev admissionPartition : Partition :=
+  partitionOfRegions Input Admission "admissionPartition" admissionMembers
+    (⟨[.malformed, .satisfied, .superseded, .staleAuthority,
+    .staleApproval, .migrationUnsafe, .retryExhausted, .retryDelayed,
+    .evidenceUnknown, .requestReservation], by intro i; cases i <;> simp⟩) admissionPartitionLookup admissionPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := admissionPartitionLookup_inhabited i
+      exact ⟨x, (admissionPartitionLookup_correct i x).mp hx⟩)
+    (by
+      obtain ⟨x, _⟩ := admissionPartitionLookup_inhabited (Classical.choice (show Nonempty Admission from ⟨.malformed⟩))
+      exact ⟨admissionPartitionLookup x⟩)
+
+theorem admission_has_members : admissionPartition.HasMembers admissionMembers := by
+  intro i x
+  rfl
 
 abbrev admissionSemanticPartition : SemanticPartition where
   partition := admissionPartition
   members := admissionMembers
   hasMembers := admission_has_members
 
-/-- No formula for the actual security service's pass relation is available.
-This supporting subdomain is deliberately opaque and does not authorize a
-deployment. `scanResultId.isSome` remains only addressability. -/
+/-- No formula or inhabitant proof for the actual security service's pass
+relation is available. This unregistered opaque predicate does not authorize
+a deployment. `scanResultId.isSome` remains only addressability. -/
 opaque externalScanPasses : Domain Input := fun _ => True
 
 abbrev admissionArchitecture : ArchitecturalPartition where
@@ -387,14 +407,8 @@ abbrev admissionArchitecture : ArchitecturalPartition where
     meaning := admissionMembers i
     definition := .predicate (admissionMembers i)
   }
-  supportingSubdomains := [{
-    name := "externalScanPasses"
-    base := fun _ => True
-    meaning := externalScanPasses
-    contained := by intro _ _; trivial
-    definition := .opaque "Security service result semantics are not imported or verified"
-      (by decide) externalScanPasses
-  }]
+  -- The old opaque scan predicate has no proved inhabitant. It is not a
+  -- registered Subdomain in 0.7.0; the external security claim remains open.
   hasMembers := admission_has_members
 
 inductive NextAction where
@@ -409,16 +423,11 @@ instance : MemberEnumeration NextAction where
     .waitRetry, .obtainEvidence, .attemptAtomicReservation]
   complete := by intro i; cases i <;> simp
 
-abbrev nextActionPartition : Partition where
-  Carrier := NextAction
-  MemberIndex := NextAction
-  carrierNonempty := ⟨.rejectInput⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
+abbrev nextActionPartition : Partition :=
+  Partition.closed NextAction "NextAction"
+    (⟨[.rejectInput, .acknowledgeCurrent, .discardOldAttempt,
     .reacquireAuthority, .seekApproval, .requireMigrationReview, .stopRetry,
-    .waitRetry, .obtainEvidence, .attemptAtomicReservation], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+    .waitRetry, .obtainEvidence, .attemptAtomicReservation], by intro i; cases i <;> simp⟩) (⟨.rejectInput⟩)
 
 abbrev nextActionSemanticPartition : SemanticPartition where
   partition := nextActionPartition

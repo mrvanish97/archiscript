@@ -81,7 +81,7 @@ private def checkedClaims : List Json := Id.run do
     duplicate_requests_no_ledger_command
   return [
     Json.mkObj [("proof", toJson "PaymentWebhook.inputSemanticPartition.hasMembers"),
-                ("claim", toJson "inputPartition classifier agrees with inputMembers")],
+                ("claim", toJson "inputPartition declared semantic members agree with inputMembers")],
     Json.mkObj [("proof", toJson "PaymentWebhook.first_success_requests_fulfillment"),
                 ("claim", toJson "requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment")],
     Json.mkObj [("proof", toJson "PaymentWebhook.duplicate_requests_no_ledger_command"),
@@ -112,6 +112,9 @@ private def provenanceJson {α : Type} : CarrierOrigin α → Json
 private def definitionJson {α : Type} {meaning : Domain α} :
     DomainDerivation α meaning → Json
   | .predicate _ => Json.mkObj [("status", toJson "lean-predicate")]
+  | .named name definition => Json.mkObj [
+      ("status", toJson "named"), ("name", toJson name),
+      ("parts", toJson [definitionJson definition])]
   | .opaque reason _ _ => Json.mkObj [
       ("status", toJson "opaque"), ("reason", toJson reason)]
   | .intersection left right => Json.mkObj [

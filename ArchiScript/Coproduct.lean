@@ -15,7 +15,6 @@ boundary.
 abbrev coproduct (P Q : Partition) : Partition where
   Carrier := Sum P.Carrier Q.Carrier
   MemberIndex := Sum P.MemberIndex Q.MemberIndex
-  carrierNonempty := ⟨Sum.inl (Classical.choice P.carrierNonempty)⟩
   memberIndexDecidableEq := inferInstance
   memberIndexFinite := by
     obtain ⟨is, his⟩ := P.memberIndexFinite
@@ -29,34 +28,58 @@ abbrev coproduct (P Q : Partition) : Partition where
     | inr j =>
       simp only [List.mem_append, List.mem_map]
       exact Or.inr ⟨j, hjs j, rfl⟩
-  classify
-    | .inl x => .inl (P.classify x)
-    | .inr y => .inr (Q.classify y)
-  member_inhabited := by
-    intro ij
-    cases ij with
-    | inl i =>
-      rcases P.member_inhabited i with ⟨x, hx⟩
-      exact ⟨.inl x, congrArg Sum.inl hx⟩
-    | inr j =>
-      rcases Q.member_inhabited j with ⟨y, hy⟩
-      exact ⟨.inr y, congrArg Sum.inr hy⟩
-
-@[simp] theorem coproduct_classify_inl (P Q : Partition) (x : P.Carrier) :
-    (P.coproduct Q).classify (.inl x) = .inl (P.classify x) := rfl
-
-@[simp] theorem coproduct_classify_inr (P Q : Partition) (y : Q.Carrier) :
-    (P.coproduct Q).classify (.inr y) = .inr (Q.classify y) := rfl
+  memberIndexNonempty := ⟨.inl (Classical.choice P.memberIndexNonempty)⟩
+  members := fun ij => Subdomain.root "tagged alternative"
+    (fun xy => match ij, xy with
+      | .inl i, .inl x => P.member i x
+      | .inr j, .inr y => Q.member j y
+      | _, _ => False)
+    (by
+      cases ij with
+      | inl i =>
+        obtain ⟨x, hx⟩ := P.member_nonempty i
+        exact ⟨.inl x, hx⟩
+      | inr j =>
+        obtain ⟨y, hy⟩ := Q.member_nonempty j
+        exact ⟨.inr y, hy⟩)
+    (.predicate _)
+  coverage := by
+    intro xy
+    cases xy with
+    | inl x =>
+      obtain ⟨i, hi⟩ := P.coverage x
+      exact ⟨.inl i, hi⟩
+    | inr y =>
+      obtain ⟨j, hj⟩ := Q.coverage y
+      exact ⟨.inr j, hj⟩
+  disjoint := by
+    intro ij kl hne xy h
+    cases ij <;> cases kl <;> cases xy <;>
+      simp only [Subdomain.root, member] at h
+    · exact hne (congrArg Sum.inl (P.member_unique h.1 h.2))
+    · exact h.1
+    · exact h.2
+    · exact h.1
+    · exact h.1
+    · exact h.2
+    · exact h.1
+    · exact hne (congrArg Sum.inr (Q.member_unique h.1 h.2))
 
 @[simp] theorem coproduct_member_inl_iff (P Q : Partition)
     (i : P.MemberIndex) (x : P.Carrier) :
-    (P.coproduct Q).member (.inl i) (.inl x) ↔ P.member i x := by
-  simp [member, coproduct]
+    (P.coproduct Q).member (.inl i) (.inl x) ↔ P.member i x := Iff.rfl
 
 @[simp] theorem coproduct_member_inr_iff (P Q : Partition)
     (j : Q.MemberIndex) (y : Q.Carrier) :
-    (P.coproduct Q).member (.inr j) (.inr y) ↔ Q.member j y := by
-  simp [member, coproduct]
+    (P.coproduct Q).member (.inr j) (.inr y) ↔ Q.member j y := Iff.rfl
+
+@[simp] theorem coproduct_classify_inl (P Q : Partition) (x : P.Carrier) :
+    (P.coproduct Q).classify (.inl x) = .inl (P.classify x) :=
+  ((P.coproduct Q).self_member _ _).mp (P.classify_spec x)
+
+@[simp] theorem coproduct_classify_inr (P Q : Partition) (y : Q.Carrier) :
+    (P.coproduct Q).classify (.inr y) = .inr (Q.classify y) :=
+  ((P.coproduct Q).self_member _ _).mp (Q.classify_spec y)
 
 /-- Coproduct two VDP isomorphisms componentwise. -/
 def PartitionIso.coproduct {P P' Q Q' : Partition}
@@ -114,19 +137,13 @@ def PartitionIso.coproduct {P P' Q Q' : Partition}
           change Sum.inr (f.memberIndex.toFun (f.memberIndex.invFun j)) = Sum.inr j
           rw [f.memberIndex.right_inv]
   }
-  classify_commutes := by
-    intro xy
-    cases xy with
-    | inl x =>
-        change
-          Sum.inl (P'.classify (e.carrier.toFun x)) =
-            Sum.inl (e.memberIndex.toFun (P.classify x))
-        rw [e.classify_commutes]
-    | inr y =>
-        change
-          Sum.inr (Q'.classify (f.carrier.toFun y)) =
-            Sum.inr (f.memberIndex.toFun (Q.classify y))
-        rw [f.classify_commutes]
+  preserves := by
+    intro ij xy
+    cases ij <;> cases xy
+    · exact e.preserves _ _
+    · exact Iff.rfl
+    · exact Iff.rfl
+    · exact f.preserves _ _
 
 end Partition
 
@@ -142,19 +159,11 @@ def coproduct (P Q : SemanticPartition) : SemanticPartition where
     | .inr j, .inr y => Q.members j y
   hasMembers := by
     intro ij xy
-    cases ij with
-    | inl i =>
-      cases xy with
-      | inl x =>
-        simpa [Partition.member, Partition.coproduct] using P.hasMembers i x
-      | inr y =>
-        simp [Partition.member, Partition.coproduct]
-    | inr j =>
-      cases xy with
-      | inl x =>
-        simp [Partition.member, Partition.coproduct]
-      | inr y =>
-        simpa [Partition.member, Partition.coproduct] using Q.hasMembers j y
+    cases ij <;> cases xy
+    · exact P.hasMembers _ _
+    · exact Iff.rfl
+    · exact Iff.rfl
+    · exact Q.hasMembers _ _
 
 end SemanticPartition
 

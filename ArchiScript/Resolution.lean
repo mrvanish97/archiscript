@@ -50,9 +50,7 @@ theorem coarseningMap_unique {P Q : Partition}
   have hqi := hq i x hx
   have hri := hr i x hx
   rw [← heq] at hri
-  change Q.classify (eq₁ ▸ x) = q i at hqi
-  change Q.classify (eq₁ ▸ x) = r i at hri
-  exact hqi.symm.trans hri
+  exact Q.member_unique hqi hri
 
 /-- Every coarse member has a fine preimage. -/
 theorem coarseningMap_surjective {P Q : Partition}
@@ -65,14 +63,12 @@ theorem coarseningMap_surjective {P Q : Partition}
   let x : P.Carrier := eqCarrier.symm ▸ y
   let i := P.classify x
   refine ⟨i, ?_⟩
-  have hi : P.member i x := rfl
+  have hi : P.member i x := P.classify_spec x
   have hqi := hcontain i x hi
   have htransport : eqCarrier ▸ x = y := by
     exact cast_symm_cast eqCarrier y
   rw [htransport] at hqi
-  change Q.classify y = q i at hqi
-  change Q.classify y = j at hy
-  exact hqi.symm.trans hy
+  exact Q.member_unique hqi hy
 
 theorem refines_refl (P : Partition) : P.Refines P := by
   refine ⟨id, rfl, ?_⟩

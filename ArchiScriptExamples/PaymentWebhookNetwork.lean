@@ -12,14 +12,9 @@ instance : MemberEnumeration ProviderResponse where
   indices := [.rejectRequest, .acknowledge]
   complete := by intro i; cases i <;> simp
 
-abbrev responsePartition : Partition where
-  Carrier := ProviderResponse
-  MemberIndex := ProviderResponse
-  carrierNonempty := ⟨.acknowledge⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejectRequest, .acknowledge], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev responsePartition : Partition :=
+  Partition.closed ProviderResponse "ProviderResponse"
+    (⟨[.rejectRequest, .acknowledge], by intro i; cases i <;> simp⟩) (⟨.acknowledge⟩)
 
 abbrev responseSemanticPartition : SemanticPartition where
   partition := responsePartition
@@ -40,15 +35,10 @@ instance : MemberEnumeration AuditIntent where
                     .firstSuccess, .duplicateSuccess]
   complete := by intro i; cases i <;> simp
 
-abbrev auditPartition : Partition where
-  Carrier := AuditIntent
-  MemberIndex := AuditIntent
-  carrierNonempty := ⟨.invalidDelivery⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.invalidDelivery, .unsupportedDelivery, .paymentFailed,
-                    .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev auditPartition : Partition :=
+  Partition.closed AuditIntent "AuditIntent"
+    (⟨[.invalidDelivery, .unsupportedDelivery, .paymentFailed,
+                    .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩) (⟨.invalidDelivery⟩)
 
 abbrev auditSemanticPartition : SemanticPartition where
   partition := auditPartition
@@ -68,14 +58,9 @@ instance : MemberEnumeration NotificationIntent where
   indices := [.paymentFailure, .successReceipt]
   complete := by intro i; cases i <;> simp
 
-abbrev notificationPartition : Partition where
-  Carrier := NotificationIntent
-  MemberIndex := NotificationIntent
-  carrierNonempty := ⟨.paymentFailure⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.paymentFailure, .successReceipt], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev notificationPartition : Partition :=
+  Partition.closed NotificationIntent "NotificationIntent"
+    (⟨[.paymentFailure, .successReceipt], by intro i; cases i <;> simp⟩) (⟨.paymentFailure⟩)
 
 abbrev notificationSemanticPartition : SemanticPartition where
   partition := notificationPartition
@@ -94,14 +79,9 @@ instance : MemberEnumeration FulfillmentRequest where
   indices := [.enqueue]
   complete := by intro i; cases i <;> simp
 
-abbrev fulfillmentPartition : Partition where
-  Carrier := FulfillmentRequest
-  MemberIndex := FulfillmentRequest
-  carrierNonempty := ⟨.enqueue⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.enqueue], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev fulfillmentPartition : Partition :=
+  Partition.closed FulfillmentRequest "FulfillmentRequest"
+    (⟨[.enqueue], by intro i; cases i <;> simp⟩) (⟨.enqueue⟩)
 
 abbrev fulfillmentSemanticPartition : SemanticPartition where
   partition := fulfillmentPartition

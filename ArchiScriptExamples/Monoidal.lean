@@ -4,14 +4,9 @@ namespace ArchiScriptExamples.Monoidal
 open ArchiScript
 
 /-- A small VDP with semantic members stated separately from its classifier. -/
-abbrev bit : Partition where
-  Carrier := Bool
-  MemberIndex := Bool
-  carrierNonempty := ⟨false⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[false, true], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev bit : Partition :=
+  Partition.closed Bool "Bool"
+    (⟨[false, true], by intro i; cases i <;> simp⟩) (⟨false⟩)
 
 def bitMembers : Bool → Domain Bool
   | false => fun x => x = false
@@ -23,7 +18,7 @@ abbrev semanticBit : SemanticPartition where
   hasMembers := by
     intro i x
     cases i <;> cases x <;>
-      simp [Partition.member, bit, bitMembers]
+      simp [Partition.member, bit, Partition.closed, Subdomain.root, bitMembers]
 
 /-- Four full product members, including both off-diagonal combinations. -/
 def pair := semanticBit.tensor semanticBit
@@ -32,8 +27,10 @@ example (i j x y : Bool) :
     pair.members (i, j) (x, y) ↔ bitMembers i x ∧ bitMembers j y := Iff.rfl
 
 #guard (bit.tensor bit).memberIndices.length == 4
-#guard (bit.tensor bit).classify (false, true) == (false, true)
-#guard (bit.tensor bit).classify (true, false) == (true, false)
+example : (bit.tensor bit).classify (false, true) = (false, true) :=
+  ((bit.tensor bit).self_member _ _).mp ⟨rfl, rfl⟩
+example : (bit.tensor bit).classify (true, false) = (true, false) :=
+  ((bit.tensor bit).self_member _ _).mp ⟨rfl, rfl⟩
 
 /-- One operation can have two branches without introducing concurrency. -/
 def flip : Operation bit bit := ⟨fun i => some (!i)⟩

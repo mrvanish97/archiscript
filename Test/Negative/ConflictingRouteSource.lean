@@ -1,3 +1,4 @@
+-- EXPECT: (operationRegistry.resolve OperationName.register).source = registrationPartition
 import ArchiScriptExamples.UserRegistration
 
 open ArchiScript

@@ -2,9 +2,9 @@ import ArchiScript.Partition
 import ArchiScript.Monoidal
 import ArchiScript.Coproduct
 import ArchiScript.Distributive
+import ArchiScript.Presentation
 import ArchiScript.Expression
 import ArchiScript.Resolution
-import ArchiScript.Boundary
-import ArchiScript.Operation.Declaration
-import ArchiScript.Review
-import ArchiScript.ParameterizedPartition
+import ArchiScript.Consequence
+import ArchiScript.Reachability
+import ArchiScript.Verification

@@ -4,7 +4,7 @@ namespace ArchiScriptTests.Monoidal
 open ArchiScript ArchiScriptExamples.Monoidal
 
 #guard Partition.unit.memberIndices.length == 1
-example : Partition.unit.member () () := rfl
+example : Partition.unit.member () () := trivial
 example : SemanticPartition.unit.members () () := trivial
 
 example (i j : Bool) : (i, j) ∈ (bit.tensor bit).memberIndices :=
@@ -21,7 +21,11 @@ example (xy : (bit.tensor bit).Carrier) : ∃ ij, pair.members ij xy :=
   pair.members_cover xy
 
 example : (bit.tensor bit).classify (false, true) ≠
-    (bit.tensor bit).classify (true, false) := by decide
+    (bit.tensor bit).classify (true, false) := by
+  have left := ((bit.tensor bit).self_member (false, true) (false, true)).mp ⟨rfl, rfl⟩
+  have right := ((bit.tensor bit).self_member (true, false) (true, false)).mp ⟨rfl, rfl⟩
+  rw [left, right]
+  decide
 
 example : independent (false, false) = none := rfl
 example : independent (false, true) = some (true, true) := rfl

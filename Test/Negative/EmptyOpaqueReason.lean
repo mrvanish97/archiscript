@@ -1,3 +1,4 @@
+-- EXPECT: proved that the proposition
 import ArchiScript
 
 open ArchiScript

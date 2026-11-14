@@ -29,25 +29,24 @@ example : formPartition.HasMembers formMembers := formPartition_has_members
 example : ¬ formPartition.HasMembers (fun | true => emailProvided | false => nameProvided) := by
   intro h
   have bad := (h false ("a@example.test", "Ada")).mpr (by decide)
-  change true = false at bad
-  cases bad
+  exact bad ⟨by decide, by decide⟩
 
 -- The incomplete member must include mixed cases, not just both-empty inputs.
 example : ¬ formPartition.HasMembers
     (fun | true => completeForm | false => fun x => ¬ emailProvided x ∧ ¬ nameProvided x) := by
   intro h
-  have bad := (h false ("a@example.test", "")).mp rfl
+  have bad := (h false ("a@example.test", "")).mp (by intro hb; exact hb.2 rfl)
   exact bad.1 (by decide)
 
 -- All three incomplete combinations survive and share one coarser member.
-#guard fieldPartition.classify ("", "") == (false, false)
-#guard fieldPartition.classify ("", "Ada") == (false, true)
-#guard fieldPartition.classify ("a@example.test", "") == (true, false)
-#guard fieldPartition.classify ("a@example.test", "Ada") == (true, true)
-#guard formPartition.classify ("", "") == false
-#guard formPartition.classify ("", "Ada") == false
-#guard formPartition.classify ("a@example.test", "") == false
-#guard formPartition.classify ("a@example.test", "Ada") == true
+#guard fieldPartitionLookup ("", "") == (false, false)
+#guard fieldPartitionLookup ("", "Ada") == (false, true)
+#guard fieldPartitionLookup ("a@example.test", "") == (true, false)
+#guard fieldPartitionLookup ("a@example.test", "Ada") == (true, true)
+#guard formPartitionLookup ("", "") == false
+#guard formPartitionLookup ("", "Ada") == false
+#guard formPartitionLookup ("a@example.test", "") == false
+#guard formPartitionLookup ("a@example.test", "Ada") == true
 
 example (x : Input) : forgetFieldFailures (fieldPartition.classify x) =
     some (formPartition.classify x) := forgetFieldFailures_preserves_classification x

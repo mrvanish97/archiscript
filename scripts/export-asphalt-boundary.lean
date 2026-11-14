@@ -23,6 +23,10 @@ private def projection : Json := Id.run do
     ("admissionCarrierOrigin", toJson status),
     ("opaqueSupportingSubdomains",
       toJson admissionArchitecture.opaqueSupportingSubdomains),
+    ("unregisteredSemanticPredicates", toJson [Json.mkObj [
+      ("name", toJson "externalScanPasses"),
+      ("status", toJson "unproved-nonemptiness"),
+      ("reason", toJson "External security semantics have no supplied inhabitant; this is not a registered Subdomain")]]),
     ("naturalCountCarrierOrigin", toJson naturalStatus),
     ("naturalCountSource", toJson "external decoder contract; no carrier-valued operation is modeled")
   ]

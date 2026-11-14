@@ -1,3 +1,4 @@
+import ArchiScriptExamples.ProofSupport
 import ArchiScript.ParameterizedPartition
 
 namespace ArchiScriptExamples.UserRegistration
@@ -21,20 +22,33 @@ instance : MemberEnumeration UserMemberIndex where
   indices := [.invalid, .validNew, .validExisting]
   complete := by intro i; cases i <;> simp
 
-abbrev userPartition : Partition where
-  Carrier := PreclassifiedUserInput
-  MemberIndex := UserMemberIndex
-  carrierNonempty := ⟨.malformed⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.invalid, .validNew, .validExisting], by intro i; cases i <;> simp⟩
-  classify
+def userPartitionRegions : UserMemberIndex → Domain PreclassifiedUserInput
+  | .invalid => fun x => x = .malformed
+  | .validNew => fun x => ∃ email, x = .newUser email
+  | .validExisting => fun x => ∃ id, x = .existingUser id
+
+def userPartitionLookup : PreclassifiedUserInput → UserMemberIndex
     | .malformed => .invalid
     | .newUser _ => .validNew
     | .existingUser _ => .validExisting
-  member_inhabited
+
+theorem userPartitionLookup_correct : ∀ i x, userPartitionLookup x = i ↔ userPartitionRegions i x := by
+  intro i x
+  cases i <;> cases x <;> simp [userPartitionLookup, userPartitionRegions]
+
+theorem userPartitionLookup_inhabited : ∀ i : UserMemberIndex, ∃ x : PreclassifiedUserInput, userPartitionLookup x = i := fun
     | .invalid => ⟨.malformed, rfl⟩
     | .validNew => ⟨.newUser "new@example.test", rfl⟩
     | .validExisting => ⟨.existingUser 0, rfl⟩
+
+abbrev userPartition : Partition :=
+  partitionOfRegions PreclassifiedUserInput UserMemberIndex "userPartition" userPartitionRegions
+    (⟨[.invalid, .validNew, .validExisting], by intro i; cases i <;> simp⟩) userPartitionLookup userPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := userPartitionLookup_inhabited i
+      exact ⟨x, (userPartitionLookup_correct i x).mp hx⟩)
+    ⟨.invalid⟩
 
 inductive RegistrationMemberIndex where
   | rejected
@@ -51,20 +65,33 @@ instance : MemberEnumeration RegistrationMemberIndex where
   indices := [.rejected, .created, .selected]
   complete := by intro i; cases i <;> simp
 
-abbrev registrationPartition : Partition where
-  Carrier := RegistrationResult
-  MemberIndex := RegistrationMemberIndex
-  carrierNonempty := ⟨.rejected⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejected, .created, .selected], by intro i; cases i <;> simp⟩
-  classify
+def registrationPartitionRegions : RegistrationMemberIndex → Domain RegistrationResult
+  | .rejected => fun x => x = .rejected
+  | .created => fun x => ∃ id, x = .created id
+  | .selected => fun x => ∃ id, x = .selected id
+
+def registrationPartitionLookup : RegistrationResult → RegistrationMemberIndex
     | .rejected => .rejected
     | .created _ => .created
     | .selected _ => .selected
-  member_inhabited
+
+theorem registrationPartitionLookup_correct : ∀ i x, registrationPartitionLookup x = i ↔ registrationPartitionRegions i x := by
+  intro i x
+  cases i <;> cases x <;> simp [registrationPartitionLookup, registrationPartitionRegions]
+
+theorem registrationPartitionLookup_inhabited : ∀ i : RegistrationMemberIndex, ∃ x : RegistrationResult, registrationPartitionLookup x = i := fun
     | .rejected => ⟨.rejected, rfl⟩
     | .created => ⟨.created 0, rfl⟩
     | .selected => ⟨.selected 0, rfl⟩
+
+abbrev registrationPartition : Partition :=
+  partitionOfRegions RegistrationResult RegistrationMemberIndex "registrationPartition" registrationPartitionRegions
+    (⟨[.rejected, .created, .selected], by intro i; cases i <;> simp⟩) registrationPartitionLookup registrationPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := registrationPartitionLookup_inhabited i
+      exact ⟨x, (registrationPartitionLookup_correct i x).mp hx⟩)
+    ⟨.rejected⟩
 
 def register : Operation userPartition registrationPartition where
   run
@@ -80,14 +107,27 @@ instance : MemberEnumeration Channel where
   indices := [.web, .api]
   complete := by intro i; cases i <;> simp
 
-abbrev channelPartition : Partition where
-  Carrier := Bool
-  MemberIndex := Channel
-  carrierNonempty := ⟨false⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.web, .api], by intro i; cases i <;> simp⟩
-  classify | false => .web | true => .api
-  member_inhabited | .web => ⟨false, rfl⟩ | .api => ⟨true, rfl⟩
+def channelPartitionRegions : Channel → Domain Bool
+  | .web => fun x => x = false
+  | .api => fun x => x = true
+
+def channelPartitionLookup : Bool → Channel | false => .web | true => .api
+
+theorem channelPartitionLookup_correct : ∀ i x, channelPartitionLookup x = i ↔ channelPartitionRegions i x := by
+  intro i x
+  cases i <;> cases x <;> simp [channelPartitionLookup, channelPartitionRegions]
+
+theorem channelPartitionLookup_inhabited : ∀ i : Channel, ∃ x : Bool, channelPartitionLookup x = i := fun
+    | .web => ⟨false, rfl⟩ | .api => ⟨true, rfl⟩
+
+abbrev channelPartition : Partition :=
+  partitionOfRegions Bool Channel "channelPartition" channelPartitionRegions
+    (⟨[.web, .api], by intro i; cases i <;> simp⟩) channelPartitionLookup channelPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := channelPartitionLookup_inhabited i
+      exact ⟨x, (channelPartitionLookup_correct i x).mp hx⟩)
+    ⟨.web⟩
 
 inductive OperationName where
   | register
@@ -206,9 +246,9 @@ structure ExistingSelection (branch : Operation.Branch register)
     (before after : UserStore) where
   source_is_existing : branch.source = UserMemberIndex.validExisting
   input : PreclassifiedUserInput
-  input_in_branch : userPartition.classify input = branch.source
+  input_in_branch : userPartition.member branch.source input
   output : RegistrationResult
-  output_in_branch : registrationPartition.classify output = branch.target
+  output_in_branch : registrationPartition.member branch.target output
   selectedId : Nat
   input_is_selected_id : input = .existingUser selectedId
   selected_was_present : before selectedId
@@ -219,9 +259,9 @@ structure NewUserCreation (branch : Operation.Branch register)
     (before after : UserStore) where
   source_is_new : branch.source = UserMemberIndex.validNew
   input : PreclassifiedUserInput
-  input_in_branch : userPartition.classify input = branch.source
+  input_in_branch : userPartition.member branch.source input
   output : RegistrationResult
-  output_in_branch : registrationPartition.classify output = branch.target
+  output_in_branch : registrationPartition.member branch.target output
   createdId : Nat
   output_is_created : output = .created createdId
   absent_before : ¬ before createdId
@@ -286,14 +326,27 @@ instance : MemberEnumeration Region where
   indices := [.domestic, .international]
   complete := by intro i; cases i <;> simp
 
-abbrev regionPartition : Partition where
-  Carrier := Bool
-  MemberIndex := Region
-  carrierNonempty := ⟨false⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.domestic, .international], by intro i; cases i <;> simp⟩
-  classify | false => .domestic | true => .international
-  member_inhabited | .domestic => ⟨false, rfl⟩ | .international => ⟨true, rfl⟩
+def regionPartitionRegions : Region → Domain Bool
+  | .domestic => fun x => x = false
+  | .international => fun x => x = true
+
+def regionPartitionLookup : Bool → Region | false => .domestic | true => .international
+
+theorem regionPartitionLookup_correct : ∀ i x, regionPartitionLookup x = i ↔ regionPartitionRegions i x := by
+  intro i x
+  cases i <;> cases x <;> simp [regionPartitionLookup, regionPartitionRegions]
+
+theorem regionPartitionLookup_inhabited : ∀ i : Region, ∃ x : Bool, regionPartitionLookup x = i := fun
+    | .domestic => ⟨false, rfl⟩ | .international => ⟨true, rfl⟩
+
+abbrev regionPartition : Partition :=
+  partitionOfRegions Bool Region "regionPartition" regionPartitionRegions
+    (⟨[.domestic, .international], by intro i; cases i <;> simp⟩) regionPartitionLookup regionPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := regionPartitionLookup_inhabited i
+      exact ⟨x, (regionPartitionLookup_correct i x).mp hx⟩)
+    ⟨.domestic⟩
 
 /-- Two finite specialization steps, resolved inside-out to an ordinary VDP. -/
 def regionalChannelRegistration : ParameterizedPartition.Nested regionPartition where

@@ -1,62 +1,45 @@
-# Compositional Lean proofs
+# Composing proofs without changing the model
 
-Use this example when a theorem requires a large case split. The goal is
-to reuse verified local statements and prove **the original theorem**.
+Keep the intended proposition and carrier fixed. A smaller proof is useful only
+when the same mathematical conclusion follows.
 
-## Example: shared reservation decision
+## Reuse algebraic facts
 
-In `ArchiScriptExamples/ReservationController.lean`:
+`Operation.comp_assoc`, `tensor_comp`, coproduct injection/copairing laws and the
+monoidal coherence laws avoid repeated source-member enumeration. Refinement
+is semantic containment on the same carrier. A consumer factors through a
+coarsening only when it respects every collapsed fiber; `firstFiberConflict`
+returns a concrete obstruction.
 
-- `planControllerMutation` combines user, payment, and expiry entry paths.
-- `inventoryEffect_factorizes` already proves:
-  `inventoryEffectAtCoarseResolution.comp forgetInventoryMutationDetail = inventoryEffect`.
-- `Operation.comp_assoc` lifts that result through any producer of a
-  `ReservationMutation`, without enumerating the producer's source members.
+The ReservationController algebra fixture retains successful inventory
+factorization and rejected outbox factorization. Its nonlinear examples now
+use `Presentation`. It is an algebra/projection example, not a complete Cone
+certificate. Its selected `Presentation.Family` establishes no exhaustiveness.
 
-The following is a template to check in Lean before using it in a model:
+`Presentation.Rewrite` certifies equality of denoted Operations with unchanged
+endpoints. `Presentation.Transport` requires explicit endpoint `PartitionIso`
+values and a commuting square. Canonical distributivity is an isomorphism,
+never definitional equality. Hiding an intermediate nominal object is an
+architecture projection, not a theorem that composition erased that object.
 
-```lean
-import ArchiScriptExamples.ReservationController
+## Reuse semantic invariants
 
-open ArchiScript
-open ArchiScriptExamples.ReservationController
+`DeclaredArchitecture.evaluate_of_assignment` proves a particular node-value
+invariant from root agreement, all generator equations and availability.
+It does not assert stationary values for arbitrary cycles. The correlated-join
+example uses this lemma to preserve common-source correlation across fan-out.
+Its independently authored join contract is checked against the reference
+relation for every derived input term.
 
-theorem inventory_after_any_producer
-    {S : Partition}
-    (producer : Operation S reservationMutationPartition) :
-    inventoryEffect.comp producer =
-      inventoryEffectAtCoarseResolution.comp
-        (forgetInventoryMutationDetail.comp producer) := by
-  rw [← inventoryEffect_factorizes]
-  exact Operation.comp_assoc
-    inventoryEffectAtCoarseResolution
-    forgetInventoryMutationDetail
-    producer
-```
+`Evaluates.supplier` projects an already proved full-tuple evaluation. It must
+not be used to redefine independently required incoming images from accepted
+join tuples. Those images are obtained from the actual suppliers first.
 
-The same `InventoryMutationView` is **not** a valid cut for the outbox:
-`publishMutation_does_not_factorThrough_inventoryView` is a checked
-counterexample. Never reuse a coarsening-based split for a different
-consumer without proving its factorization.
+For cycles, prove the reference boundary image before optimizing saturation.
+The cyclic example relates finite provenance derivations to an independently
+stated alternating-member law and supplies `ExactAbstraction` for its finite
+closure. Reachable sets stabilize while Operation powers keep alternating.
 
-## Choose an assembly law
-
-| Goal structure | Existing Lean mechanism |
-| --- | --- |
-| Equality of Operations | `Operation.ext` |
-| Sequential composition | `Operation.comp_assoc` |
-| Independent tensor composition | `Operation.tensor_comp` |
-| Rewriting an Expression subtree | `Expression.Rewrite.comp`, `.tensor`, `.copair`, `.trans` |
-| Changed endpoint representatives | `Expression.Transport` with an explicit `PartitionIso` |
-| Consumer of a coarsened VDP | Prove `Operation.FactorsThrough`; use `firstFiberConflict` to reject invalid candidates |
-
-Only use a row when its theorem matches the goal. If no structural law
-applies, a direct finite proof is acceptable. Keep the source theorem,
-carriers, partiality, and independent tensor members unchanged.
-
-## Verify the result
-
-Run `lake build` and the normal project checks. For each difficult
-proof, retain the checked theorem name and any reusable local lemmas.
-For performance comparisons, use the same original statement and record
-actual Lean check time and AI retries; do not claim a speedup without a run.
+A fixed-point calculation on a reduced state space requires an exactness
+proof. Keep all root identity and correlations needed by the final query.
+Memoizing only an Operation and one member is not generally sufficient.

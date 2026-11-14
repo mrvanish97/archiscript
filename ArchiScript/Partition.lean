@@ -1,4 +1,4 @@
-import Std
+import ArchiScript.Subdomain
 
 namespace ArchiScript
 
@@ -46,126 +46,150 @@ instance [MemberEnumeration α] [MemberEnumeration β] :
 end MemberEnumeration
 
 
-/-- A value domain is a predicate. It need not be a partition. -/
-abbrev Domain (α : Type u) := α → Prop
-
-namespace Domain
-
-def complement (s : Domain α) : Domain α := fun x => ¬ s x
-
-/-- The remainder of a subdomain inside its explicitly justified parent. -/
-def relativeComplement (parent excluded : Domain α)
-    (_contained : ∀ x, excluded x → parent x) : Domain α :=
-  fun x => parent x ∧ ¬ excluded x
-
-theorem mem_complement_iff (s : Domain α) (x : α) : complement s x ↔ ¬ s x := Iff.rfl
-
-theorem cover_complement (s : Domain α) (x : α) : s x ∨ complement s x :=
-  Classical.em (s x)
-
-theorem disjoint_complement (s : Domain α) (x : α) : ¬ (s x ∧ complement s x) :=
-  fun h => h.2 h.1
-
-end Domain
-
-/--
-A partition (VDP) is a nonempty carrier classified by finitely many abstract
-member indices. A proof-irrelevant finiteness witness replaces ordered storage.
-`member_inhabited` rules out unused indices. The semantic member is the
-classifier fiber, not its index.
--/
+/-- A VDP is a finite, nonempty family of declared semantic Subdomains
+partitioning the whole carrier. No classifier is accepted as its definition. -/
 structure Partition where
   Carrier : Type u
   MemberIndex : Type v
-  carrierNonempty : Nonempty Carrier
   memberIndexDecidableEq : DecidableEq MemberIndex
   memberIndexFinite : ∃ indices : List MemberIndex, ∀ i, i ∈ indices
-  classify : Carrier → MemberIndex
-  member_inhabited : ∀ i, ∃ x, classify x = i
+  memberIndexNonempty : Nonempty MemberIndex
+  members : MemberIndex → Subdomain Carrier
+  coverage : ∀ x, ∃ i, (members i).meaning x
+  disjoint : ∀ {i j}, i ≠ j → ∀ x, ¬ ((members i).meaning x ∧ (members j).meaning x)
+
+set_option linter.checkUnivs false in
+/-- Preferred mathematical name; `Partition` remains the algebra's spelling. -/
+abbrev VDP := Partition
 
 namespace Partition
 
-/-- A deliberately separate, computable enumeration of semantic member indices. -/
-def memberIndices (P : Partition) [MemberEnumeration P.MemberIndex] :
-    List P.MemberIndex := MemberEnumeration.indices
+/-- A genuinely closed finite carrier may use constructor equality as its
+semantic regions. The exhaustive carrier enumeration is required evidence. -/
+abbrev closed (α : Type u) [DecidableEq α] (name : String)
+    (finite : ∃ xs : List α, ∀ x, x ∈ xs) (inhabited : Nonempty α) : Partition where
+  Carrier := α
+  MemberIndex := α
+  memberIndexDecidableEq := inferInstance
+  memberIndexFinite := finite
+  memberIndexNonempty := inhabited
+  members := fun i => Subdomain.root name (fun x => x = i) ⟨i, rfl⟩ (.predicate _)
+  coverage := fun x => ⟨x, rfl⟩
+  disjoint := by
+    intro i j different x h
+    exact different (h.1.symm.trans h.2)
 
-theorem memberIndices_complete (P : Partition) [MemberEnumeration P.MemberIndex]
-    (i : P.MemberIndex) : i ∈ P.memberIndices :=
-  MemberEnumeration.complete i
+/-- Reuse all the evidence of a declared split of the entire carrier type. -/
+abbrev ofSplit {parent : Subdomain α} (s : SemanticSplit parent)
+    (entire : ∀ x, parent.meaning x) : Partition where
+  Carrier := α
+  MemberIndex := s.Index
+  memberIndexDecidableEq := s.indexDecidableEq
+  memberIndexFinite := ⟨s.indices, s.indices_complete⟩
+  memberIndexNonempty := s.indexNonempty
+  members := s.children
+  coverage := fun x => s.covers x (entire x)
+  disjoint := fun h x => s.disjoint _ _ h x
+
+instance (P : Partition) : DecidableEq P.MemberIndex := P.memberIndexDecidableEq
+instance (P : Partition) : Nonempty P.MemberIndex := P.memberIndexNonempty
+
+def member (P : Partition) (i : P.MemberIndex) : Domain P.Carrier :=
+  (P.members i).meaning
+
+theorem member_nonempty (P : Partition) (i : P.MemberIndex) : ∃ x, P.member i x :=
+  (P.members i).nonempty
+
+theorem carrierNonempty (P : Partition) : Nonempty P.Carrier := by
+  obtain ⟨i⟩ := P.memberIndexNonempty
+  obtain ⟨x, _⟩ := P.member_nonempty i
+  exact ⟨x⟩
 
 instance (P : Partition) : Nonempty P.Carrier := P.carrierNonempty
-instance (P : Partition) : DecidableEq P.MemberIndex := P.memberIndexDecidableEq
 
-/-- Independent aggregation: every pair of carrier values and every pair of
-members remains present, including when both factors are the same VDP. -/
+def memberIndices (P : Partition) [MemberEnumeration P.MemberIndex] : List P.MemberIndex :=
+  MemberEnumeration.indices
+
+theorem memberIndices_complete (P : Partition) [MemberEnumeration P.MemberIndex]
+    (i : P.MemberIndex) : i ∈ P.memberIndices := MemberEnumeration.complete i
+
+theorem member_unique (P : Partition) {i j : P.MemberIndex} {x : P.Carrier}
+    (hi : P.member i x) (hj : P.member j x) : i = j := by
+  by_cases h : i = j
+  · exact h
+  · exact False.elim (P.disjoint h x ⟨hi, hj⟩)
+
+/-- Optional classical lookup, derived only after semantic coverage is proved. -/
+noncomputable def classify (P : Partition) (x : P.Carrier) : P.MemberIndex :=
+  Classical.choose (P.coverage x)
+
+theorem classify_spec (P : Partition) (x : P.Carrier) : P.member (P.classify x) x :=
+  Classical.choose_spec (P.coverage x)
+
+theorem self_member (P : Partition) (i : P.MemberIndex) (x : P.Carrier) :
+    P.member i x ↔ P.classify x = i := by
+  constructor
+  · exact fun h => P.member_unique (P.classify_spec x) h
+  · intro h
+    rw [← h]
+    exact P.classify_spec x
+
+/-- Executable lookup requires separate decidability evidence. The witness is
+checked against the primary members, not used to define them. -/
+def lookup (P : Partition) [MemberEnumeration P.MemberIndex] (x : P.Carrier)
+    [DecidablePred (fun i => P.member i x)] : Option P.MemberIndex :=
+  P.memberIndices.find? (fun i => decide (P.member i x))
+
+def HasMembers (P : Partition) (meanings : P.MemberIndex → Domain P.Carrier) : Prop :=
+  ∀ i x, P.member i x ↔ meanings i x
+
 abbrev tensor (P Q : Partition) : Partition where
   Carrier := P.Carrier × Q.Carrier
   MemberIndex := P.MemberIndex × Q.MemberIndex
-  carrierNonempty := ⟨Classical.choice P.carrierNonempty, Classical.choice Q.carrierNonempty⟩
   memberIndexDecidableEq := inferInstance
   memberIndexFinite := by
     obtain ⟨is, his⟩ := P.memberIndexFinite
     obtain ⟨js, hjs⟩ := Q.memberIndexFinite
     refine ⟨is.flatMap (fun i => js.map fun j => (i, j)), ?_⟩
     intro ⟨i, j⟩
-    simp only [List.mem_flatMap, List.mem_map]
-    exact ⟨i, his i, j, hjs j, rfl⟩
-  classify := fun xy => (P.classify xy.1, Q.classify xy.2)
-  member_inhabited := by
-    intro ⟨i, j⟩
-    obtain ⟨x, hx⟩ := P.member_inhabited i
-    obtain ⟨y, hy⟩ := Q.member_inhabited j
-    exact ⟨(x, y), Prod.ext hx hy⟩
+    exact List.mem_flatMap.mpr ⟨i, his i, List.mem_map.mpr ⟨j, hjs j, rfl⟩⟩
+  memberIndexNonempty := inferInstance
+  members := fun ij => Subdomain.root
+    ((P.members ij.1).name ++ " ⊗ " ++ (Q.members ij.2).name)
+    (fun xy => P.member ij.1 xy.1 ∧ Q.member ij.2 xy.2)
+    (by
+      obtain ⟨x, hx⟩ := P.member_nonempty ij.1
+      obtain ⟨y, hy⟩ := Q.member_nonempty ij.2
+      exact ⟨(x, y), hx, hy⟩)
+    (.predicate _)
+  coverage := by
+    intro ⟨x, y⟩
+    obtain ⟨i, hi⟩ := P.coverage x
+    obtain ⟨j, hj⟩ := Q.coverage y
+    exact ⟨(i, j), hi, hj⟩
+  disjoint := by
+    intro ⟨i, j⟩ ⟨k, l⟩ hne ⟨x, y⟩ h
+    exact hne (Prod.ext (P.member_unique h.1.1 h.2.1) (Q.member_unique h.1.2 h.2.2))
 
-/-- The tensor unit has one value and one semantic member. -/
 abbrev unit : Partition where
   Carrier := Unit
   MemberIndex := Unit
-  carrierNonempty := ⟨()⟩
   memberIndexDecidableEq := inferInstance
   memberIndexFinite := ⟨[()], by intro i; cases i; simp⟩
-  classify := fun _ => ()
-  member_inhabited := by intro i; cases i; exact ⟨(), rfl⟩
-
-/-- The actual semantic subdomain represented by a member index. -/
-def member (P : Partition) (i : P.MemberIndex) : Domain P.Carrier :=
-  fun x => P.classify x = i
+  memberIndexNonempty := ⟨()⟩
+  members := fun _ => Subdomain.root "Unit" (fun _ => True) ⟨(), trivial⟩ (.predicate _)
+  coverage := fun _ => ⟨(), trivial⟩
+  disjoint := by intro i j h; exact False.elim (h (Subsingleton.elim _ _))
 
 @[simp] theorem tensor_member_iff (P Q : Partition)
-    (i : P.MemberIndex) (j : Q.MemberIndex)
-    (x : P.Carrier) (y : Q.Carrier) :
-    (P.tensor Q).member (i, j) (x, y) ↔ P.member i x ∧ Q.member j y := by
-  simp only [member, tensor, Prod.mk.injEq]
+    (i : P.MemberIndex) (j : Q.MemberIndex) (x : P.Carrier) (y : Q.Carrier) :
+    (P.tensor Q).member (i, j) (x, y) ↔ P.member i x ∧ Q.member j y := Iff.rfl
 
 @[simp] theorem tensor_classify (P Q : Partition) (x : P.Carrier) (y : Q.Carrier) :
-    (P.tensor Q).classify (x, y) = (P.classify x, Q.classify y) := rfl
+    (P.tensor Q).classify (x, y) = (P.classify x, Q.classify y) :=
+  ((P.tensor Q).self_member _ _).mp ⟨P.classify_spec x, Q.classify_spec y⟩
 
-/--
-The selected semantic members agree with the classifier's actual fibers.
-Supporting subdomains may overlap or be grouped into one selected member.
-The member predicates must be stated independently for this to provide
-semantic evidence; Lean cannot enforce that authoring discipline.
--/
-def HasMembers (P : Partition) (members : P.MemberIndex → Domain P.Carrier) : Prop :=
-  ∀ i x, P.member i x ↔ members i x
-
-theorem self_member (P : Partition) (i : P.MemberIndex) (x : P.Carrier) :
-    P.member i x ↔ P.classify x = i := Iff.rfl
-
-theorem coverage (P : Partition) (x : P.Carrier) : ∃ i, P.member i x :=
-  ⟨P.classify x, rfl⟩
-
-theorem disjoint (P : Partition) {i j : P.MemberIndex} (hne : i ≠ j) (x : P.Carrier) :
-    ¬ (P.member i x ∧ P.member j x) := by
-  intro h
-  exact hne (h.1.symm.trans h.2)
-
-theorem member_nonempty (P : Partition) (i : P.MemberIndex) : ∃ x, P.member i x :=
-  P.member_inhabited i
-
-/-- A carrier value tagged with proof of its unique semantic member. -/
 abbrev Total (P : Partition) := Sigma fun i : P.MemberIndex => {x : P.Carrier // P.member i x}
-
 def erase (P : Partition) : P.Total → P.Carrier := fun t => t.2.1
 
 /-- Minimal isomorphism data, kept independent of external libraries. -/
@@ -178,120 +202,73 @@ structure Iso (α : Type u) (β : Type v) where
 theorem Iso.injective (e : Iso α β) {x y : α} (h : e.toFun x = e.toFun y) : x = y := by
   rw [← e.left_inv x, ← e.left_inv y, h]
 
-def totalIso (P : Partition) : Iso P.Total P.Carrier where
+noncomputable def totalIso (P : Partition) : Iso P.Total P.Carrier where
   toFun := P.erase
-  invFun := fun x => ⟨P.classify x, ⟨x, rfl⟩⟩
+  invFun := fun x => ⟨P.classify x, ⟨x, P.classify_spec x⟩⟩
   left_inv := by
-    intro t
-    rcases t with ⟨m, ⟨x, hx⟩⟩
-    simp only [erase]
-    cases hx
+    intro ⟨i, x, hx⟩
+    have h := (P.self_member i x).mp hx
+    cases h
     rfl
-  right_inv := by intro x; rfl
+  right_inv := fun _ => rfl
 
-/-- Isomorphism may transport values to a different carrier; it is not equality. -/
+/-- Carrier and index isomorphisms must preserve the declared semantic regions. -/
 structure PartitionIso (P Q : Partition) where
   carrier : Iso P.Carrier Q.Carrier
   memberIndex : Iso P.MemberIndex Q.MemberIndex
-  classify_commutes : ∀ x, Q.classify (carrier.toFun x) = memberIndex.toFun (P.classify x)
+  preserves : ∀ i x, P.member i x ↔ Q.member (memberIndex.toFun i) (carrier.toFun x)
 
 namespace PartitionIso
 
+theorem classify_commutes {P Q : Partition} (e : PartitionIso P Q) (x : P.Carrier) :
+    Q.classify (e.carrier.toFun x) = e.memberIndex.toFun (P.classify x) :=
+  (Q.self_member _ _).mp ((e.preserves _ _).mp (P.classify_spec x))
+
 def refl (P : Partition) : PartitionIso P P where
-  carrier := {
-    toFun := id
-    invFun := id
-    left_inv := by intro x; rfl
-    right_inv := by intro x; rfl
-  }
-  memberIndex := {
-    toFun := id
-    invFun := id
-    left_inv := by intro i; rfl
-    right_inv := by intro i; rfl
-  }
-  classify_commutes := by intro x; rfl
+  carrier := ⟨id, id, fun _ => rfl, fun _ => rfl⟩
+  memberIndex := ⟨id, id, fun _ => rfl, fun _ => rfl⟩
+  preserves := fun _ _ => Iff.rfl
 
 def symm {P Q : Partition} (e : PartitionIso P Q) : PartitionIso Q P where
-  carrier := {
-    toFun := e.carrier.invFun
-    invFun := e.carrier.toFun
-    left_inv := e.carrier.right_inv
-    right_inv := e.carrier.left_inv
-  }
-  memberIndex := {
-    toFun := e.memberIndex.invFun
-    invFun := e.memberIndex.toFun
-    left_inv := e.memberIndex.right_inv
-    right_inv := e.memberIndex.left_inv
-  }
-  classify_commutes := by
-    intro y
-    apply e.memberIndex.injective
-    change
-      e.memberIndex.toFun (P.classify (e.carrier.invFun y)) =
-        e.memberIndex.toFun (e.memberIndex.invFun (Q.classify y))
-    rw [← e.classify_commutes (e.carrier.invFun y)]
-    rw [e.carrier.right_inv y, e.memberIndex.right_inv (Q.classify y)]
+  carrier := ⟨e.carrier.invFun, e.carrier.toFun, e.carrier.right_inv, e.carrier.left_inv⟩
+  memberIndex := ⟨e.memberIndex.invFun, e.memberIndex.toFun,
+    e.memberIndex.right_inv, e.memberIndex.left_inv⟩
+  preserves := by
+    intro j y
+    have h := e.preserves (e.memberIndex.invFun j) (e.carrier.invFun y)
+    rw [e.memberIndex.right_inv, e.carrier.right_inv] at h
+    exact h.symm
 
-/-- Compose classification-preserving VDP isomorphisms. -/
 def trans {P Q R : Partition} (e : PartitionIso P Q)
     (f : PartitionIso Q R) : PartitionIso P R where
   carrier := {
     toFun := fun x => f.carrier.toFun (e.carrier.toFun x)
     invFun := fun z => e.carrier.invFun (f.carrier.invFun z)
-    left_inv := by
-      intro x
-      rw [f.carrier.left_inv, e.carrier.left_inv]
-    right_inv := by
-      intro z
-      rw [e.carrier.right_inv, f.carrier.right_inv]
+    left_inv := by intro x; rw [f.carrier.left_inv, e.carrier.left_inv]
+    right_inv := by intro z; rw [e.carrier.right_inv, f.carrier.right_inv]
   }
   memberIndex := {
     toFun := fun i => f.memberIndex.toFun (e.memberIndex.toFun i)
     invFun := fun k => e.memberIndex.invFun (f.memberIndex.invFun k)
-    left_inv := by
-      intro i
-      rw [f.memberIndex.left_inv, e.memberIndex.left_inv]
-    right_inv := by
-      intro k
-      rw [e.memberIndex.right_inv, f.memberIndex.right_inv]
+    left_inv := by intro i; rw [f.memberIndex.left_inv, e.memberIndex.left_inv]
+    right_inv := by intro k; rw [e.memberIndex.right_inv, f.memberIndex.right_inv]
   }
-  classify_commutes := by
-    intro x
-    rw [f.classify_commutes, e.classify_commutes]
+  preserves := fun i x => (e.preserves i x).trans (f.preserves _ _)
 
 end PartitionIso
 
-theorem partitionIso_preserves_member {P Q : Partition} (r : PartitionIso P Q)
+theorem partitionIso_preserves_member {P Q : Partition} (e : PartitionIso P Q)
     (i : P.MemberIndex) (x : P.Carrier) :
-    P.member i x ↔ Q.member (r.memberIndex.toFun i) (r.carrier.toFun x) := by
-  simp only [member]
-  rw [r.classify_commutes]
-  constructor
-  · intro h
-    exact congrArg r.memberIndex.toFun h
-  · intro h
-    exact r.memberIndex.injective h
+    P.member i x ↔ Q.member (e.memberIndex.toFun i) (e.carrier.toFun x) := e.preserves i x
 
-/--
-Pure relabeling keeps the carrier type and every carrier value fixed. The
-equality field is only a type transport, never an arbitrary carrier bijection.
--/
 structure Relabeling (P Q : Partition) where
   sameCarrier : P.Carrier = Q.Carrier
   memberIndex : Iso P.MemberIndex Q.MemberIndex
-  classify_commutes : ∀ x,
-    Q.classify (sameCarrier ▸ x) = memberIndex.toFun (P.classify x)
+  preserves : ∀ i x, P.member i x ↔ Q.member (memberIndex.toFun i) (sameCarrier ▸ x)
 
 theorem relabeling_preserves_member {P Q : Partition} (r : Relabeling P Q)
     (i : P.MemberIndex) (x : P.Carrier) :
-    P.member i x ↔ Q.member (r.memberIndex.toFun i) (r.sameCarrier ▸ x) := by
-  simp only [member]
-  rw [r.classify_commutes]
-  constructor
-  · exact fun h => congrArg r.memberIndex.toFun h
-  · exact fun h => r.memberIndex.injective h
+    P.member i x ↔ Q.member (r.memberIndex.toFun i) (r.sameCarrier ▸ x) := r.preserves i x
 
 end Partition
 
@@ -317,7 +294,7 @@ abbrev tensor (P Q : SemanticPartition) : SemanticPartition where
 def unit : SemanticPartition where
   partition := Partition.unit
   members := fun _ _ => True
-  hasMembers := by intro i x; cases i; cases x; simp [Partition.member, Partition.unit]
+  hasMembers := by intro i x; rfl
 
 /-- The stated semantic members cover every value of the declared carrier. -/
 theorem members_cover (S : SemanticPartition) (x : S.partition.Carrier) :

@@ -1,4 +1,5 @@
-import ArchiScript
+-- EXPECT: CarrierOrigin ConvenientCount
+import ArchiScript.Boundary
 
 open ArchiScript
 

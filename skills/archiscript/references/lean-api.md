@@ -1,542 +1,117 @@
-# Current Lean API patterns
-
-Read the installed `ArchiScript.lean` and its imported modules before adapting
-these patterns. Declaration names and types in the installed package are
-authoritative.
-
-## Partition shape
-
-The example boundary is an externally supplied natural-number request (for
-example, a protocol count); zero is a real input, not a missing constructor.
-The carrier is all `Nat`, and the partition uses the zero predicate and its
-complement. The finite inductive type is only the label universe.
-
-```lean
-import ArchiScript
-
-open ArchiScript
-
-inductive RequestIndex where
-  | zero
-  | positive
-  deriving DecidableEq
-
-def positive : Domain Nat := fun n => 0 < n
-
-def requestPartition : Partition where
-  Carrier := Nat
-  MemberIndex := RequestIndex
-  carrierNonempty := ⟨0⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndices := [.zero, .positive]
-  memberIndices_complete := by intro i; cases i <;> simp
-  classify n := if n = 0 then .zero else .positive
-  member_inhabited
-    | .zero => ⟨0, rfl⟩
-    | .positive => ⟨1, rfl⟩
-```
-
-Here `requestPartition.member .positive` is extensionally the positive
-predicate and `requestPartition.member .zero` is its relative complement. The
-external specification is “a `Nat` request is supplied”; the classifier does
-not invent the carrier from two selected examples. `MemberIndex` contains
-labels, while `requestPartition.member .positive` is the semantic predicate.
-The finite enumeration is not the carrier.
-
-To check that the classifier has the separately defined semantic members:
-
-```lean
-def requestMembers : RequestIndex → Domain Nat
-  | .zero => Domain.complement positive
-  | .positive => positive
-
-example : requestPartition.HasMembers requestMembers := by
-  intro i n
-  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
-    Domain.complement, positive]
-
-def requestSemanticPartition : SemanticPartition where
-  partition := requestPartition
-  members := requestMembers
-  hasMembers := by
-    intro i n
-    cases i <;> cases n <;> simp [Partition.member, requestPartition,
-      requestMembers, Domain.complement, positive]
-```
-
-For review and implementation handoff, record the carrier's origin and a typed
-derivation of each selected member's exact Lean predicate:
-
-```lean
-def requestArchitecture : ArchitecturalPartition where
-  partition := requestPartition
-  carrierOrigin := .externalRoot {
-    source := "request protocol"
-    scope := "request count field"
-    claim := "this independently specified appearance supplies Nat counts"
-    revision := "protocol-revision-id"
-    identified := by decide
-  }
-  selectedMembers := fun i => {
-    meaning := requestMembers i
-    definition := .predicate (requestMembers i)
-  }
-  hasMembers := requestSemanticPartition.hasMembers
-```
-
-The external root is a trusted claim, not a decoder proof. If raw input may be
-negative or fractional, model that broader boundary first or use
-`externalNarrowing` with its upstream origin and a scoped trusted guarantee.
-Carrier provenance does not contain a modeled emitter. `Operation` is a partial
-member mapping, not a carrier-value transformation, and cannot establish the
-origin of its target carrier. Preserve the wider carrier and refine it with
-typed `DomainDerivation` predicates when possible. Use `architecturalDomain`
-for an internally defined semantic universe.
-`carrierClosure` proves constructor exhaustiveness inside a chosen carrier,
-not that an external boundary emits only that carrier. Use
-`.opaque "reason" (by decide) predicate` for a selected member whose extension has no
-defining formula; review export warns about it. Compose Lean predicates with
-`DomainDerivation.intersection`, `.union`, or `.relativeComplement` when the
-subdomain is deductively assembled from supporting domains.
-
-This correspondence constrains the model: the selected regions must equal the
-actual classifier fibers. It is separate proof evidence, so it does not change
-partition identity or composition endpoints. Core coverage and disjointness
-then apply to those regions; there is no separate tree obligation.
-
-## Subdomains and architectural resolution
-
-Represent a named subdomain as a `Domain` predicate. Containment is implication,
-intersection is conjunction, and union is disjunction. A domain can be contained
-in several parents; supporting domains need not be disjoint or exhaustive.
-`Domain.complement s` negates `s` over the whole carrier, while
-`Domain.relativeComplement parent s contained` means $parent \setminus s$,
-implemented as `fun x => parent x ∧ ¬ s x`. Supply containment evidence
-`contained : ∀ x, s x → parent x`. For example, exclude `completeForm` from
-`emailProvided` using `fun _ h => h.1`; the independent `nameProvided` domain is
-not itself contained in `emailProvided`.
-
-A VDP groups regions at the resolution its consumers need. The library's
-`ArchiScriptExamples.FormInput` demonstrates two arbitrary string fields:
-`emailProvided` and `nameProvided` overlap, their intersection is `completeForm`,
-and the remaining three combinations can be either separate members or one
-incomplete member. Both VDPs have checked `HasMembers` evidence and
-`SemanticPartition` review objects. The
-`forgetFieldFailures` operation coarsens the four members to two, with a proof
-that the member mapping agrees with classification of the same input value.
-These predicates model presence, not full email or name validation.
-
-This implements the docs' distinction between supporting semantic regions and
-the selected partition members. A flat declaration is normal; a tree is only a
-possible explanatory view. Opaque-domain reasoning can take explicit predicate
-parameters and assumptions; the core has no symbolic provenance registry or
-automatic inference of those assumptions.
-
-## Coproduct for design-time alternatives
-
-`Partition.coproduct P Q` forms a tagged sum carrier and tagged sum member
-family. It is lossless: neither summand nor member identity is forgotten.
-
-```lean
-#check Partition.coproduct
-#check SemanticPartition.coproduct
-#check Operation.coproductInl
-#check Operation.coproductInr
-#check Operation.copair
-#check Operation.copair_unique
-#check Operation.coproductMap
-```
-
-The categorical law is the usual one: for `f : Operation P R` and
-`g : Operation Q R`, `Operation.copair f g` is the unique operation from
-`P.coproduct Q` whose composites with the two injections are `f` and `g`.
-
-The mathematical constructor is general, but the ArchiScript authoring rule is
-narrow: use coproduct only when the alternatives are fixed by architecture
-before runtime data is materialized. A browser entry VDP and a CLI entry VDP may
-be grouped when the software exposes exactly those two entry channels. Do not
-parse one runtime input, notice several known cases, and manufacture a
-coproduct carrier from those cases. That recreates the unjustified-generalization
-failure: coverage becomes true only because omitted cases were excluded from the
-carrier.
-
-Each summand still needs a complete VDP for its own runtime boundary. Coproduct
-proves exhaustiveness relative to `Sum P.Carrier Q.Carrier`; it never proves
-that this sum is the complete external universe.
-
-The public structure here is binary coproduct. Since `Partition` requires a
-nonempty carrier, this calculus has no empty/initial VDP; do not infer a
-nullary coproduct or claim full finite-coproduct structure including zero.
-
-See `ArchiScriptExamples.Coproduct` for the Browser/CLI example.
-
-## Refinement, coarsening, and consumer factorization
-
-For VDPs on the same carrier, `P.RefinesVia Q q` means every semantic member
-of `P` is wholly contained in the coarse member selected by the total map
-`q`. This is stronger than `q` merely being total and surjective.
-
-```lean
-#check Partition.RefinesVia
-#check Partition.Refines
-#check Partition.coarseningOperation
-#check Partition.coarseningMap_unique
-#check Partition.coarseningMap_surjective
-
-#check Operation.ConstantOnFibers
-#check Operation.FactorsThrough
-#check Operation.firstFiberConflict
-#check Operation.factorizedThrough
-#check Operation.factorization_exists_and_unique
-#check Operation.analyzeFactorization
-```
-
-A proved refinement canonically induces an ordinary total `Operation P Q`.
-For `f : Operation P Y`, factorization through that coarsening exists exactly
-when `f` is constant on every coarsening fiber. The positive result gives the
-unique coarse consumer `g` with `g.comp q = f`; the executable negative path
-returns a proof-carrying `FiberConflict`.
-
-`ArchiScriptExamples.FormInput` is the reference example: four field-presence
-members refine a two-member complete/incomplete VDP without changing the input
-carrier.
-
-## Independent tensor and the unit VDP
-
-`Partition.tensor P Q` has carrier `P.Carrier × Q.Carrier`, index type
-`P.MemberIndex × Q.MemberIndex`, and every pair in its member enumeration.
-Every pair is inhabited because both factors have inhabited members. It is
-never a same-carrier intersection or a compatibility-filtered product. The
-separately defined meanings tensor without another handwritten product proof:
-
-```lean
-def pairedRequests : SemanticPartition :=
-  requestSemanticPartition.tensor requestSemanticPartition
-
-example (i j : RequestIndex) (x y : Nat) :
-    pairedRequests.members (i, j) (x, y) ↔
-      requestMembers i x ∧ requestMembers j y := Iff.rfl
-```
-
-The self tensor has two `Nat` slots even though both factors use the same VDP.
-`Partition.unit` is the one-member Unit VDP. `Operation.tensor` takes the
-independent product of two partial member maps and returns `none` if either is
-undefined:
-
-```lean
-def pairedAccept : Operation (requestPartition.tensor requestPartition)
-    (requestPartition.tensor requestPartition) := accept.tensor accept
-
-example : pairedAccept (.zero, .positive) = none := rfl
-```
-
-`Operation.tensor_id` and `Operation.tensor_comp` establish bifunctoriality.
-`Partition.tensorAssociator`, `tensorLeftUnitor`, `tensorRightUnitor`, and
-`tensorSymmetry` preserve carrier classification and induce invertible member
-operations. `Operation.associator_natural`, `leftUnitor_natural`,
-`rightUnitor_natural`, `symmetry_natural`, `pentagon`, `triangle`, and `hexagon`
-check the concrete symmetric monoidal laws. These maps do not schedule runtime
-work, establish resource independence, or provide a categorical product.
-In particular, there are no canonical tensor projections in the partial-map
-calculus, and the tensor unit is not terminal because partial maps into it need
-not be unique. Architectural joint relevance remains a human review question; normalize
-factor-only findings across rebracketing and symmetry.
-
-## Expressions, distributivity, and local normalization
-
-Version 0.5.0 keeps presentation syntax separate from semantic Operations.
-`Expression X Y` is a finite well-typed syntax tree with exactly one source
-and one target. Interpret it with `Expression.denote`:
-
-```lean
-def acceptExpression : Expression requestPartition requestPartition :=
-  .atom accept
-
-example : Expression.denote acceptExpression = accept := rfl
-
-def acceptFamily : Expression.Family :=
-  Expression.Family.singleton acceptExpression
-```
-
-An expression can branch internally through tensor or copairing without becoming
-a multi-source or multi-target object:
-
-```lean
-def twoAlternativeAccept :
-    Expression (requestPartition.coproduct requestPartition) requestPartition :=
-  .copair (.atom accept) (.atom accept)
-```
-
-`Expression.Family` stores a finite nonempty list of `Expression.Entry` values.
-All entries share `family.source`; each entry carries its own target and typed
-expression. The list is storage, not an ordering relation: 0.5.0 assigns no
-execution order, priority, or architectural identity to an entry's position.
-The declaration naming the family is presentation identity. No name field is
-added to `Partition` or `Operation`.
-
-For unchanged endpoints, use `Expression.Rewrite before after`. Its
-`sound` field proves equality of the denoted Operations. The library supplies
-initial laws for identities, associativity, tensor identity, and coproduct
-injection/copairing:
-
-```lean
-#check Expression.Rewrite.id_left
-#check Expression.Rewrite.id_right
-#check Expression.Rewrite.comp_assoc
-#check Expression.Rewrite.copair_inl
-#check Expression.Rewrite.copair_inr
-#check Expression.Rewrite.tensor_identity
-#check Expression.Rewrite.comp
-#check Expression.Rewrite.tensor
-#check Expression.Rewrite.copair
-```
-
-The congruence helpers `Expression.Rewrite.comp`,
-`.tensor`, and `.copair` lift already-certified local rewrites through a
-larger expression context. This is the intended 0.5.0 pattern for local
-normalization: prove a small law once, then transport that equality through the
-surrounding syntax instead of reproving the whole end-to-end Operation.
-
-When endpoint representatives change through a structural isomorphism, use
-`Expression.Transport`. `Expression.Transport.source` precomposes with the
-inverse source isomorphism, while `Expression.Transport.target` postcomposes
-with a target isomorphism. Both return the commuting-square certificate.
-
-Binary tensor/coproduct distributivity is concrete, not definitional equality:
-
-```lean
-#check Partition.tensorCoproductRightDistributivity
-#check Partition.tensorCoproductLeftDistributivity
-#check Operation.distributeRight
-#check Operation.distributeRightInv
-#check Operation.distributeLeft
-#check Operation.distributeLeftInv
-#check Operation.distributeRight_natural
-#check Operation.distributeLeft_natural
-```
-
-For example,
-
-```lean
-def factoredSourceIso :
-    Partition.PartitionIso
-      ((requestPartition.tensor requestPartition).coproduct
-        (requestPartition.tensor requestPartition))
-      ((requestPartition.coproduct requestPartition).tensor requestPartition) :=
-  Partition.tensorCoproductRightDistributivity
-    requestPartition requestPartition requestPartition
-```
-
-The isomorphism shows one shared structural right coordinate. It does not prove
-one physical read, cache lookup, transaction, or runtime instance.
-
-Structural isomorphisms compose directly:
-
-```lean
-#check Partition.PartitionIso.refl
-#check Partition.PartitionIso.symm
-#check Partition.PartitionIso.trans
-#check Partition.PartitionIso.tensor
-#check Partition.PartitionIso.coproduct
-```
-
-Use these combinators to assemble larger structural rewrites from already-proved
-pieces. For example, the ReservationController first factors the user/payment
-coproduct by right distributivity, lifts that isomorphism through the outer
-coproduct with expiry, then composes with a second right-distributivity witness.
-This avoids restating carrier and member-index bijections for the complete
-three-channel source.
-
-A normalizer should consume known/proved structural `PartitionIso` witnesses;
-it should not search for arbitrary carrier bijections simply because two VDPs
-happen to be mathematically isomorphic. Likewise, tensor does not acquire a
-missing context value: there is no canonical `Operation X (X.tensor R)`.
-If `R` is independent external context, make it a source coordinate unless a
-preceding ordinary Operation explicitly produces the paired value.
-
-Composition also does not remove its intermediate VDP. If an expression denotes
-`g.comp f : Operation A C`, the intermediate `B` from
-`A -> B -> C` remains an object of the architecture category. A review view
-that intentionally hides that nominal VDP is an **architecture projection**,
-not ordinary 0.5.0 normalization. There is intentionally no foundational
-projection object in this release.
-
-The canonical integration example is
-`ArchiScriptExamples.ReservationController`: it combines one common-source
-multi-target family, coproduct reachability simplification, and distributive
-factoring of the common `ReservationState` source coordinate with the existing
-tensor, partiality, coarsening, and factorization stress cases.
-
-## Operations and canonical branch references
-
-An `Operation` is only a partial member map:
-
-```lean
-def accept : Operation requestPartition requestPartition where
-  run
-    | .zero => none
-    | .positive => some .positive
-```
-
-Stable declaration identity comes from `Operation.Registry.OperationName`, not
-from extensional equality of `accept.run`. A declaration owns its scoped
-`BranchName` and one resolver:
-
-```lean
-inductive OperationName where | accept deriving DecidableEq
-inductive BranchName where | positive deriving DecidableEq
-
-def acceptDeclaration : Operation.Declaration where
-  source := requestPartition
-  target := requestPartition
-  operation := accept
-  BranchName := BranchName
-  branchNameDecidableEq := inferInstance
-  branchNames := [.positive]
-  branchNames_complete := by intro name; cases name; simp
-  branchNames_nodup := by decide
-  branch
-    | .positive => ⟨.positive, .positive, rfl⟩
-  responsibilityOwners := ["request-api"]
-  branchResponsibilityOwners := fun _ => some ["request-processing"]
-  implementation := some (.planned { primary := {
-    repository := "request-service", path := "src/requests.ts", symbol := some "accept" } })
-
-def registry : Operation.Registry where
-  OperationName := OperationName
-  operationNameDecidableEq := inferInstance
-  operationNames := [.accept]
-  operationNames_complete := by intro name; cases name; simp
-  operationNames_nodup := by decide
-  resolve
-    | .accept => acceptDeclaration
-
-def acceptedBranch : Operation.BranchAddress registry :=
-  ⟨.accept, .positive⟩
-
-def acceptedBranchWitness := registry.resolveBranch acceptedBranch
-
-#guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
-#guard registry.branchesWithoutImplementation.length == 0
-```
-
-One registry value is the uniqueness scope. Another registry is another model
-scope. An alias is a definition equal to the same `OperationName` or
-`BranchAddress`; a new name is a new declaration identity even if the map is
-extensionally equal.
-
-`responsibilityOwners` defaults to `[]`, and `branchResponsibilityOwners`
-defaults to `fun _ => none`. `none` inherits the operation tags; `some tags`
-replaces them, and `some []` explicitly marks a branch unassigned. Use
-`declaration.effectiveResponsibility name` or
-`registry.resolveBranchResponsibility address` for effective responsibility.
-Tags are free-form labels, with no inferred permission or effect semantics.
-There is no automatic owner propagation through `Operation.comp`: register and
-annotate a composite declaration when it needs its own responsibility contract.
-
-`SourceRef` identifies a production site by repository, path, and optional
-symbol. Line range and revision are navigation metadata. A disposition is
-`planned`, `resolved`, `external`, `intentionallyAbstract`, or `unimplemented`.
-`ImplementationBinding` carries one primary location, optional supporting
-locations, and optional `EvidenceRef`s. `implementation` supplies an operation
-default; `branchImplementation` can override it. Use
-`registry.resolveBranchImplementation address` for the effective result.
-`none` means no disposition was declared and is reported by
-`branchesWithoutImplementation`; it does not mean `unimplemented`.
-
-Declarations and registries enumerate their names with completeness and
-no-duplicate proofs. `branchAddresses` traverses that scope;
-`branchesWithoutResponsibility` and `branchesWithoutImplementation` identify
-missing metadata. `branchesAt sourceRef` returns addresses bound to a matching
-primary or supporting source identity, ignoring line/revision drift. These
-functions inspect declarations; they do not scan repositories, validate paths
-or symbols, or prove that tests and production code conform.
-`Declaration.definedMappingsWithoutBranch` lists defined source-member mappings
-that an optional named branch subset omits. An empty missing-metadata query over
-named branches does not establish whole-operation handoff completeness; check
-this mapping query separately when handing off the full operation. Both example
-review exporters include a coverage count for every registry operation, and
-their generators reject missing coverage or unnamed defined mappings.
-
-The repository example demonstrates an effect theorem tied to a canonical
-branch:
-
-```lean
-import ArchiScriptExamples.UserRegistration
-
-open ArchiScriptExamples.UserRegistration
-
-#check existingUserBranch
-#check existingUserBranchWitness
-#check ExistingSelection.input_is_selected_id
-#check NewUserCreation
-```
-
-This is a preclassified API fixture, not a raw-input registration model.
-`ExistingSelection.input_is_selected_id` requires the selected output ID to
-match the input ID. Its store premise is separate from that value relation and
-from the member map.
-The new-user contract's `absent_before` and `present_after` fields can be used
-directly; do not add a theorem merely to conjoin them. Likewise, branch aliases
-need no named equality theorem. Tests can check the API without turning those
-checks into model guarantees.
-
-## Review record and approval gate
-
-`ArchiScript.Review` defines `ReviewSubjectKind`, `ReviewSubject`,
-`ReviewFinding`, `ReviewDecision`, and `ReviewRecord`. Findings carry canonical
-model IDs rather than PDF page numbers. `ReviewRecord.implementationAllowed`
-is true only for an `approved reviewer revision` decision matching the record's
-model revision with no open findings. It is a workflow predicate, not identity
-authentication. A Lean build does not set review state or approve architecture.
-
-The repository's PaymentWebhook prototype exports typed model facts from Lean,
-joins them with structured review metadata, and generates Markdown and PDF
-snapshots. The generator validates that every review subject names an exported
-model object. Its revision hash covers checked model sources, the exported
-projection, and substantive review metadata; approval fields are excluded.
-The generator builds the imported Lean model before export. An executable test
-compares the Lean and Python approval gates on a shared case matrix.
-General model export and automated source-location freshness checks are future
-work.
-
-## Routed parameterization
-
-`ParameterizedPartition.Routed.routeOperation` returns a canonical registry
-operation name. `resolveOutbound` derives its typed target and operation from
-the registry; callers cannot independently attach a different payload.
-`routeSource` proves that the registered operation source matches the selected
-specialization.
-
-Use `RoutingRelevant` to show that some canonical operation is available in one
-specialization and unavailable in another. Use `RoutesEquivalent` to show that
-renamed or duplicated route aliases preserve the same operation availability.
-
-The runnable file [../examples/CurrentApi.lean](../examples/CurrentApi.lean)
-checks these entry points against the repository's current library.
-
-## Diagnostics
-
-The core has no missing-tree warning or automatic semantic-boundary linter.
-Current checks are Lean type/proof obligations:
-
-| Condition | Result | Why |
-| --- | --- | --- |
-| Flat declaration with valid partition evidence | Accepted | Presentation does not determine semantic validity |
-| Overlapping or incomplete supporting subdomains | Accepted | Supporting regions are not necessarily VDP members |
-| Selected regions disagree with classifier fibers | `Partition.HasMembers` cannot be proved | Declared semantics must match actual members |
-| Missing inhabitance or enumeration evidence | Lean proof/type error | Every declared member must exist and be enumerated |
-| Conflicting branch or route source | Lean proof/type error | Witnesses must match the canonical declaration |
-
-The original design calls for `unjustified-generalization` when a convenient
-leaf union becomes a carrier, complement boundary, or completeness universe
-without an independently established parent or explicit constructor closure.
-Apply that as a review criterion here; automatic detection needs provenance
-that this Lean core does not yet represent. A union or Lean `inductive` alone
-does not justify a warning.
-
-Unused, equivalent, or safely collapsible subdomains are possible design-smell
-diagnostics, not foundational errors; these are also not implemented.
-Completeness is always relative to the stated universe and assumptions. A
-classifier can be valid while omitting real-world cases from its carrier, and
-an unchecked named predicate need not describe any classifier member.
+# Implemented 0.7 API
+
+The compiled [public smoke](../examples/CurrentApi.lean) is the executable
+construction example. These names refer to real Lean declarations, not the
+historical TypeScript notation.
+
+## Semantic declarations
+
+| API | Required evidence / meaning |
+| --- | --- |
+| `Domain α` | Predicate; intermediate emptiness is allowed |
+| `DomainDerivation α meaning` | Definition evidence indexed by its exact predicate; `.named` retains semantic identity, `.opaque` records an assumption boundary |
+| `Subdomain α` | `name`, `base`, `parent`, `meaning`, `contained`, `definition`, `nonempty` |
+| `Subdomain.root` | Explicit meaning, definition evidence and inhabitant |
+| `Subdomain.child` | Parent intersection with the remaining criterion; inhabitant required |
+| `Subdomain.remainder` | Parent-relative complement, containment and inhabitant required |
+| `SemanticSplit parent` | Finite nonempty `Index`; declared `children`, `within`, `covers`, `disjoint` |
+| `SemanticSplit.complement` | Positive region and nonempty parent remainder form one proved split |
+| `SemanticSplit.refine` | Flatten verified child splits with inherited coverage/disjointness |
+| `VDP` / `Partition` | Carrier type, finite nonempty member indices, declared Subdomains, `coverage`, `disjoint` |
+| `Partition.ofSplit` | Split plus proof that its parent is the entire carrier type |
+| `Partition.closed` | Exhaustive finite carrier enumeration, constructor-equality meanings |
+
+`Partition.member` is the declared member predicate. `member_nonempty`,
+`member_unique`, `coverage` and `disjoint` concern those predicates directly.
+`Partition.classify` is noncomputable and derived from coverage; `classify_spec`
+and `self_member` prove its correspondence. `lookup` additionally needs a
+computable member enumeration and decidable membership. It is not a VDP field.
+
+## Algebra and linear paths
+
+`Operation.run` maps source indices to `Option` target indices. `id`, `comp`,
+`tensor`, `copair`, coproduct injections, associator, unitors, symmetry and
+canonical distributivity keep their mathematical meaning. `Operation.image`
+restricts to specified inputs; `image_comp` proves image composition and
+`single_output` rejects member-level nondeterminism.
+
+`Partition.PartitionIso` contains carrier and member-index isomorphisms plus
+`preserves`, the semantic-member correspondence. Its `classify_commutes` is now
+a derived theorem. `RefinesVia`, `coarseningMap_surjective`, `FactorsThrough`,
+`ConstantOnFibers` and the proved factorization APIs remain available.
+
+`Generators` associates registered names with nominal `Object`s, semantic
+`object` VDPs, `source`, `target` and `operation`. `Expression G X Y` has only
+`identity` and `step`. `append`, `denote_append` and `image` preserve linearity.
+Nominal objects remain distinct even if their VDP denotations coincide.
+
+The old tree-shaped syntax is `Presentation`, with `denote`, `Family`,
+`Rewrite` and `Transport`. Equality of Operations or a commuting VDP-isomorphism
+square certifies a local algebraic rewrite. It does not establish Cone-effect
+or provenance equivalence.
+
+## Declared architecture and consequences
+
+`ArchitectureSignature` contains exhaustive lists for `Node`, `Cause` and
+`Generator`, verified `object` VDPs, the closed `domains` and `splits` inventories,
+`memberDeclared`, `RootInstance`, `origin`, `start`, `owner`, typed generator
+`input`/`output`/`operation`, and `localFactor`.
+
+`Inputs` is supplier syntax on an existing generator: `unit`, `node`, `tensor`.
+`vdp` gives the full mathematical object; `Position`, `nodeAt`, `coordinate`
+and `coordinate_assign` retain individual factors. No tensor-specific nominal
+entity is declared.
+
+`ArchitectureSignature.Occurrence` specializes `Term` to have no holes. Its
+constructors are `cause`, `operation`, `tensor`, `unit`. Root instances and full
+producer derivations preserve provenance. `Term.supplier` selects a factor.
+`Term.CycleBoundary` uses a typed hole family solely to witness a genuine cyclic
+entry/observation route; `oneEntry` and `nontrivial` are mandatory.
+
+`DeclaredArchitecture` supplies `boundary`, `boundaryNonempty`, `context`,
+`admissibleInput`, `cyclicBoundary`, `effectContext`, `admissibleEffect`.
+`evaluate` is a noncomputable reference denotation of finite derivations;
+`Evaluates` is its relational form. `Evaluates.deterministic`,
+`Evaluates.supplier` and `defined_consequence` are proved. `InCone` requires the
+specified originating root and preserves its identity.
+
+`isInputContext` derives ownership from real supplier provenance. `incoming`
+is independent of current join acceptance. `reachInput` includes the stated
+availability context. `InputValid` requires exact agreement and projections;
+`InputStatus` distinguishes inhabited verification from proved unreachability.
+
+`effectNodes` derives terminal and cyclic-boundary occurrences from the closed
+inventory. `effect`, `effectIncoming`, `reachEffect`, `ConeValid` and
+`BoundariesComplete` expose the required Cone obligations. Empty effects cannot
+receive a successful certificate through the tensor unit.
+
+`CertifiedDeclaredArchitecture` requires `model`, `causeNonempty`, universal `inputs`, `cones`
+and `boundariesComplete`, plus `terminalOccurrencesFaithful` for distinct natural
+terminal producers. Its scope is declared contexts. **Global
+Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
+
+`CertifiedDeclaredArchitecture.hasCone` proves the existence of an actual valid
+Cone; an absent Cause inventory cannot acquire a vacuous complete certificate.
+
+## Computation and trust
+
+`Reachability.Reach` is inductive finite-transition closure.
+`FiniteAnalysis.compute` is bounded saturation; `compute_sound` and
+`compute_complete_of_closed` prove correctness. `certify` returns an `Exact`
+result only after closure is checked. `ExactAbstraction` and
+`certified_abstraction` connect an analysis to architectural semantics.
+
+`Verification.missing`, `unexpected` and `unpartnered` return concrete tuples
+or upstream members, with witness theorems. `checkAgreement_correct` needs a
+complete tuple enumeration and decidability of both relations.
+
+Development tools import `ArchiScript.ProofAudit` explicitly. Tag concrete
+closed results with `@[archiscript_certificate]` and independent predicates with
+`@[archiscript_contract]`. `#audit_archiscript` inspects all project declarations,
+including private declarations, and rejects unauthorized transitive axioms.
+Conventional `propext`, `Classical.choice`, `Quot.sound` are the only allowlist.
+
+Natural terminal producers must remain distinct: the mandatory
+`terminalOccurrencesFaithful` proof prevents two independent arrows from being
+collapsed into one unmarked terminal slot. A typed cyclic marker explicitly
+selects the boundary at which repeated entries/feedback visits are aggregated.

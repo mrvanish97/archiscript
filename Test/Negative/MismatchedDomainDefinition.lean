@@ -1,3 +1,4 @@
+-- EXPECT: DomainDerivation Nat
 import ArchiScript
 
 open ArchiScript

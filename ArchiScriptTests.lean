@@ -1,3 +1,10 @@
+import ArchiScriptTests.LinearExpression
+import ArchiScriptTests.Reachability
+import ArchiScriptTests.TensorVerification
+import ArchiScriptTests.Provenance
+import ArchiScriptTests.TerminalOccurrences
+import ArchiScriptTests.SemanticFoundation
+import ArchiScript.Review
 import ArchiScript
 import ArchiScriptExamples.UserRegistration
 import ArchiScriptExamples.PaymentWebhook

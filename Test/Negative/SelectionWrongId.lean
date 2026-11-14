@@ -1,3 +1,4 @@
+-- EXPECT: PreclassifiedUserInput.existingUser 7 = PreclassifiedUserInput.existingUser 42
 import ArchiScriptExamples.UserRegistration
 
 open ArchiScriptExamples.UserRegistration
@@ -7,9 +8,9 @@ def allUsers : UserStore := fun _ => True
 def wrongSelection : ExistingSelection existingUserBranchWitness allUsers allUsers where
   source_is_existing := rfl
   input := .existingUser 7
-  input_in_branch := rfl
+  input_in_branch := ⟨7, rfl⟩
   output := .selected 42
-  output_in_branch := rfl
+  output_in_branch := ⟨42, rfl⟩
   selectedId := 42
   input_is_selected_id := rfl
   selected_was_present := trivial

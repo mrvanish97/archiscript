@@ -1,3 +1,4 @@
+import ArchiScriptExamples.ProofSupport
 import ArchiScript
 
 /-!
@@ -36,35 +37,45 @@ instance : MemberEnumeration PaymentInputMember where
   indices := [.invalidAmount, .missingToken, .eligible]
   complete := by intro i; cases i <;> simp
 
-abbrev paymentInputPartition : Partition where
-  Carrier := PaymentRequest
-  MemberIndex := PaymentInputMember
-  carrierNonempty := ⟨⟨0, ""⟩⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.invalidAmount, .missingToken, .eligible], by intro i; cases i <;> simp⟩
-  classify x :=
+def paymentInputPartitionLookup (x : PaymentRequest) : PaymentInputMember :=
     if x.amountCents = 0 then .invalidAmount
     else if x.paymentToken = "" then .missingToken
     else .eligible
-  member_inhabited
-    | .invalidAmount => ⟨⟨0, ""⟩, rfl⟩
-    | .missingToken => ⟨⟨100, ""⟩, rfl⟩
-    | .eligible => ⟨⟨100, "tok"⟩, rfl⟩
 
 def paymentInputMembers : PaymentInputMember → Domain PaymentRequest
   | .invalidAmount => invalidAmount
   | .missingToken => missingToken
   | .eligible => eligiblePayment
 
-theorem paymentInput_has_members :
-    paymentInputPartition.HasMembers paymentInputMembers := by
+theorem paymentInputPartitionLookup_correct : ∀ i x, paymentInputPartitionLookup x = i ↔ paymentInputMembers i x := by
   intro i x
   rcases x with ⟨amountCents, paymentToken⟩
   cases i <;>
     by_cases ha : amountCents = 0 <;>
     by_cases ht : paymentToken = "" <;>
-    simp [Partition.member, paymentInputPartition, paymentInputMembers,
+    simp [paymentInputPartitionLookup, paymentInputMembers,
       invalidAmount, missingToken, eligiblePayment, ha, ht] at *
+
+
+theorem paymentInputPartitionLookup_inhabited : ∀ i : PaymentInputMember, ∃ x : PaymentRequest, paymentInputPartitionLookup x = i := fun
+    | .invalidAmount => ⟨⟨0, ""⟩, rfl⟩
+    | .missingToken => ⟨⟨100, ""⟩, rfl⟩
+    | .eligible => ⟨⟨100, "tok"⟩, rfl⟩
+
+abbrev paymentInputPartition : Partition :=
+  partitionOfRegions PaymentRequest PaymentInputMember "paymentInputPartition" paymentInputMembers
+    (⟨[.invalidAmount, .missingToken, .eligible], by intro i; cases i <;> simp⟩) paymentInputPartitionLookup paymentInputPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := paymentInputPartitionLookup_inhabited i
+      exact ⟨x, (paymentInputPartitionLookup_correct i x).mp hx⟩)
+    (by
+      obtain ⟨x, _⟩ := paymentInputPartitionLookup_inhabited (Classical.choice (show Nonempty PaymentInputMember from ⟨.invalidAmount⟩))
+      exact ⟨paymentInputPartitionLookup x⟩)
+
+theorem paymentInput_has_members : paymentInputPartition.HasMembers paymentInputMembers := by
+  intro i x
+  rfl
 
 abbrev paymentInputSemantic : SemanticPartition where
   partition := paymentInputPartition
@@ -96,35 +107,45 @@ instance : MemberEnumeration InventoryMember where
   indices := [.invalidDemand, .shortfall, .sufficient]
   complete := by intro i; cases i <;> simp
 
-abbrev inventoryObservationPartition : Partition where
-  Carrier := InventoryObservation
-  MemberIndex := InventoryMember
-  carrierNonempty := ⟨⟨0, 0⟩⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.invalidDemand, .shortfall, .sufficient], by intro i; cases i <;> simp⟩
-  classify x :=
+def inventoryObservationPartitionLookup (x : InventoryObservation) : InventoryMember :=
     if x.requestedUnits = 0 then .invalidDemand
     else if x.requestedUnits ≤ x.availableUnits then .sufficient
     else .shortfall
-  member_inhabited
-    | .invalidDemand => ⟨⟨0, 0⟩, rfl⟩
-    | .shortfall => ⟨⟨2, 1⟩, rfl⟩
-    | .sufficient => ⟨⟨1, 1⟩, rfl⟩
 
 def inventoryMembers : InventoryMember → Domain InventoryObservation
   | .invalidDemand => invalidDemand
   | .shortfall => inventoryShortfall
   | .sufficient => inventorySufficient
 
-theorem inventoryObservation_has_members :
-    inventoryObservationPartition.HasMembers inventoryMembers := by
+theorem inventoryObservationPartitionLookup_correct : ∀ i x, inventoryObservationPartitionLookup x = i ↔ inventoryMembers i x := by
   intro i x
   rcases x with ⟨requestedUnits, availableUnits⟩
   cases i <;>
     by_cases hz : requestedUnits = 0 <;>
     by_cases hle : requestedUnits ≤ availableUnits <;>
-    simp [Partition.member, inventoryObservationPartition, inventoryMembers,
+    simp [inventoryObservationPartitionLookup, inventoryMembers,
       invalidDemand, inventoryShortfall, inventorySufficient, hz, hle] at *
+
+
+theorem inventoryObservationPartitionLookup_inhabited : ∀ i : InventoryMember, ∃ x : InventoryObservation, inventoryObservationPartitionLookup x = i := fun
+    | .invalidDemand => ⟨⟨0, 0⟩, rfl⟩
+    | .shortfall => ⟨⟨2, 1⟩, rfl⟩
+    | .sufficient => ⟨⟨1, 1⟩, rfl⟩
+
+abbrev inventoryObservationPartition : Partition :=
+  partitionOfRegions InventoryObservation InventoryMember "inventoryObservationPartition" inventoryMembers
+    (⟨[.invalidDemand, .shortfall, .sufficient], by intro i; cases i <;> simp⟩) inventoryObservationPartitionLookup inventoryObservationPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := inventoryObservationPartitionLookup_inhabited i
+      exact ⟨x, (inventoryObservationPartitionLookup_correct i x).mp hx⟩)
+    (by
+      obtain ⟨x, _⟩ := inventoryObservationPartitionLookup_inhabited (Classical.choice (show Nonempty InventoryMember from ⟨.invalidDemand⟩))
+      exact ⟨inventoryObservationPartitionLookup x⟩)
+
+theorem inventoryObservation_has_members : inventoryObservationPartition.HasMembers inventoryMembers := by
+  intro i x
+  rfl
 
 abbrev inventoryObservationSemantic : SemanticPartition where
   partition := inventoryObservationPartition
@@ -141,14 +162,9 @@ instance : MemberEnumeration PaymentPlan where
   indices := [.rejectAmount, .rejectToken, .authorize]
   complete := by intro i; cases i <;> simp
 
-abbrev paymentPlanPartition : Partition where
-  Carrier := PaymentPlan
-  MemberIndex := PaymentPlan
-  carrierNonempty := ⟨.rejectAmount⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejectAmount, .rejectToken, .authorize], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev paymentPlanPartition : Partition :=
+  Partition.closed PaymentPlan "PaymentPlan"
+    (⟨[.rejectAmount, .rejectToken, .authorize], by intro i; cases i <;> simp⟩) (⟨.rejectAmount⟩)
 
 abbrev paymentPlanSemantic : SemanticPartition where
   partition := paymentPlanPartition
@@ -165,14 +181,9 @@ instance : MemberEnumeration InventoryPlan where
   indices := [.rejectDemand, .backorder, .reserve]
   complete := by intro i; cases i <;> simp
 
-abbrev inventoryPlanPartition : Partition where
-  Carrier := InventoryPlan
-  MemberIndex := InventoryPlan
-  carrierNonempty := ⟨.rejectDemand⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejectDemand, .backorder, .reserve], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev inventoryPlanPartition : Partition :=
+  Partition.closed InventoryPlan "InventoryPlan"
+    (⟨[.rejectDemand, .backorder, .reserve], by intro i; cases i <;> simp⟩) (⟨.rejectDemand⟩)
 
 abbrev inventoryPlanSemantic : SemanticPartition where
   partition := inventoryPlanPartition
@@ -211,14 +222,9 @@ instance : MemberEnumeration CheckoutAction where
   indices := [.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder]
   complete := by intro i; cases i <;> simp
 
-abbrev checkoutActionPartition : Partition where
-  Carrier := CheckoutAction
-  MemberIndex := CheckoutAction
-  carrierNonempty := ⟨.rejectPayment⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev checkoutActionPartition : Partition :=
+  Partition.closed CheckoutAction "CheckoutAction"
+    (⟨[.rejectPayment, .rejectInventoryRequest, .waitForStock, .placeOrder], by intro i; cases i <;> simp⟩) (⟨.rejectPayment⟩)
 
 abbrev checkoutActionSemantic : SemanticPartition where
   partition := checkoutActionPartition
@@ -238,18 +244,30 @@ instance : MemberEnumeration FulfillmentView where
   indices := [.noCommand, .submit]
   complete := by intro i; cases i <;> simp
 
-abbrev fulfillmentViewPartition : Partition where
-  Carrier := CheckoutAction
-  MemberIndex := FulfillmentView
-  carrierNonempty := ⟨.rejectPayment⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.noCommand, .submit], by intro i; cases i <;> simp⟩
-  classify
+def fulfillmentViewPartitionRegions : FulfillmentView → Domain CheckoutAction
+  | .submit => fun x => x = .placeOrder
+  | .noCommand => fun x => x ≠ .placeOrder
+
+def fulfillmentViewPartitionLookup : CheckoutAction → FulfillmentView
     | .placeOrder => .submit
     | .rejectPayment | .rejectInventoryRequest | .waitForStock => .noCommand
-  member_inhabited
+
+theorem fulfillmentViewPartitionLookup_correct : ∀ i x, fulfillmentViewPartitionLookup x = i ↔ fulfillmentViewPartitionRegions i x := by
+  intro i x
+  cases i <;> cases x <;> simp [fulfillmentViewPartitionLookup, fulfillmentViewPartitionRegions]
+
+theorem fulfillmentViewPartitionLookup_inhabited : ∀ i : FulfillmentView, ∃ x : CheckoutAction, fulfillmentViewPartitionLookup x = i := fun
     | .noCommand => ⟨.rejectPayment, rfl⟩
     | .submit => ⟨.placeOrder, rfl⟩
+
+abbrev fulfillmentViewPartition : Partition :=
+  partitionOfRegions CheckoutAction FulfillmentView "fulfillmentViewPartition" fulfillmentViewPartitionRegions
+    (⟨[.noCommand, .submit], by intro i; cases i <;> simp⟩) fulfillmentViewPartitionLookup fulfillmentViewPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := fulfillmentViewPartitionLookup_inhabited i
+      exact ⟨x, (fulfillmentViewPartitionLookup_correct i x).mp hx⟩)
+    ⟨.noCommand⟩
 
 def checkoutActionToFulfillmentView :
     checkoutActionPartition.MemberIndex → fulfillmentViewPartition.MemberIndex
@@ -261,9 +279,9 @@ theorem checkoutAction_refines_fulfillmentView :
       fulfillmentViewPartition checkoutActionToFulfillmentView := by
   refine ⟨rfl, ?_⟩
   intro i action hx
-  change checkoutActionPartition.classify action = i at hx
-  cases hx
-  cases action <;> rfl
+  change action = i at hx
+  subst action
+  cases i <;> simp [Partition.member, fulfillmentViewPartition, partitionOfRegions, Subdomain.root, fulfillmentViewPartitionRegions, checkoutActionToFulfillmentView]
 
 def forgetCheckoutActionDetail :
     Operation checkoutActionPartition fulfillmentViewPartition :=
@@ -293,14 +311,9 @@ instance : MemberEnumeration FulfillmentCommand where
   indices := [.submitOrder]
   complete := by intro i; cases i; simp
 
-abbrev fulfillmentCommandPartition : Partition where
-  Carrier := FulfillmentCommand
-  MemberIndex := FulfillmentCommand
-  carrierNonempty := ⟨.submitOrder⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.submitOrder], by intro i; cases i; simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev fulfillmentCommandPartition : Partition :=
+  Partition.closed FulfillmentCommand "FulfillmentCommand"
+    (⟨[.submitOrder], by intro i; cases i; simp⟩) (⟨.submitOrder⟩)
 
 /-- Only one semantic checkout action has a fulfillment-command mapping. -/
 def requestFulfillment :

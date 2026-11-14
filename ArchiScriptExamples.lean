@@ -8,3 +8,9 @@ import ArchiScriptExamples.Coproduct
 import ArchiScriptExamples.Checkout
 import ArchiScriptExamples.ConcurrencyQuestions
 import ArchiScriptExamples.ReservationController
+import ArchiScriptExamples.ProjectReference
+import ArchiScriptExamples.SimpleCone
+import ArchiScriptExamples.CyclicCone
+import ArchiScriptExamples.CorrelatedJoin
+import ArchiScriptExamples.CrossCone
+import ArchiScriptExamples.MutualCones
