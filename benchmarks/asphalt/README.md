@@ -59,12 +59,14 @@ flowchart LR
 The Lean carrier retains separate request, logical deployment, attempt, tenant,
 artifact digest, lease epoch, policy revision, infrastructure revision, network
 revision, schema revision, retry state, capacity observation, and evidence
-references. `HasMembers` checks the selected predicates against the classifier.
+references. The VDP now uses the declared semantic predicates directly;
+coverage, disjointness and inhabitation are proved before optional lookup.
 `admissionArchitecture` explicitly marks that carrier as a trusted fixture
 boundary; it does not establish completeness against production inputs. Its
-supporting `externalScanPasses` subdomain is marked **opaque** because no
-security-service result formula has been imported. The review must keep that
-warning visible instead of promoting a scan reference to a passing result.
+opaque `externalScanPasses` predicate has no supplied nonemptiness evidence.
+In 0.7 it therefore remains **unregistered**, rather than being accepted as a
+named Subdomain. The boundary export and benchmark keep this unresolved external
+predicate visible; a scan reference is not promoted to a passing result.
 The signed-count probe preserves all `Int` inputs upstream and shows a checked
 contract for narrowing to `Nat`; an absolute-value decoder fails that source
 member claim. This checks the modeled decoder relation, not runtime conformance.
@@ -139,8 +141,8 @@ both as claims requiring checks.
 
 ## Seeded defects and ground truth
 
-The catalog has 31 explicit defects. Nineteen have deterministic fixtures. The
-remaining twelve are marked `pending` and retain their required oracle; they
+The catalog has 34 explicit defects. Nineteen have deterministic fixtures. The
+remaining fifteen are marked `pending` and retain their required oracle; they
 must **not** be counted as caught. Passing a fixture means its fake adapter
 demonstrated an expected behavior, not that ArchiScript found the defect. The
 catalog deliberately assigns several cases to external analyzers, temporal

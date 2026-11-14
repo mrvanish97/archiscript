@@ -1,5 +1,9 @@
 # Proof authoring benchmark (0.5.2)
 
+Historical protocol, retained in 0.7.0. The regression now uses nonlinear
+`Presentation` syntax; it is not a Cone completeness or reachability benchmark.
+New runs must record the 0.7.0 skill revision rather than describe it as 0.5.2.
+
 This is a **measurement protocol**, not a speedup claim. The compiled
 `ArchiScriptTests/ProofEngineering.lean` is a correctness regression and its
 compilation time alone does not establish an improvement over 0.5.1.

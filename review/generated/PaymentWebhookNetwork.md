@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `b144a22d5c97`
+Model revision: `bad9eaae1d37`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
@@ -165,7 +165,7 @@ The base `decide` binding is resolved in companion code. New output-plan binding
 
 **PROVED over the declared model**
 
-- inputPartition classifier agrees with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- inputPartition declared semantic members agree with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - duplicateSuccess has an acknowledge response plan — `PaymentWebhookNetwork.duplicate_acknowledged`
 - duplicateSuccess has no notification mapping — `PaymentWebhookNetwork.duplicate_has_no_notification_intent`
 - duplicateSuccess has no fulfillment-request mapping — `PaymentWebhookNetwork.duplicate_requests_no_fulfillment`

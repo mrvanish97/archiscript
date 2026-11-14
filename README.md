@@ -1,828 +1,157 @@
 # ArchiScript
 
-**Machine-checked architecture for AI-assisted software design.**
+A Lean calculus for making architectural assumptions and member consequences
+explicit before implementation.
 
-ArchiScript is a small Lean calculus for making architectural contracts precise
-before implementation. An architect or AI proposes the semantic model; Lean
-checks the stated mathematical obligations; engineers review whether the model
-matches the real system.
+**0.7.0 semantic-core rewrite — pending architect review.**
 
-Current release: **0.6.0**.
+**Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Certificates
+cover the declared semantic objects and derived contexts described below.
+Universal coverage of every generated path by the declared Cones is explicitly
+next-version work. Real-world inventory completeness is always an author assumption.
 
-ArchiScript deliberately does **not** standardize a vocabulary of queues,
-timeouts, failures, services, retries, or cloud resources. Those are meanings
-chosen by the model author. ArchiScript standardizes how such meanings are
-partitioned, connected, composed, combined, and safely viewed at different
-resolutions.
+## Semantic foundation
 
-## The core model
+Declare a complete meaningful carrier, including failed, invalid and absent
+cases. Declare named semantic Subdomains and their ancestry. Prove every declared
+split. Select a finite nonempty family of those regions as the VDP's members.
 
-A model starts from a value universe and derives finite semantic distinctions
-from it.
-
-```text
-carrier
-  ↓ semantic predicates
-Domain
-  ↓ select a finite exhaustive disjoint family
-VDP / Partition
-  ↓ partial member maps
-Operation
-```
-
-The basic vocabulary is:
-
-| Concept | Meaning |
+| Concept | Enforced meaning |
 | --- | --- |
-| **Carrier** | the full value universe considered at a boundary |
-| **Domain** | a semantic predicate over that carrier |
-| **VDP / Partition** | finitely many nonempty, disjoint, exhaustive semantic members |
-| **Operation** | a partial function between VDP member sets |
-| **Composition** | ordinary sequential composition of partial maps |
-| **Tensor** | lossless structural AND for independent coordinates |
-| **Coproduct** | lossless structural OR for design-time closed alternatives |
-| **Refinement / coarsening** | two semantic resolutions of the same carrier |
-| **Factorization** | proof that a consumer is insensitive to distinctions a coarsening removes |
-| **Expression** | finite typed presentation syntax for one morphism, with exactly one source and one target |
-| **Expression family** | finite nonempty family of selected expressions sharing one source |
-| **Local normalization** | semantics-preserving rewrite certified by Operation equality or structural transport |
-| **Architecture projection** | a derived view that intentionally hides selected nominal VDP boundaries |
-
-At member level, operations form partial maps between finite sets. Tensor and
-coproduct retain their conventional mathematical roles. Refinement is semantic
-containment between partitions of the same carrier.
-
-Lean checks the declared model. It does not discover missing requirements,
-validate an external protocol, or prove that production code implements the
-model.
-
-## The most important rule: start from the carrier
-
-Coverage is only meaningful relative to the carrier that was declared.
-
-If malformed input, existing state, environment, configuration, or another
-outcome-relevant fact can reach the boundary, removing it from the carrier does
-not simplify the model — it makes the proof prove less.
-
-For example, do this:
-
-```text
-WebhookPayload × LedgerObservation
-```
-
-when the outcome depends on both the incoming payload and existing ledger state.
-
-Do not encode only the convenient semantic leaves into the carrier and then use
-the resulting tautological coverage as evidence of completeness.
-
-Member names are also not semantic definitions. Define the predicates first;
-then prove that the VDP classifier corresponds to them.
-
-## Composition
-
-### Sequential composition
-
-For:
-
-```text
-f : A ⇀ B
-g : B ⇀ C
-```
-
-ArchiScript provides:
-
-```text
-g.comp f : A ⇀ C
-```
-
-Undefinedness propagates as ordinary partial-map composition.
-
-Sequentiality is represented structurally by an intermediate VDP:
-
-```text
-A ──f──▶ B ──g──▶ C
-```
-
-By contrast, several operations leaving the same VDP:
-
-```text
-       ┌──f──▶ B
-A ─────┤
-       └──g──▶ C
-```
-
-do **not** establish an order between `f` and `g`. Such fan-out is therefore
-compatible with sequential, parallel, or otherwise coordinated runtime
-implementations. ArchiScript records the absence of an ordering edge; it does
-not infer a scheduler or prove concurrency.
-
-### Expressions and local normalization
-
-Version 0.5.0 separates semantic morphisms from the syntax used to present them.
-
-```text
-e : Expression X Y
-        │
-        │ denote
-        ▼
-Operation X Y
-```
-
-Every expression has exactly one source and one target. Its syntax may still
-branch internally through tensor or coproduct copairing. A linear operation
-sequence is therefore only one expression shape.
-
-An expression family records several selected consequences of one common source:
-
-```text
-       ┌──e₁──▶ T₁
-S ─────┼──e₂──▶ T₂
-       └──e₃──▶ T₃
-```
-
-These remain separate morphisms. The family does not tensor the targets and
-does not assert execution order or runtime parallelism.
-
-Local normalization is proof-carrying. With unchanged endpoints, ArchiScript
-requires equality of the denoted Operations. If a structural rewrite changes
-the chosen source or target representation, it requires explicit
-`PartitionIso` transport and a commuting square.
-
-Composition itself never deletes an intermediate VDP. Given:
-
-```text
-A ──f──▶ B ──g──▶ C
-```
-
-the composite `g.comp f : A → C` exists while `B` remains an architecture
-object. A view that deliberately hides `B` is an **architecture projection**,
-not ordinary 0.5.0 normalization.
-
-Whole-architecture equivalence is deliberately deferred until a future
-transformation actually needs to change nominal boundaries or family structure.
-
-### Tensor: independent coordinates
-
-```text
-P ⊗ Q
-```
-
-has carrier:
-
-```text
-Carrier(P) × Carrier(Q)
-```
-
-and contains every pair of selected members.
-
-Tensor does not mean runtime concurrency. It says that the model has two
-independently valued semantic coordinates.
-
-Likewise:
-
-```lean
-f.tensor g
-```
-
-maps both coordinates componentwise and is defined only when both factor maps
-are defined.
-
-### Coproduct: design-time alternatives
-
-```text
-P ⊕ Q
-```
-
-has carrier:
-
-```text
-Carrier(P) + Carrier(Q)
-```
-
-and preserves both the summand tag and the original member identity.
-
-ArchiScript uses coproduct only when the alternatives are already closed by the
-architecture at design time. A program with exactly a browser entry point and a
-CLI entry point may model:
-
-```text
-BrowserInput ⊕ CliInput
-```
-
-because the two channels exist independently of any runtime value.
-
-Coproduct must **not** be used to enumerate cases discovered by inspecting
-runtime data. A CLI parser, protocol decoder, or external message boundary still
-needs a complete carrier and a complete VDP for all values that may arrive.
-
-The invariant is:
-
-```text
-P ⊕ Q is exhaustive over Carrier(P) + Carrier(Q).
-
-It does not prove that this sum exhausts an independently supplied
-external boundary.
-```
-
-The public API provides canonical injections and `Operation.copair`; the
-mediating operation is unique.
-
-### Distributive structural factoring
-
-Tensor distributes over the binary coproduct through explicit canonical
-`PartitionIso` witnesses. For example:
-
-```text
-(A ⊗ R) ⊕ (B ⊗ R)  ≅  (A ⊕ B) ⊗ R
-```
-
-This is an isomorphism, not definitional equality. Larger structural rewrites
-should be assembled from proved pieces with
-`Partition.PartitionIso.trans`, `.tensor`, and `.coproduct` instead of
-restating carrier/member bijections by hand. The factored form makes one shared
-structural `R` coordinate visible across both alternatives. It does
-**not** imply one physical read, one transaction, one cache lookup, or one
-runtime instance. By contrast, `A ⊗ R ⊗ R` still contains two independently
-valued `R` coordinates.
-
-### Refinement and coarsening
-
-Two VDPs can classify the same carrier at different resolutions.
-
-```text
-P ≼ Q
-```
-
-means that every fine member of `P` lies wholly inside one member of `Q`.
-That containment induces a unique total coarsening member map:
-
-```text
-q : P → Q
-```
-
-and therefore an ordinary ArchiScript `Operation`.
-
-A total surjective member map alone is not enough. The whole fine semantic region
-must be contained in its selected coarse region.
-
-### Consumer factorization
-
-Given a coarsening:
-
-```text
-q : P → Q
-```
-
-and a consumer:
-
-```text
-f : P ⇀ Y
-```
-
-ArchiScript can ask whether there is a unique:
-
-```text
-g : Q ⇀ Y
-```
-
-with:
-
-```text
-f = g ∘ q
-```
-
-Equivalently, `f` must be constant on every fiber of `q`.
-
-This is the mathematical basis for **semantic zoom** in diagrams. If
-factorization succeeds, the consumer can be shown against the coarse VDP without
-losing behavior. If it fails, ArchiScript can expose concrete fine members that
-were incorrectly merged for that consumer.
-
-## Small example: checkout
-
-The checked
-[Checkout model](ArchiScriptExamples/Checkout.lean) starts from two independent
-runtime carriers:
-
-```text
-PaymentRequest
-InventoryObservation
-```
-
-Each receives its own complete VDP and local operation:
-
-```text
-PaymentInput ──planPayment────▶ PaymentPlan
-Inventory    ──planInventory──▶ InventoryPlan
-```
-
-The independent maps tensor:
-
-```text
-PaymentInput ⊗ Inventory
-        │
-        │ planPayment ⊗ planInventory
-        ▼
-PaymentPlan ⊗ InventoryPlan
-        │
-        │ chooseCheckoutAction
-        ▼
-CheckoutAction
-```
-
-The final fulfillment consumer does not need every `CheckoutAction`
-distinction. The example therefore also defines a coarser view of the same
-carrier:
-
-```text
-CheckoutAction
-  ├── rejectPayment
-  ├── rejectInventoryRequest
-  ├── waitForStock
-  └── placeOrder
-          │
-          │ coarsen
-          ▼
-FulfillmentView
-  ├── noCommand
-  └── submit
-```
-
-and proves:
-
-```text
-requestFulfillment
-  =
-requestFulfillmentAtCoarseResolution ∘ forgetCheckoutActionDetail
-```
-
-So the coarse view is not a presentation guess; it is justified by
-factorization.
-
-## Full-calculus stress test
-
-The checked
-[ReservationController](ArchiScriptExamples/ReservationController.lean) is the
-canonical stress test. It intentionally combines the major algebraic features
-in one model instead of demonstrating them in isolation.
-
-The system has three design-time entry channels:
-
-- user request + inventory observation + reservation state;
-- payment event + reservation state;
-- expiry trigger + reservation state.
-
-Within a channel, independently valued coordinates are combined with tensor.
-Across the three already-established channels, the controller uses coproduct.
-The resulting paths converge on one detailed mutation VDP. Different consumers
-then require different semantic resolutions of that same mutation carrier.
-
-```mermaid
-flowchart TB
-  UT["UserTrigger VDP"]
-  IO["InventoryObservation VDP"]
-  RS["ReservationState VDP"]
-  PT["PaymentTrigger VDP"]
-  ET["ExpiryTrigger VDP"]
-
-  UXT{{"⊗"}}
-  PXT{{"⊗"}}
-  EXT{{"⊗"}}
-
-  UC["UserContext<br/>(UserTrigger ⊗ InventoryObservation) ⊗ ReservationState"]
-  PC["PaymentContext<br/>PaymentTrigger ⊗ ReservationState"]
-  EC["ExpiryContext<br/>ExpiryTrigger ⊗ ReservationState"]
-
-  UDC["UserDecisionContext<br/>(UserIntent ⊗ InventoryPlan) ⊗ ReservationState"]
-
-  COP{{"⊕"}}
-  CI["ControllerInput<br/>UserContext ⊕ PaymentContext ⊕ ExpiryContext"]
-
-  RM["ReservationMutation VDP<br/>hold · markPaid · cancel · expire"]
-  RSTATE["ReservationState VDP<br/>empty · held · paid · cancelled · expired"]
-  WRITE["ReservationWrite VDP"]
-  OUTBOX["OutboxMessage VDP"]
-
-  Q["InventoryMutationView<br/>reserve · noCommand · release"]
-  INV["InventoryCommand VDP<br/>reserveUnits · releaseUnits"]
-  NONE(["∅ · undefined"])
-
-  NOTE1["factorization proven:<br/>inventoryEffect = coarseInventoryEffect ∘ q"]
-  NOTE2["factorization rejected for publishMutation:<br/>cancel and expire coarsen together<br/>but publish different messages"]
-
-  UT --- UXT
-  IO --- UXT
-  RS --- UXT
-  UXT --> UC
-
-  PT --- PXT
-  RS --- PXT
-  PXT --> PC
-
-  ET --- EXT
-  RS --- EXT
-  EXT --> EC
-
-  UC -->|"prepareUserContext"| UDC
-  UDC -->|"decideUserMutation"| RM
-
-  UC --- COP
-  PC --- COP
-  EC --- COP
-  COP --> CI
-  CI -->|"planControllerMutation = copair(...)"| RM
-
-  PC -->|"planPaymentMutation"| RM
-  EC -->|"planExpiryMutation"| RM
-
-  RM -->|"nextReservationState"| RSTATE
-  RM -->|"persistMutation"| WRITE
-  RM -->|"publishMutation"| OUTBOX
-
-  RM -->|"q = forgetInventoryMutationDetail"| Q
-  Q -->|"inventoryEffectAtCoarseResolution"| INV
-  Q -.->|"noCommand"| NONE
-
-  Q --- NOTE1
-  Q --- NOTE2
-```
-
-The diagram contains several different kinds of structure; they should not be
-confused:
-
-- the `⊗` nodes are **VDP construction** for independent coordinates;
-- the `⊕` node is **lossless design-time alternative aggregation**;
-- for both constructors, input lines have no arrowheads and the constructor's
-  output has one arrowhead toward the constructed VDP. That arrowhead indicates
-  construction direction, not an `Operation`;
-- coproduct injections are not shown in this structural view. If shown, they
-  would be actual directed Operations from each summand to the coproduct;
-- solid labeled arrows are ordinary partial `Operation` mappings or
-  compositions of them;
-- `q` is an ordinary total operation induced by a proved coarsening;
-- the first note records a successful factorization theorem;
-- the second note records a failed factorization: the inventory view may merge
-  `cancel` and `expire`, but the outbox consumer may not;
-- `∅` is undefinedness, not a VDP member;
-- multiple outgoing operations from `ReservationMutation` are fan-out. No
-  order is encoded between persistence, publication, state selection, and
-  inventory intent; a runtime implementation may execute such effects
-  sequentially or in parallel unless additional semantics constrain it.
-
-### Normalization view: before and after
-
-The same controller source has a compact before/after normalization view. This
-is the structural rewrite certified by `controllerSourceFactoringIso` and
-`controllerFactoringCertificate`; it is not a second architecture.
-
-**Before normalization**
-
-```mermaid
-flowchart LR
-  UI["UserTrigger ⊗ InventoryObservation"]
-  P["PaymentTrigger"]
-  E["ExpiryTrigger"]
-  R["ReservationState"]
-
-  TU{{"⊗"}}
-  TP{{"⊗"}}
-  TE{{"⊗"}}
-
-  UR["(U ⊗ I) ⊗ R"]
-  PR["P ⊗ R"]
-  ER["E ⊗ R"]
-
-  C{{"⊕"}}
-  SRC["ControllerInput<br/>((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)"]
-  RM["ReservationMutation VDP"]
-
-  UI --- TU
-  R --- TU
-  TU --> UR
-
-  P --- TP
-  R --- TP
-  TP --> PR
-
-  E --- TE
-  R --- TE
-  TE --> ER
-
-  UR --- C
-  PR --- C
-  ER --- C
-  C --> SRC
-
-  SRC -->|"planControllerMutation"| RM
-```
-
-**After normalization**
-
-```mermaid
-flowchart LR
-  UI["UserTrigger ⊗ InventoryObservation"]
-  P["PaymentTrigger"]
-  E["ExpiryTrigger"]
-  R["ReservationState"]
-
-  C{{"⊕"}}
-  ALT["((U ⊗ I) ⊕ P) ⊕ E"]
-  T{{"⊗"}}
-  SRC["(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R"]
-  RM["ReservationMutation VDP"]
-
-  UI --- C
-  P --- C
-  E --- C
-  C --> ALT
-
-  ALT --- T
-  R --- T
-  T --> SRC
-
-  SRC -->|"controllerFactoredPlanExpression"| RM
-```
-
-The certified source transport is
-
-```text
-((U ⊗ I) ⊗ R) ⊕ (P ⊗ R) ⊕ (E ⊗ R)
-  ≅
-(((U ⊗ I) ⊕ P) ⊕ E) ⊗ R
-```
-
-The after-view exposes one shared structural `ReservationState` coordinate
-instead of three repeated occurrences. It does **not** assert one database read,
-cache lookup, transaction, runtime instance, or execution schedule. The target
-`ReservationMutation` remains the same nominal VDP. The factored source is an
-anonymous structural representation, not a replacement nominal declaration.
-
-The 0.5.0 stress layer also records the controller as typed expressions and
-one common-source expression family. It certifies coproduct reachability
-rewrites, contextual local rewrites, and the full three-channel distributive
-factoring shown above. The existing intermediate `ReservationMutation` VDP
-remains nominally present; an end-to-end view that hides it is explicitly an
-architecture projection.
-
-The same model also exposes a concurrency review boundary:
-
-```text
-authorized × held ──▶ markPaid
-fired      × held ──▶ expire
-```
-
-Those independently sourced paths can request incompatible updates from the
-same observed state. ArchiScript exposes the topology, but does not claim that a
-runtime race occurs. Ordering, atomicity, liveness, resource effects, and
-production conformance require additional semantics or evidence.
-
-## Four architecture diagram views
-
-ArchiScript supports four **independent views of the same checked model**.
-Choose a view by its review question. Different views have different node
-and edge meanings; hiding detail in one view never changes the model.
-
-### 1. VDP topology — operations between whole VDPs
-
-Draw one node per VDP and labeled directed arrows **VDP → VDP** for
-`Operation`s. Do **not** expand members. This answers which boundaries and
-operations are connected, not how individual members map.
-
-```mermaid
-flowchart LR
-  P["Request VDP"] -->|"decide"| Q["Decision VDP"]
-```
-
-A VDP-level arrow summarizes an Operation on member indices. It is not a
-runtime call, nor does it imply that the Operation is total. Never draw an
-edge from a collapsed VDP node directly to `∅`.
-
-### 2. VDP member mapping — operations between members
-
-Draw each relevant VDP as a container with member nodes inside it; draw
-**member → member** arrows for the actual mappings of one Operation.
-If the Operation is undefined on a source member, connect that member to
-`∅` **outside** the target VDP. This answers what a particular operation
-does at the chosen semantic resolution.
-
-```mermaid
-flowchart LR
-  subgraph P["Request VDP"]
-    P1["valid"]
-    P2["invalid"]
-  end
-  subgraph Q["Decision VDP"]
-    Q1["accept"]
-    Q2["reject"]
-  end
-  P1 -->|"decide"| Q1
-  P2 -->|"decide"| Q2
-```
-
-The mapping above is illustrative. In real models, account for every source
-member; if a focused diagram collapses some, state which members are hidden.
-A display group is not a new VDP member.
-
-### 3. Subdomain derivation — relationships among semantic regions
-
-Draw **only subdomains and their deductions**. Do not draw a carrier node,
-a VDP, or selected VDP members in this view. Show intersections, unions,
-relative complements, and proved containment relationships. Supporting
-subdomains may overlap, and a region may be used by multiple derivations;
-the result is often a DAG, not a mandatory partition tree.
-
-For this illustrative example the *declared base*, recorded in the caption
-rather than drawn as a node, is `C = Bool × Bool`. Subdomain `A` means
-"first coordinate is true" and subdomain `B` means "second coordinate is
-true". Both are subsets of `C`.
-
-```mermaid
-flowchart TD
-  A["Subdomain A: first = true"]
-  B["Subdomain B: second = true"]
-  D["Subdomain D = A ∩ B"]
-  E["Subdomain E = C ∖ A"]
-  F["Subdomain F = A ∖ B"]
-  G["Subdomain G = E ∪ F"]
-  A -.->|"operand"| D
-  B -.->|"operand"| D
-  A -.->|"excluded from base C"| E
-  A -.->|"included operand"| F
-  B -.->|"excluded operand"| F
-  E -.->|"union operand"| G
-  F -.->|"union operand"| G
-```
-
-Every dashed edge above is a **formula dependency**, not an `Operation`
-or automatically a subset relation. When the intended relation is proven
-containment, label it explicitly as `⊆`. Although the carrier is omitted
-*visually*, predicates remain typed over the correct base, and the diagram
-caption must identify that base, its provenance, and any opaque or externally
-assumed predicates. Supporting subdomains are not required to be disjoint
-or exhaustive.
-
-### 4. VDP member semantics — how members relate to subdomains
-
-Draw **one actual VDP and its selected members**, along with the relevant
-subdomains. Use formula equality or proved inclusion to show how each
-selected member is defined by or relates to particular subdomains. A member
-can have a meaning composed from several subdomains; a supporting subdomain
-can appear in several member formulas. These are **semantic relations,
-not arrows between Operations**.
-
-Continuing the example above, choose a two-member VDP on the *same*
-declared carrier `C`. The selected meanings are `D = A ∩ B` and
-`G = (C ∖ A) ∪ (A ∖ B)`:
-
-```mermaid
-flowchart LR
-  D["Subdomain D = A ∩ B"]
-  G["Subdomain G = E ∪ F"]
-  A["Subdomain A"]
-  B["Subdomain B"]
-  subgraph V["VDP on C"]
-    M1["Member: accepted"]
-    M2["Member: other"]
-  end
-  D -.->|"meaning = "| M1
-  G -.->|"meaning = "| M2
-  M1 -.->|"region ⊆"| A
-  M1 -.->|"region ⊆"| B
-```
-
-For this illustrative carrier, `D` and `G` are nonempty, disjoint, and
-cover `C`. In an actual model, the VDP's selected members must be
-nonempty, pairwise disjoint, and exhaustive over the declared carrier,
-and their separately stated semantic formulas must correspond to
-`Partition.classify` through a checked `Partition.HasMembers` proof.
-Only show a semantic equality or inclusion when the definitions or a
-proved theorem support it. Do not equate a subdomain with a member merely
-because they have similar names.
-
-## Diagram discipline
-
-ArchiScript diagrams are projections of the checked model, not an independent
-source of truth.
-
-A useful diagram may collapse detail only when the collapse is justified:
-
-- tensor factors may stay visually factored rather than expanding a large
-  Cartesian product;
-- coproduct summands may be shown under one structural alternative node because
-  the tags remain present in the model;
-- fine VDP members may be replaced by a coarse VDP for a selected consumer only
-  when factorization proves that the consumer cannot observe the removed
-  distinctions.
-
-A display group with hidden members is only a presentation device. It does not
-create a new VDP member.
-
-## What ArchiScript checks
-
-For the declared model, Lean can check things such as:
-
-- VDP coverage, disjointness, and inhabitance;
-- correspondence between semantic predicates and selected members;
-- partial member mappings;
-- sequential composition;
-- tensor laws and symmetric monoidal coherence;
-- coproduct injections, copairing, and uniqueness;
-- typed expression denotation and finite common-source expression families;
-- same-endpoint normalization certificates and isomorphic endpoint transport;
-- tensor/coproduct distributivity and naturality;
-- semantic refinement/coarsening;
-- totality and surjectivity of proved coarsening maps;
-- positive consumer factorization;
-- concrete conflicts that prevent a proposed semantic zoom;
-- architecture review and implementation-handoff obligations encoded by the
-  review layer.
-
-## What ArchiScript does not claim
-
-A successful proof does not establish that:
-
-- the carrier matches reality if the boundary was specified incorrectly;
-- an external producer obeys an assumed contract;
-- production code conforms to the architecture;
-- a member arrow represents a successful database, queue, HTTP, or filesystem
-  effect;
-- tensor means simultaneous execution;
-- fan-in proves a race;
-- a cycle proves deadlock;
-- the model has temporal, scheduler, resource, or distributed-system semantics
-  that were never declared.
-
-ArchiScript keeps these unknowns visible rather than silently deriving them from
-graph shape.
-
-## Public calculus
-
-| Area | Main API |
-| --- | --- |
-| Semantic regions | `Domain`, complement, relative complement, `DomainDerivation` |
-| VDPs | `Partition`, `HasMembers`, `SemanticPartition` |
-| Boundary evidence | `CarrierOrigin`, `CarrierClosure`, `ArchitecturalPartition` |
-| Sequential calculus | `Operation.id`, `Operation.comp` |
-| Independent aggregation | `Partition.tensor`, `SemanticPartition.tensor`, `Operation.tensor` |
-| Alternative aggregation | `Partition.coproduct`, `SemanticPartition.coproduct`, injections, `Operation.copair` |
-| Structural distributivity | tensor/coproduct `PartitionIso` witnesses, induced Operations, naturality |
-| Expressions | `Expression`, `Expression.denote`, `Expression.Family` |
-| Local normalization | `Expression.Rewrite`, `Expression.Transport` |
-| Coherence | associator, unitors, symmetry, naturality, pentagon, triangle, hexagon |
-| Semantic resolution | `Partition.RefinesVia`, `Partition.Refines`, `Partition.coarseningOperation` |
-| Factorization | `ConstantOnFibers`, `FactorsThrough`, `firstFiberConflict`, `analyzeFactorization` |
-| Handoff | `Operation.Declaration`, `Operation.Registry`, canonical branch addresses |
-| Routing | `ParameterizedPartition` |
-| Review | `ReviewFinding`, `ReviewRecord`, revision-bound implementation gate |
-
-## Examples
-
-- [Checkout](ArchiScriptExamples/Checkout.lean) — tensor, composition, coarsening, and factorization
-- [ConcurrencyQuestions](ArchiScriptExamples/ConcurrencyQuestions.lean) — design-time coproduct fan-in, tensor, and retry-cycle review shapes
-- [ReservationController](ArchiScriptExamples/ReservationController.lean) — full-calculus stress test
-- [FormInput](ArchiScriptExamples/FormInput.lean) — direct refinement/coarsening example
-- [Coproduct](ArchiScriptExamples/Coproduct.lean) — minimal Browser/CLI coproduct example
-- [PaymentWebhook](ArchiScriptExamples/PaymentWebhook.lean) — semantic decisions with observed ledger state
-- [PaymentWebhookNetwork](ArchiScriptExamples/PaymentWebhookNetwork.lean) — connected multi-VDP architecture
-- [UserRegistration](ArchiScriptExamples/UserRegistration.lean) — canonical branches and routing
-- [Asphalt](ArchiScriptExamples/Asphalt.lean) — adversarial carrier and assumption stress test
-- [Monoidal](ArchiScriptExamples/Monoidal.lean) — compact tensor/coherence example
-
-## Build
-
-```sh
-lake build
-bash scripts/check-negative.sh
-lake env lean skills/archiscript/examples/CurrentApi.lean
-python -m unittest discover -s scripts -p "test_*.py"
+| `Domain α` | Predicate; intermediate emptiness is permitted |
+| `Subdomain α` | Explicit base, definition evidence, containment and inhabitant |
+| `SemanticSplit parent` | Finite nonempty children covering the parent, internally disjoint |
+| `VDP` / `Partition` | Declared Subdomain members with full carrier coverage and disjointness |
+| `Operation X Y` | Possibly partial, non-surjective member map between whole verified VDPs |
+| `Expression G X Y` | Finite linear chain of registered Operations between nominal objects |
+| `Presentation` | Nonlinear algebraic presentation syntax, separate from linear routes |
+| Cause / Cone | One originating Cause, explicit root instance and all supported consequences |
+| Contextual Effect | Terminal boundary image or full Cone-effect tuple relation |
+
+Different decomposition trees may share a root and overlap across trees. Flat
+member selections and coarsenings remain valid. Every **named** Subdomain is
+nonempty; an empty string, array or absence value is not the empty set.
+`Partition.classify` is now a derived classical lookup, never a construction field.
+Carriers may be infinite while member families remain finite.
+
+The [Stage 2 project-reference regression](ArchiScriptExamples/ProjectReference.lean)
+uses verified deductive splits for all eight URI success/failure leaves. Its
+symbolic URI/filesystem interpretation is explicit; it is not a parser or a
+proof that real filesystem observations are truthful. A counterexample rejects
+promoting only the successful leaves into the full URI boundary.
+
+## Operations, tensor and provenance
+
+`g.comp f` composes defined member mappings. `none` denotes mathematical
+undefinedness, without a runtime execution claim. Several outgoing Operations
+are non-exclusive possible structural routes, with no scheduler or liveness rule.
+
+Tensor preserves the full Cartesian carrier and member product, including self
+tensor. Coproduct preserves tagged alternatives. Common-source fan-out creates
+no implicit diagonal Operation. At an actual tensor use, the relevant questions are
+
+\[
+\forall i,\quad \pi_i(\operatorname{Adm})=I_i,
+\qquad \operatorname{Reach}=\operatorname{Adm}.
+\]
+
+Here each incoming image is independently obtained from its actual supplier.
+`Reach` and the independently authored `Adm` may be proper subsets of the full
+product. Neither an Operation nor a factor is required to reach all target members.
+Every complete n-ary tuple matters; pairwise checks are insufficient.
+
+`ArchitectureSignature` closes the declared primitive, Cause, node, domain and
+split inventories. `Inputs` records actual generator suppliers. Finite provenance
+`Term`s retain root instances and producer histories; they are not single linear
+Expressions. Equal VDP denotations do not merge nominal nodes or factor positions.
+`isInputContext` derives local contexts from their real originating roots.
+
+The reference relation includes every finite derivation from the inventory,
+including recursive cross-Cone dependencies. Availability is an explicit
+semantic assumption. No default physical persistence, consumption, synchronization
+or resource-effect semantics is introduced.
+
+## Cycles and proof-backed checking
+
+A cycle needs a real typed entry and observation boundary. `Term.CycleBoundary`
+records a nontrivial return with one entry hole and explicit auxiliary suppliers.
+All finite traversals contribute to one boundary image. They do not create one
+terminal tensor factor per iteration.
+
+Reachable sets may stabilize while the Operation continues alternating.
+[The swap example](ArchiScriptExamples/CyclicCone.lean) proves both facts and
+connects its boundary image to a finite exact analysis through `ExactAbstraction`.
+A finite VDP alphabet does not imply finitely many occurrence histories.
+`FiniteAnalysis.certify` checks closure of the entire analyzed state before
+returning an `Exact` result; an unchanged terminal projection is insufficient.
+
+`CertifiedDeclaredArchitecture` requires a nonempty Cause inventory and proofs for all derived local input
+contexts, every declared Cone's full Effect, and terminal-boundary completeness.
+A verified use must have an actual reachable tuple. Proved-unreachable contexts
+are separate. A Cone with no reachable full Effect cannot pass as tensor-unit
+success; it remains outside this complete-effect certificate's supported scope.
+
+Certificates establish necessary obligations of the declared model. They do not
+establish missing real-world requirements, production-code conformance, fairness,
+termination, races or physical concurrency.
+
+## Algebra retained
+
+The calculus retains partial-map identity/associativity, symmetric monoidal
+coherence/naturality, coproduct universal properties, canonical tensor/coproduct
+distributivity, semantic VDP isomorphisms, refinement/coarsening and conditional
+consumer factorization. Isomorphisms now preserve the primary semantic predicates.
+
+`Presentation.Rewrite` checks Operation equality; `Presentation.Transport` checks
+an explicit isomorphism square. These are local algebraic facts, not Cone-effect
+equivalence. Composition never deletes intermediate nominal objects; a view
+hiding them is an architecture projection. Selected `Presentation.Family` values
+are useful views, not completeness certificates.
+
+## Build and trust boundary
+
+Lean/Lake are pinned to **4.34.0**. Runtime examples need Node; repository tooling
+uses Python through `uv`. Optional review PDFs use Tectonic.
+
+```bash
+uv run --no-project python scripts/verify-lean.py
+uv run --no-project python -m unittest discover -s scripts -p 'test_*.py'
 node --test examples/payment-webhook.test.mjs
 ```
 
-The required PR gate runs the same checks. See
-[CONTRIBUTING.md](CONTRIBUTING.md).
+The first command cleans and builds with warnings as errors, checks the public-library
+skill smoke, audits compiled transitive axioms, runs intended-diagnostic negative
+fixtures and invokes kernel replay with explicit module names. Reports are in
+`.lake/reports/verification.json` and `.lake/reports/axioms.json`. Verification
+rejects changing sources, direct/transitive `sorryAx`, custom axioms, extra trusted
+computation axioms and tagged conditional certificates disguised as concrete ones.
+The conventional allowlist is `propext`, `Classical.choice`, `Quot.sound`.
 
-## AI skill
+Tagged admissibility predicates are also checked for dependencies on the Reach
+implementation. This prevents a direct self-confirming definition; mathematical
+set equality cannot prove independent human business judgment.
 
-The repository includes an
-[ArchiScript skill](skills/archiscript/SKILL.md) for AI agents. It teaches the
-agent to begin from a justified carrier, state semantics independently of
-classification, use tensor and coproduct with their strict structural meanings,
-prove resolution changes rather than drawing them heuristically, preserve
-unknowns, and keep formal architecture separate from production-code claims.
+## Examples and authoring
 
-The public API smoke test is
-[skills/archiscript/examples/CurrentApi.lean](skills/archiscript/examples/CurrentApi.lean).
+- [Public-only smoke](skills/archiscript/examples/CurrentApi.lean): explicit regions, split, VDP, primitive inventory and scoped certificate.
+- [Correlated join](ArchiScriptExamples/CorrelatedJoin.lean): common-source diagonal and constant non-surjective supplier.
+- [External cyclic supplier](ArchiScriptExamples/CrossCone.lean): one local and one external factor with typed cyclic observation.
+- [Mutually dependent Cones](ArchiScriptExamples/MutualCones.lean): joint reference semantics and certified finite query analysis.
+- [Distinct terminal occurrences](ArchiScriptTests/TerminalOccurrences.lean): two sinks with the same VDP retain separate correlated Effect coordinates.
+- [ReservationController](ArchiScriptExamples/ReservationController.lean): retained algebraic stress model, with nonlinear Presentations and linear primitive-consumer routes.
+- [Migration and release evidence](docs/0.7.0-release.md): file dispositions, assumptions, tests, gate status and limitations.
+- [Next-version backlog](plans/0.8.0.md): universal coverage and scoped analysis improvements.
 
-## Project status
+The [authoring skill](skills/archiscript/SKILL.md) and every reference were rewritten
+for 0.7. Legacy workflow modules (`Boundary`, `Review`, `Operation.Declaration`,
+registry-based parameterization) remain explicit companion imports. Their approval
+and binding records are not part of mathematical certification. Existing webhook
+review packs are draft projections, not new Cone certificates.
 
-ArchiScript deliberately builds on established mathematics rather than a
-project-specific software ontology. The experiment is whether a small semantic
-architecture calculus, machine-checked local obligations, and explicit human
-review improve AI-assisted implementation by exposing omitted cases, unjustified
-generalizations, and unsafe simplifications before code is written.
+See [CONTRIBUTING.md](CONTRIBUTING.md) for the repository's PR/merge policy and
+[LICENSE](LICENSE) for licensing.
 
-Release history belongs in [CHANGELOG.md](CHANGELOG.md).
-
-## License
-
-Apache License 2.0. See [LICENSE](LICENSE).
+Natural terminal producers must remain distinct: the mandatory
+`terminalOccurrencesFaithful` proof prevents two independent arrows from being
+collapsed into one unmarked terminal slot. A typed cyclic marker explicitly
+selects the boundary at which repeated entries/feedback visits are aggregated.

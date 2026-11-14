@@ -1,104 +1,115 @@
-# ArchiScript design guidance
+# ArchiScript 0.7 design and proof guidance
 
-The sibling repository `../archiscript-docs` contains the original design.
-Its Stage 2 model was carefully developed; consult it before changing modeling
-semantics, adding abstractions or diagnostics, or revising the authoring skill.
-Do not treat a new term or a convenient implementation pattern as a replacement
-for the established design.
+The implementation contract is
+[the 0.7 handoff](../archiscript-docs/chapter-1/stage-3/archiscript-0.7.0-lean-core-rewrite-handoff.md).
+Consult relevant Stage 1/2/3 sources in `../archiscript-docs` before changing
+semantics. The handoff deliberately supersedes classifier-primary VDPs,
+nonlinear Expression terminology and earlier universal-surjectivity proposals.
+Use current Lean declarations for API names. Report unavailable design sources
+or proposed departures explicitly.
 
-Start with the sources relevant to the change:
+## Semantic boundary
 
-- [Stage 3 scope](../archiscript-docs/chapter-1/stage-3/scope.md): architecture
-  expressions, expression families, certified local normalization, distributivity,
-  dependency/provenance observations, and the normalization/projection boundary.
-- [Stage 2 scope](../archiscript-docs/chapter-1/stage-2/scope.md): subdomain
-  discipline, deduction, architectural boundaries, observation, and parameterization.
-- [Stage 2 design](../archiscript-docs/chapter-1/stage-2/design/): concrete models
-  that demonstrate the intended semantics.
-- [Stage 2 backlog](../archiscript-docs/chapter-1/stage-2/backlog.md): unresolved
-  questions and deferred work.
-- [Mathematical foundation](../archiscript-docs/chapter-1/stage-1/foundation.tex)
-  and [Stage 1 specification](../archiscript-docs/chapter-1/stage-1/spec.md): formal
-  definitions and foundational constraints.
+- Keep the public `ArchiScript` root focused on the calculus. Companion models
+  belong in `ArchiScriptExamples`. Workflow bindings and approval metadata are
+  optional imports, not mathematical acceptance criteria. The installed skill's
+  smoke example imports only the public library and its proof-audit module.
+- Declare semantic Subdomains first, with parent evidence and nonemptiness.
+  Intermediate `Domain` predicates may be empty. Empty strings, arrays and
+  absence-like values are actual values when their chosen carrier includes them.
+- Supporting Subdomains may overlap and need not exhaust their parent. Every
+  declared `SemanticSplit` has finite nonempty children, containment, union
+  coverage and sibling disjointness proofs. Independent trees may share a root.
+  Flat declarations and coarsening remain legitimate; no global taxonomy is
+  required. VDP members are declared Subdomains, not manufactured classifier fibers.
+- Preserve full meaningful boundary carriers, including failed and invalid cases.
+  Lean cannot establish real-world exhaustiveness from an already narrowed type.
+  Preserve the Stage 2 eight-leaf project-reference regression and its explicit
+  URI/filesystem interpretation boundary.
+- Operations connect whole verified VDPs and remain partial member maps.
+  `none` is undefinedness, not runtime non-execution. Non-surjectivity is valid.
+  Several outgoing Operations are non-exclusive declared possible routes; no
+  execution, delivery, fairness or ordering obligation follows from declaring them.
+- Keep symmetric monoidal tensor full, including self tensor. Never reinterpret
+  it as common refinement, a diagonal, filtered product or runtime parallelism.
+  Coproduct is tagged OR and cannot replace a simultaneous structural join.
+- `Expression` is a finite linear chain over registered names and nominal objects.
+  `Presentation` retains nonlinear algebraic syntax and selected families.
+  A selected family is not complete Cone discovery. Equality of denoted Operations
+  proves algebraic normalization, not preservation of all contextual effects.
+- Composition does not delete intermediate nominal objects. Hiding one is an
+  architecture projection. Structural endpoint changes require concrete
+  `PartitionIso` transport and a commuting square. Distributivity is a canonical
+  proved isomorphism, not definitional equality or a physical optimization.
 
-Preserve the distinction between supporting subdomains and VDP members.
-Subdomains may overlap and need not exhaust their parent; the selected members
-of a VDP must be nonempty, exhaustive, and disjoint. Flat member declarations
-and coarsening are legitimate. Do not introduce a mandatory taxonomy tree.
+## Consequence and verification boundary
 
-Use the docs for design intent and the current Lean source for API names; the
-older TypeScript notation is not the Lean API. Identify conflicts or proposed
-departures explicitly, with references to the relevant design, rather than
-silently redefining the model. Follow explicit user changes to that design.
-If the sibling repository is unavailable, report that limitation before making
-design-sensitive assumptions.
+- `ArchitectureSignature` is the claimed-complete declaration inventory.
+  Keep generator identities, actual supplier structure, Cause ownership, root
+  instances and producer histories. Equal nominal VDPs do not identify occurrences.
+- Contexts come from existing generator inputs and actual provenance through
+  `isInputContext`; do not introduce an author-declared tensor-site entity or
+  certify a selected list of favorable contexts. At least one factor in an
+  internal use must belong to the studied one-Cause Cone.
+- Determine incoming images independently from upstream supplier semantics.
+  Require every incoming member to have a full admissible partner and exact
+  full-tuple `Reach = Adm`. Do not impose surjectivity onto all factor members.
+  Pairwise checks do not establish an n-ary relation. Independent contract
+  meaning and external boundary truth remain architect responsibilities.
+- Cyclic entry and Effect observation points must be typed on actual declared
+  routes. `Term.CycleBoundary` supplies one typed entry hole and a nontrivial
+  return, with explicit auxiliary factors. All finite traversals contribute to
+  the image of one boundary. They do not create one effect factor per iteration.
+- Preserve recursive cross-Cone dependencies and full source correlations.
+  Finite VDP member sets do not prove finite occurrence histories. A finite
+  analyzer must enumerate complete semantic configurations and supply an
+  `ExactAbstraction` theorem before certifying architectural reachability.
+  Closure is checked on the complete analyzed state, not only terminal images.
+- `CertifiedDeclaredArchitecture` requires `causeNonempty`, universal declared-context, Cone and
+  terminal-boundary proofs. Proved-unreachable contexts are separate from
+  inhabited verified uses. Empty effects cannot pass as a meaningful tensor-unit
+  success. A raw declaration cannot be sent to the certified consumer.
+- Natural terminal arrows need distinct occurrence slots. The mandatory
+  `terminalOccurrencesFaithful` proof rejects silent merging; a typed cyclic
+  marker explicitly identifies the boundary whose repeated visits are aggregated.
+- **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Do not claim
+  universal generated-path coverage from these scoped certificates. Automation
+  is explicitly deferred to the next version. Real-world inventory completeness
+  is an external modeling assumption even if a future global checker is proved.
+- Keep concurrency, persistence, transactions and implementation conformance
+  conditional on separately modeled semantics. Unsupported conclusions remain
+  review questions or `UNKNOWN`.
 
-## Repository conventions and guardrails
+## Engineering and release checks
 
-- Keep the public `ArchiScript` library focused on the calculus. Put companion
-  models in `ArchiScriptExamples`; the installed skill smoke file must compile
-  from the public library alone. Keep operation algebra separate from branch,
-  responsibility, and implementation-binding metadata.
-- Treat a complete `branchNames` list as covering only its chosen name type.
-  An empty missing-metadata query over named branches does not prove coverage of every
-  defined member mapping. For whole-operation handoff, check
-  `Declaration.definedMappingsWithoutBranch` for every registered operation and
-  make review generation reject missing coverage. Named branch subsets remain
+- Use `uv` for Python work. Do not spawn subagents without explicit user authorization.
+- Preserve legitimate closed enums, `id`/`rfl` proofs, optional branch subsets and
+  consumer-specific coarsenings. Regress demonstrated failures instead of adding
+  speculative abstractions. Keep changes to meaning explicit.
+- The standard gate is `uv run --no-project python scripts/verify-lean.py`.
+  It builds first, checks the public smoke, audits actual transitive axioms,
+  runs intended-diagnostic negative cases and replays kernels with explicit
+  `leanchecker` module names. Reports identify checked source digests and commands.
+- Builds treat warnings as errors. No local suppression outside deliberate
+  negative fixtures. `sorryAx`, custom axioms and extra computation axioms are
+  rejected by the audit; a source-token search is insufficient. Tag concrete
+  closed certificates and independent admissibility declarations for additional
+  assumption/dependency checks. Conditional reusable theorems are not concrete
+  architecture certificates.
+- When public algebra, Expression or consequence APIs change, update the full
+  authoring skill, API reference, diagrams, public-only smoke, dedicated tests
+  and ReservationController presentation stress example together.
+- Build imported Lean targets before any `lean --run` export. Bind review
+  revisions to checked sources, projection and substantive metadata; exclude
+  approval fields and reject source changes during export. Lean and Python
+  workflow approval predicates must remain in executable agreement.
+- A complete branch-name list covers its chosen name type only. For whole-operation
+  handoff, check `Declaration.definedMappingsWithoutBranch` for every registered
+  operation; review generation rejects missing coverage. Optional subsets remain
   valid when whole-operation completeness is not claimed.
-- Do not infer value selection or runtime effects from member mappings. State
-  needed input/output identity and state-change relations in typed contracts. A proof
-  that merely returns the same contract field adds no guarantee; use a negative
-  check for the bad case instead. Label preclassified API fixtures explicitly,
-  and do not present their constructors as a validated raw-input boundary.
-- Build imported Lean targets before `lean --run` exports. Bind review revisions
-  to the checked sources, exported projection, and substantive review metadata;
-  exclude approval fields to avoid circular hashes. Reject source changes during
-  export. Keep Lean and Python approval predicates in executable agreement.
-- Diff review snapshots by canonical IDs and source identities, covering edits
-  and removals of findings, claims, bindings, and evidence. Ignore list order
-  when it has no semantics, and report each change once. Regenerate review
-  artifacts after changing exporters or model paths; draft packs remain draft
-  until an engineer records approval.
-- Parse GitHub remote prefixes and strip `.git` explicitly in Bash. Its ERE
-  syntax has no lazy `+?` quantifier. Test remote parsing with local command
-  stubs so tests cannot mutate remote rulesets.
-- Preserve legitimate closed enums, simple `id`/`rfl` proofs, flat declarations,
-  coarsening, and optional branch subsets. Add regression checks for reproduced
-  failures rather than replacing the established model with a convenient new
-  abstraction.
-- Preserve the symmetric monoidal VDP tensor: full independent carrier and
-  member products, including self tensor. Do not interpret tensor as common
-  refinement, filtered product, pullback, same-value observation, or runtime
-  parallelism. `Operation.tensor` maps member pairs and carries no resource
-  effects. Keep one operation's alternative branches distinct from separately
-  sourced operation arrows.
-- Describe Lean as checking explicit necessary model obligations. It does not
-  search for omitted requirements or certify a production architecture.
-  Concurrency conclusions require resource/effect semantics; keep unsupported
-  race or ordering claims as review questions or `UNKNOWN`.
-- Keep category semantics separate from presentation syntax. `Operation` is the
-  semantic morphism; `Expression` records one finite well-typed presentation
-  with exactly one source and one target. An `Expression.Family` is finite,
-  nonempty, and has one common source with possibly several targets.
-- Do not let composition erase nominal architecture objects conceptually.
-  `g.comp f : A -> C` exists while the intermediate VDP `B` remains in the
-  category. A view that deliberately hides `B` is an architecture projection,
-  not ordinary 0.5.0 normalization.
-- Require explicit local normalization evidence. For unchanged endpoints use
-  equality of denoted Operations; for structural endpoint changes use concrete
-  `PartitionIso` transport with a commuting square. Do not block local
-  normalization on a speculative whole-architecture isomorphism theory.
-- Treat tensor/coproduct distributivity as a proved canonical isomorphism, never
-  definitional equality. Factoring a shared tensor coordinate is structural and
-  says nothing about physical reads, transactions, caching, or scheduling.
-- Infer dependencies from required source structure, not from arbitrary VDP
-  occurrence in a codomain. Coproduct alternatives are tagged alternatives, not
-  simultaneous dependencies. Establish dependency before producer provenance;
-  `X tensor S` has no canonical projection to `S`.
-- Keep graphs derived. Cycles in the categorical/presentation structure do not
-  by themselves assert runtime loops or temporal recurrence, and expression
-  families never enumerate infinite cyclic closure.
-- When the public monoidal, coproduct, distributivity, or expression API changes,
-  update the authoring skill, its API reference, review-diagram guidance, smoke
-  example, dedicated regression tests, and the ReservationController stress
-  example together.
+- Diff review snapshots by canonical IDs and source identities, including edits
+  and removals of findings, claims, bindings and evidence. Ignore meaningless
+  list order and report each change once. Regenerate artifacts when exporters
+  or model paths change; drafts remain draft until an engineer records approval.
+- Parse GitHub remote prefixes and strip `.git` explicitly in Bash; ERE has no
+  lazy `+?`. Remote/ruleset tests use local command stubs and never mutate remotes.
