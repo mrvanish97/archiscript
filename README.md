@@ -97,6 +97,57 @@ If the cases are not yet distinguished, that is a
 concrete task for architecture modeling, not a
 reason to demand an unrestricted branch or clock.
 
+**ArchiScript is deliberately structured to resist procedural
+slippage during construction, not just to explain it away in
+review.** Several constraints force an agent or author to
+account for the relevant semantic cases:
+
+1. **One Operation, one target member per source member.**
+   `Operation.run : X.MemberIndex → Option Y.MemberIndex`
+   cannot silently map the same source member to
+   both `Success` and `NetworkError`. The model must
+   justify a finer scenario distinction, an additional
+   sourced tensor factor, or genuinely separate
+   Operations. A new member label alone is not proof
+   of a legitimate semantic distinction.
+2. **Explicit suppliers and full input tuples.**
+   A network/AZ factor needs genuine provenance;
+   `InputSources` and contextual `InputValid`
+   check availability and the full relation
+   `ReachInput = AdmInput` (E), plus exact projections
+   of independently incoming member images (P).
+   Neither a missing supplier nor an invented
+   combination may be concealed by the tensor.
+3. **Consequences cannot be guessed from the diagram.**
+   Each observable Cone's `ConeValid` requires a
+   nonempty, genuinely reachable full Effect tuple,
+   equality `ReachEffect = AdmEffect`, and exact
+   projections to its incoming Effect coordinates.
+   The Effect is derived with supplier/provenance
+   constraints; it is **not** a freely asserted
+   outcome product. Explicitly unobservable Cones
+   have different checked obligations. Not every
+   Cartesian pair of Effect members must be
+   reachable; inadmissible cross-pairs remain
+   excluded by the declared contexts.
+4. **Proof feedback exposes unsupported shortcuts.**
+   Missing distinctions, provenance, tuple partners
+   or unjustified Effect claims lead to unfulfilled
+   obligations when the relevant contract applies.
+   This gives AI agents a constructive route:
+   refine the model, justify the source, inspect
+   a counterexample and retry Lean, rather than
+   simulating events or declaring an unspecified
+   nondeterministic branch.
+
+These safeguards make procedural misconceptions
+**harder to encode as certified claims**, but they
+do not automatically prove that the author chose
+the right real-world boundary, declared every
+relevant Cause or matched an implementation.
+Current certificates also do **not** establish
+global all-generated-Expression/Cone coverage.
+
 This is not a simulator, a guarantee that every real-world
 failure was enumerated, or a proof of implementation
 conformance, eventual delivery or physical determinism.
