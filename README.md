@@ -293,26 +293,59 @@ A developer/DevOps deployment can explain why a service exists, but
 If the Cause is merely a completed-deployment event, a single `Deployed`
 member can express that much, not both live service states.
 
-One **possible architecture sketch**, not a compiled Lean fixture:
+One **possible architecture sketch**, not a compiled Lean fixture.
+The service-status supplier is an explicitly modeled architectural input,
+**not** a claim that the unavailable service has itself returned a message.
+In this example the status can be supplied by an external monitor/report:
 
 ```text
-Cause: requestArrived                Cause: serviceStatusReported
-         |                                       |
-  Request VDP (String)                  ServiceStatus VDP
-  - Invalid                             - Available
-  - ValidAndPermitted                   - Unavailable
-  - ValidAndDenied                               |
-         |                                       |
-         +---------------- tensor --------------+
+  CONE A: request                          CONE B: service status
+  Cause: requestArrived                    Cause: serviceStatusReported
+           |                                        |
+           v                                        v
+  +----------------------+              +----------------------+
+  | Request VDP          |              | ServiceStatus VDP    |
+  | Carrier: String      |              | (status evidence)    |
+  |                      |              |                      |
+  | Invalid              |              | Available            |
+  | ValidAndPermitted    |              | Unavailable          |
+  | ValidAndDenied       |              +----------------------+
+  +----------------------+                         |
+           |                                       |
+           +-----------------+---------------------+
                              |
-              process : Request ⊗ ServiceStatus
-                         → Response
+                             v
+           INPUT: Request (x) ServiceStatus
+           Full VDP tensor has 3 x 2 = 6 member pairs
                              |
-                         Response VDP
-                         - Success
-                         - InvalidInput
-                         - PermissionDenied
-                         - ServiceUnavailable
+               Verify supplied input relations:
+               P: each incoming member has a full partner
+               E: Reach = Adm for complete tuples
+                             |
+                             v
+               process : Request (x) ServiceStatus
+                         -> Response
+               (one ordinary PARTIAL Operation)
+                             |
+           +-----------------+---------------------------+
+           | INPUT PAIR                  DEFINED OUTPUT   |
+           |                                              |
+           | (Invalid, Available)       -> InvalidInput  | <--+
+           | (Invalid, Unavailable)     -> InvalidInput  | <--+ SAME
+           |                                              |     result
+           | (ValidAndPermitted, Available)   -> Success  |
+           | (ValidAndPermitted, Unavailable) -> ServiceUnavailable
+           | (ValidAndDenied, Available)      -> PermissionDenied
+           | (ValidAndDenied, Unavailable)    -> ServiceUnavailable
+           +----------------------------------------------+
+                             |
+                             v
+                Response VDP (selected members)
+                Success | InvalidInput
+                PermissionDenied | ServiceUnavailable
+
+  The two Invalid rows differ in the service-status FACTOR,
+  but not in the mapped response. They are still TWO tensor inputs.
 ```
 
 There are **six nominal tensor members** (three times two), not an
@@ -327,16 +360,37 @@ for illustration:
 | `ValidAndDenied` | `some PermissionDenied` | `some ServiceUnavailable` |
 
 This is one **design choice**, not an ArchiScript rule about error
-precedence. It assumes invalid input can be rejected without the
-authorization service, while handling a valid request depends on that
-service even if the request's semantic permission classification is
-already determined. A different justified architecture might prioritize
-`PermissionDenied` when the service is unavailable, or map selected
-pairs to `none`. The Operation is **still partial by type**; a certified
-tensor input does not require `some` for every reachable pair.
-`none` is undefinedness, not a runtime event or an `Absent` VDP member.
-The response members must themselves be justified regions of a suitable
-response carrier; they are not magic labels that bypass Subdomain proofs.
+precedence. The two `Invalid` rows show **output invariance under the
+service-status member**, not the absence of an architectural supplier
+dependency. In this sketch, even an `Invalid` request is an input to
+`process : Request ⊗ ServiceStatus → Response` only as part of a **complete
+tuple** whose status factor has a justified supplier. The fact
+`Unavailable` is a *defined status member*, not `none` or a missing
+supplier. If no status supplier exists, the tensor-sourced path cannot
+silently treat that missing factor as `Unavailable`.
+
+For the shown mapping, the member-level invariant is:
+
+```text
+forall status in {Available, Unavailable}:
+    process(Invalid, status) = some InvalidInput
+```
+
+This proves the mapped answer does not vary *with the supplied status
+value*. It does **not** prove that the status need not be supplied, that
+the service was or was not invoked, that validation happens first, or
+that a response is physically delivered. To **remove** the status
+dependency for invalid input, the architect would need a separately
+declared and verified path/Operation consuming the request without that
+factor; two equal tensor-output rows do not create such a path.
+
+One could instead choose to prioritize `PermissionDenied` when the
+service is unavailable or leave selected mappings at `none`. The
+Operation is **still partial by type**; a certified tensor input does
+not require `some` for every reachable pair. `none` is mathematical
+undefinedness, not a runtime event or an `Absent` VDP member. Response
+members must themselves be justified regions of an appropriate response
+carrier; they do not bypass Subdomain proofs.
 
 The entry `(ValidAndPermitted, Unavailable) → ServiceUnavailable` is the
 instructive case: the request belongs to a permitted semantic region,
