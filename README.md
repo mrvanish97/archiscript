@@ -286,6 +286,140 @@ VDP may be appropriate if the distinction is **not** claimed; merely merging
 different outcomes into an opaque member must not masquerade as having proved
 their separate behavior.
 
+### Does a future-outcome VDP require the running program to know the future?
+
+**No. This is a category error between a priori semantic possibility and
+runtime information.** A `VDP` is a partition of a declared value carrier
+into semantic Subdomains, **not** a set of runtime classes, messages,
+objects, or tags that an implementation must already possess or transmit.
+A model may describe a possible complete scenario without claiming that
+a component can observe or predict it at the start of execution.
+
+An example of an **invalid review objection**:
+
+> "The program has not yet learned when the service will be ready, so
+> distinguishing `ShortWait`, `LongWait`, and `Timeout` is artificial
+> determinism that hides real nondeterminism."
+
+This confuses the **mathematical classification of possible scenarios**
+with an **executable function operating on information currently
+available to one component**. In
+[`PossibilitySpace.lean`](ArchiScriptExamples/PossibilitySpace.lean),
+the mathematical carrier is `Scenario` with a waiting budget and
+`readyAfter : Option Nat`. The three selected regions partition
+that full declared carrier: short readiness, long readiness,
+and timeout (including no readiness). The `decide` Operation
+maps their **semantic member indices** to outcome members.
+Its functional mapping does **not** assert that a click handler
+has read `readyAfter`, knows future readiness, implements a
+waiting algorithm, or guarantees a timeout event.
+
+```text
+    DECLARED A PRIORI SCENARIO SPACE
+    Scenario(budget, readyAfter)
+           |
+           v
+      VDP partition
+       /    |     \
+    Short  Long   Timeout       (regions of possible scenarios)
+       \     |     /
+        member-level Operation
+                |
+          Success / Timeout     (semantic consequences)
+
+    NOT: click handler knows readyAfter when clicked
+    NOT: three runtime message classes must be transmitted
+    NOT: Lean proved eventual delivery or executable waiting
+```
+
+**A legitimate critique would be different:** the chosen scenario
+boundary may omit cancellation, errors, relevant network conditions,
+or other meaningful outcomes; `readyAfter` may be an unjustified
+environmental assumption for the intended scope; the author may
+incorrectly claim that the handler *has* this information; or a
+separate implementation-conformance/liveness claim may lack
+evidence. Those must be evaluated against the particular
+declared boundary and assertion. They are **not** established
+merely by pointing out that the program cannot know the future.
+
+**Reviewer discipline:** before labeling a formal example "hidden
+nondeterminism," quote the exact claim, identify the precise
+VDP member, supplier/Operation, or proof obligation allegedly
+violated, and distinguish **semantic classification** from
+**runtime observability**. See also
+[the a priori possibility-space explanation](#a-priori-possibility-space)
+and [the click/wait/timeout example](#click-wait-and-timeout).
+
+### Can network outages or availability-zone failures be analyzed without a network simulator?
+
+**Yes, at the level of declared semantic possibilities and consequences.**
+Network connectivity, provider health, regional degradation and an
+availability-zone outage can be described by VDP members supplied
+through **other Cones**, then used as factors of an explicit tensor
+input in the request's Cone. This is a natural architectural use
+of ArchiScript's typed supplier structure, not an invitation to
+simulate the network or invent physical time.
+
+```text
+    CONE: Network              CONE: Zone          CONE: Request
+    Cause: network event       Cause: zone event   Cause: request
+             |                        |                  |
+             v                        v                  v
+     NetworkStatus VDP           ZoneStatus VDP       Request VDP
+     Up / Degraded / Down        Healthy / Down       Valid / Invalid
+             |                        |                  |
+             +-----------+------------+------------------+
+                         |
+                         v
+          Request VDP ⊗ NetworkStatus VDP ⊗ ZoneStatus VDP
+                         |
+            actual suppliers + full contextual P/E
+                         |
+                         v
+                  Handle Operation
+                         |
+                         v
+                Response / Effect
+```
+
+The **level of modeling is a choice**: an internet-service
+provider, regional network, availability zone, dependency,
+link or routing condition can be relevant. One may introduce
+a concrete provider event as a Cause, for example a
+provider-side connectivity change, **if that is a meaningful
+declared external event**. A model could instead use an
+observation/report event, or include an infrastructure
+condition in an honestly scoped scenario carrier. A
+hypothetical outage does not require a newly invented
+Cause at each step. These VDP regions are mathematical
+possibilities, **not runtime message classes** and not
+knowledge that a request handler must already possess.
+
+The `⊗` is a **candidate semantic product**, not
+independence, physical simultaneity or an automatic
+Operation joining suppliers. In the actual architecture,
+producers must be justified with roots and provenance;
+a declared tensor-consuming Operation must check exact
+`ReachInput = AdmInput` over **whole tuples** (E) and
+incoming-member/projection completeness (P). Shared
+network causes may correlate zone and link failure
+members, so not every Cartesian tuple must be
+reachable. A cross-Cone join may be meaningful even
+if sources are associated with different events.
+
+**Evidence and scope:** [`CrossCone.lean`](ArchiScriptExamples/CrossCone.lean)
+already contains a certified cross-Cone tensor;
+[`CorrelatedJoin.lean`](ArchiScriptExamples/CorrelatedJoin.lean)
+shows correlated input relations. The exact
+network/AZ diagram here is an **illustration, not a
+compiled or certified implementation**. It does not
+prove delivery, recovery, availability over time,
+runtime freshness, or deployed infrastructure
+conformance. Those are additional claims requiring
+their own evidence if asserted. An external time
+simulator is **not a prerequisite** to the a priori
+network-failure analysis above.
+
 ### Does that ban branching architectures or multiple outgoing Operations?
 
 **No.** These are **different** declared Operations, not two results of one
