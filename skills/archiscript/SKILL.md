@@ -154,6 +154,35 @@ coproduct algebra and contains no supplier-sum constructor in
 intent of every coproduct use**. Check this manually; see the
 [full FAQ with supported and invalid diagrams](../../README.md#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
 
+**Adversarial review anti-example — future knowledge is NOT required.**
+Do not criticize `PossibilitySpace.lean` on the grounds that
+"the program has not yet learned the future readiness time, so
+`ShortWait | LongWait | Timeout` cannot be a valid VDP."
+That is a **category error**: VDP members are semantic
+Subdomains partitioning a declared *scenario carrier*, not
+runtime classes that must be constructed, transmitted or
+selected by a click handler at the event's beginning.
+An `Operation : X → Y` maps **member indices**; it
+does not claim that the deployed program can observe the
+future, execute a wait, or guarantee eventual progress.
+See the [dedicated FAQ and negative-review example](../../README.md#does-a-future-outcome-vdp-require-the-running-program-to-know-the-future)
+and [the source example](../../ArchiScriptExamples/PossibilitySpace.lean).
+
+**How to review this correctly:** distinguish (a) the
+meaningful a priori partition, (b) which factors and
+supplier occurrences are actually available to a
+particular Operation/context, and (c) physical runtime
+observability, liveness and implementation claims.
+Challenge an omitted cancellation/error outcome,
+unjustified scenario assumptions, falsely asserted
+supplier availability or a purported model-to-code
+theorem. Do not require the program to predict a
+future scenario merely to permit a semantic partition.
+State the precise Lean contract violated if claiming
+a formal defect. This mistake is a negative
+**reviewer reasoning example**, not a negative Lean
+compilation test.
+
 **Do not conflate** (1) two target members for one source member of **one**
 Operation, which is forbidden by `Operation.single_output`, (2) multiple
 declared outgoing Operations, which are legal and non-exclusive, and
