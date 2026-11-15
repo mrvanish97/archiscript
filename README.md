@@ -350,6 +350,76 @@ violated, and distinguish **semantic classification** from
 [the a priori possibility-space explanation](#a-priori-possibility-space)
 and [the click/wait/timeout example](#click-wait-and-timeout).
 
+### Can network outages or availability-zone failures be analyzed without a network simulator?
+
+**Yes, at the level of declared semantic possibilities and consequences.**
+Network connectivity, provider health, regional degradation and an
+availability-zone outage can be described by VDP members supplied
+through **other Cones**, then used as factors of an explicit tensor
+input in the request's Cone. This is a natural architectural use
+of ArchiScript's typed supplier structure, not an invitation to
+simulate the network or invent physical time.
+
+```text
+    CONE: Network              CONE: Zone          CONE: Request
+    Cause: network event       Cause: zone event   Cause: request
+             |                        |                  |
+             v                        v                  v
+     NetworkStatus VDP           ZoneStatus VDP       Request VDP
+     Up / Degraded / Down        Healthy / Down       Valid / Invalid
+             |                        |                  |
+             +-----------+------------+------------------+
+                         |
+                         v
+          Request VDP ⊗ NetworkStatus VDP ⊗ ZoneStatus VDP
+                         |
+            actual suppliers + full contextual P/E
+                         |
+                         v
+                  Handle Operation
+                         |
+                         v
+                Response / Effect
+```
+
+The **level of modeling is a choice**: an internet-service
+provider, regional network, availability zone, dependency,
+link or routing condition can be relevant. One may introduce
+a concrete provider event as a Cause, for example a
+provider-side connectivity change, **if that is a meaningful
+declared external event**. A model could instead use an
+observation/report event, or include an infrastructure
+condition in an honestly scoped scenario carrier. A
+hypothetical outage does not require a newly invented
+Cause at each step. These VDP regions are mathematical
+possibilities, **not runtime message classes** and not
+knowledge that a request handler must already possess.
+
+The `⊗` is a **candidate semantic product**, not
+independence, physical simultaneity or an automatic
+Operation joining suppliers. In the actual architecture,
+producers must be justified with roots and provenance;
+a declared tensor-consuming Operation must check exact
+`ReachInput = AdmInput` over **whole tuples** (E) and
+incoming-member/projection completeness (P). Shared
+network causes may correlate zone and link failure
+members, so not every Cartesian tuple must be
+reachable. A cross-Cone join may be meaningful even
+if sources are associated with different events.
+
+**Evidence and scope:** [`CrossCone.lean`](ArchiScriptExamples/CrossCone.lean)
+already contains a certified cross-Cone tensor;
+[`CorrelatedJoin.lean`](ArchiScriptExamples/CorrelatedJoin.lean)
+shows correlated input relations. The exact
+network/AZ diagram here is an **illustration, not a
+compiled or certified implementation**. It does not
+prove delivery, recovery, availability over time,
+runtime freshness, or deployed infrastructure
+conformance. Those are additional claims requiring
+their own evidence if asserted. An external time
+simulator is **not a prerequisite** to the a priori
+network-failure analysis above.
+
 ### Does that ban branching architectures or multiple outgoing Operations?
 
 **No.** These are **different** declared Operations, not two results of one
