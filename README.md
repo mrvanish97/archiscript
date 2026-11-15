@@ -7,6 +7,26 @@ ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
 
+## Review target: a priori semantic possibilities
+
+ArchiScript sits between high-level architecture diagrams and existing or
+proposed code. It is a calculus for **reviewing the declared architecture as a
+whole system of semantic possibilities and their joint consequences**, not a
+tool for producing a final C4 diagram or simulating an implementation.
+
+Model the full meaningful possibility space **a priori**, before an individual
+execution selects an outcome. VDP members denote semantic regions, not observed
+runtime values. Operations state partial maps between those regions; Causes,
+supplier provenance, contexts and Cones constrain which joint consequences
+are possible. Lean verifies obligations about that declared interpretation,
+without choosing concrete runtime outcomes or executing values.
+
+The review presumes that the model describes the intended existing or future
+code. Proving the model corresponds to code, and that its real-world boundary
+is complete, remain separate responsibilities. Formal coverage of the
+**declared** scope must likewise not be confused with the currently deferred
+global Cone/Expression guarantee.
+
 **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Certificates
 cover the declared semantic objects and derived contexts described below.
 The checker does not establish that the union of declared Cones covers every
@@ -58,6 +78,89 @@ Declare a complete meaningful carrier, including failed, invalid and absent
 cases. Declare named semantic Subdomains and their ancestry. Prove every declared
 split. Select a finite nonempty family of those regions as the VDP's members.
 
+### From Subdomains to selected VDP members: a `String` carrier
+
+Take `String` as the carrier: **all strings**, including empty, malformed,
+invalid, valid-but-denied and valid-and-permitted values. The carrier remains
+`String` through every refinement; it is never replaced by an enum of
+outcomes or narrowed to successful cases.
+
+A `Domain String` is a predicate, which may describe an empty region.
+A `Subdomain String` is a **named, inhabited** semantic region carrying its
+meaning, parent/definition evidence and containment proof. Subdomains are the
+building blocks; **a selected VDP member is itself a Subdomain**, not a separate
+kind of object. A Subdomain does not have to be selected by any particular VDP.
+
+The architect can derive regions by proved `SemanticSplit` declarations:
+
+```text
+String                           <- unchanged carrier (type)
+└── AllStrings                   <- root Subdomain, meaning True
+    ├── Invalid                  <- selected VDP member
+    └── Valid                    <- intermediate Subdomain
+        ├── ValidAndPermitted    <- selected VDP member
+        └── ValidAndDenied       <- selected VDP member
+```
+
+First, split `AllStrings` into `Invalid` and `Valid`; then split
+`Valid` into `ValidAndPermitted` and `ValidAndDenied`. The predicate for
+permission must be independently justified and meaningful on the declared
+carrier. If permission needs external state not contained in `String`, that
+information must be supplied explicitly in an appropriate carrier or through
+a justified Cause/supplier dependency; it cannot be inferred from the string
+alone.
+
+For example, let `V(s)` express validity and `P(s)` an independently
+justified permission predicate on strings. The **selected** regions have
+meanings:
+
+```text
+Invalid(s)           := not V(s)
+ValidAndPermitted(s) := V(s) and P(s)
+ValidAndDenied(s)    := V(s) and not P(s)
+```
+
+Their union is the **entire** carrier, not merely the valid strings:
+
+```text
+forall s : String,
+  not V(s) or (V(s) and P(s)) or (V(s) and not P(s))
+```
+
+The regions are pairwise disjoint. Each named Subdomain must **also** have a
+separate inhabitance proof: logical coverage by itself does not establish that
+all three regions are nonempty. Each declared `SemanticSplit` proves its
+children are contained in the parent, cover that parent and are disjoint;
+its children are already inhabited Subdomains.
+
+`SemanticSplit.refine` can flatten these proved nested splits (using a
+singleton split on the `Invalid` branch). `Partition.ofSplit` then constructs
+a `VDP` / `Partition` from the leaves, with proof that `AllStrings` covers
+every `String`. The VDP selects exactly `Invalid`, `ValidAndPermitted`
+and `ValidAndDenied` as members; `Valid` and `AllStrings` remain part of
+the derivation, but are **not** also selected as members. `MemberIndex`
+identifies these three chosen regions.
+
+A subsequent single `Operation` may map those source members to
+`Rejected`, `Accepted` and `Rejected`, respectively, in a result VDP.
+Trying to map one coarse `Valid` member to both distinct results in the
+same Operation is a signal of a missing source distinction, not a reason to
+introduce an unexplained nondeterministic member arrow.
+
+This is **logical funneling of semantic distinctions**, not a runtime
+validation pipeline or a succession of executed checks. A hierarchical tree
+is one useful derivation, not a mandatory global taxonomy: flat selections,
+independent overlapping supporting Subdomains and justified coarsenings are
+also legitimate. The formal question is always whether the **selected**
+Subdomains partition the full declared carrier, and why those distinctions
+are meaningful for downstream architectural consequences.
+
+The existing [project-reference example](ArchiScriptExamples/ProjectReference.lean)
+shows the same construction with eight proved leaves using
+`Subdomain.child`, `Subdomain.remainder`, `SemanticSplit.refine` and
+`Partition.ofSplit`. [FormInput](ArchiScriptExamples/FormInput.lean) shows
+different granularities over an unchanged `String × String` carrier.
+
 ### A priori possibility space
 
 Before validating downstream consequences, the architect states the meaningful
@@ -84,10 +187,12 @@ source before the affected Operation's member mapping is asserted.
 
 | Concept | Enforced meaning |
 | --- | --- |
+| `Partition.Carrier` | Full declared type of possibilities, unchanged by semantic refinement |
 | `Domain α` | Predicate; intermediate emptiness is permitted |
 | `Subdomain α` | Explicit base, definition evidence, containment and inhabitant |
 | `SemanticSplit parent` | Finite nonempty children covering the parent, internally disjoint |
 | `VDP` / `Partition` | Declared Subdomain members with full carrier coverage and disjointness |
+| Selected VDP member | A declared `Subdomain` chosen by `members : MemberIndex → Subdomain Carrier` |
 | `Operation X Y` | Possibly partial, non-surjective member map between whole verified VDPs |
 | `Expression G X Y` | Finite linear chain of registered Operations between nominal objects |
 | `Presentation` | Nonlinear algebraic presentation syntax, separate from linear routes |
