@@ -1,11 +1,149 @@
 # ArchiScript
 
-A Lean calculus for making architectural assumptions and member consequences
-explicit before implementation.
+A **proof-guided architecture tool for AI agents building and auditing software**.
+Its Lean calculus makes architectural assumptions and member consequences
+explicit before implementation or while reviewing existing code.
 
 ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
+
+## AI-first development and codebase auditing
+
+**The primary intended workflow is agent-led software development and review,
+not human-authored diagrams.** An AI agent reconstructs or proposes the
+semantic architecture, attempts the required Lean proofs, investigates failed
+obligations, and uses the resulting scoped contract to implement or audit code.
+Lean supplies an independent formal feedback channel rather than relying on
+the agent's own prose confidence.
+
+```text
+  NEW SOFTWARE                                  EXISTING SOFTWARE
+  Requirements, assumptions                     Code, APIs, tests, requirements
+            |                                              |
+            v                                              v
+  Agent proposes ArchiScript model             Agent reconstructs model from evidence
+  (Causes, VDPs, suppliers,                    across one or more repositories
+   Operations, Cones, Effects)                              |
+            |                                              |
+            +-------------> Lean proof obligations <--------+
+                                   |
+                       +-----------+------------+
+                       |                        |
+                 Not discharged             Discharged
+                       |                        |
+                       v                        v
+           Investigate semantics,         Model internally checked
+           sources, contracts and         to the certificate's scope
+           missing assumptions                    |
+                       |                         v
+                  Revise or report        Compare model with source
+                  unresolved scope        evidence / intended behavior
+                                                 |
+                                                 v
+                                      Implement increment or report
+                                      actual mismatches; verify again
+```
+
+### Human attention is for architectural adequacy, not proof bookkeeping
+
+An AI agent can generate and revise substantial numbers of local
+semantic declarations, supplier cases and Lean proof obligations,
+while Lean checks each submitted proof. This is intended to
+**shift human effort from repetitive local modeling errors
+toward higher-level judgment**: whether requirements and
+scenario boundaries are sufficient, which assumptions are
+credible, which invariants matter, and which architectural
+risks deserve investigation. It does not make exhaustive
+global architecture coverage automatic or make proof search
+free of limits.
+
+The agent should hand the human a **progressively inspectable
+review package**, rather than a wall of Lean declarations:
+
+```text
+  Requirements / code evidence
+              |
+              v
+     AI-generated architecture
+     + many scoped Lean obligations
+              |
+      Lean checks each proof
+              |
+              v
+    CONCISE HUMAN REVIEW VIEW
+    - small Cause / VDP / Operation / Cone / Effect diagram
+    - important invariants and proven consequences
+    - exact proof and source-evidence references
+    - assumptions, gaps, failed obligations, open questions
+              |
+              v
+       Human examines sufficiency,
+       missing cases and key risks
+              |
+       asks: "Why this member?"
+             "Where is the supplier?"
+             "Which theorem proves that?"
+              |
+              v
+       Agent exposes the precise
+       Lean proof, model definition,
+       counterexample or source path
+```
+
+A diagram is a **navigation and explanation layer** over the
+formal model, not an alternative to it. For any reviewed claim,
+the agent must make the underlying definition, exact proven
+statement, certificate scope and supporting code/requirements
+evidence inspectable on demand. The human should be able to
+challenge **sufficient conditions** for the *intended*
+system behavior without manually reproducing every routine
+partition or tuple proof. A formally verified but irrelevant
+invariant is not a substitute for reviewing whether the
+**right invariant** was selected.
+
+**The diagnostic asymmetry matters.** A **passing** Lean certificate
+establishes the proved propositions about the declared model, **not**
+that an agent has accurately understood requirements or source code.
+A **missing or failed mandatory proof** means the agent has *not yet*
+justified its architecture to that formal standard: it must not
+claim that it understands the system merely because its explanation
+sounds plausible. In a supported, well-scoped model this is a
+valuable reason to question the agent's interpretation. Distinguish
+an actual counterexample/inconsistent contract from an incomplete
+proof attempt, tactic failure, tool limit or missing library feature;
+the latter do **not** establish that the intended architecture is
+false. A failed proof is a **blocker to a verification claim**, not
+by itself proof that the code is wrong.
+
+**For greenfield development**, model requirements and assumptions
+first, discharge the **available scoped obligations** before
+implementing behavior that relies on those claims, then develop in
+small increments and compare implementation to the independently
+authored contracts. **For auditing existing systems**, cite real
+code paths and requirements for each modeled Cause, semantic
+distinction, supplier and effect, then compare source evidence to
+the checked model instead of silently importing desired behavior
+as implemented behavior.
+
+**Do not game the proof to make it green.** If a withdrawal function
+only checks `balance >= amount`, an agent can add
+`UserAuthorized` as a mathematically coherent tensor factor,
+but that does not establish an authorization check in the code.
+Likewise, `WaitingSuccess` and `WaitingTimeout` may be valid
+*a priori* semantic regions only when their meanings,
+exhaustiveness and sources are justified; they cannot be
+introduced merely to conceal an unexplained branch.
+An unproved requirement, missing supplier or unsupported
+model/code correspondence must be reported as such.
+
+**Assurance boundary:** Lean verifies the declared model and
+formal premises, not the real-world completeness of requirements,
+the correctness of an AI-generated code interpretation or
+deployed implementation conformance. In 0.7.0 even global
+all-generated-Expression/Cone coverage is **NOT AUTOMATICALLY
+VERIFIED**. Aligning the model with code remains a separate
+evidence-based review obligation.
 
 ## Review target: a priori semantic possibilities
 
@@ -91,6 +229,33 @@ The answers explain the intended semantics, the guarantees actually proved
 by ArchiScript 0.7.0, and the limitations that remain open. They are intended
 as context for critical discussion, not as rules limiting which concerns
 a reviewer may raise.
+
+### Is ArchiScript mainly a diagram language or an AI-development verification tool?
+
+**It is intended primarily as a proof-guided instrument for AI agents.**
+The agent constructs and verifies an architecture *before*
+implementation, or reconstructs one from existing code
+and independently checks correspondence with the source.
+See [the AI-first workflow](#ai-first-development-and-codebase-auditing).
+
+The key feedback is **asymmetric**: a successful Lean
+certificate does not establish correct understanding of
+requirements or code, but an **unproved mandatory
+obligation means that the agent has not established
+a formally adequate architecture** at the requested
+scope. The agent must investigate missing distinctions,
+sources, full tensor partners, provenance or Effects
+instead of asserting confidence or changing the model
+until it is trivially provable. An explicit
+counterexample proves a particular model obligation
+fails; a failed tactic or missing proof does not
+by itself prove a semantic contradiction or code bug.
+
+For code audits, maintain independently reviewable
+evidence connecting every important modeled assumption
+to actual code/tests/requirements. A green model
+can still be a bad interpretation of the system:
+the Lean certificate is not a code-conformance theorem.
 
 ### Why is there no arrow from one source member to two different outputs?
 

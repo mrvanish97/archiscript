@@ -1,9 +1,110 @@
 ---
 name: archiscript
-description: Author and verify ArchiScript 0.7 Lean architectural models, semantic Subdomains, VDPs, linear Expressions, contextual tensor uses and Cone Effects. Use for ArchiScript modeling and migration, not unrelated Lean code.
+description: Guide AI-led software development and architecture audits with ArchiScript 0.7 Lean models, scoped proofs, VDPs, contextual tensor inputs and Cone Effects; check that formal contracts match requirements and code. Not for unrelated Lean code.
 ---
 
 # ArchiScript 0.7 authoring
+
+**Primary intended use: proof-guided AI development and codebase auditing.**
+Do not present this merely as a manual architecture-diagram tool.
+The agent is expected to propose or reconstruct a semantic architecture,
+try to discharge its mandatory Lean obligations, correct unsupported
+assumptions, and either implement against the model or audit existing
+code against it.
+
+**Greenfield agent workflow:** state the requirements and external
+assumptions; define complete meaningful carriers, selected Subdomains,
+Causes, source provenance, contextual Operations, tensors, Cones and
+Effects; attempt the available scoped certification *before*
+implementing dependent behavior. Investigate failed proof obligations
+as possible missing understanding, rather than optimizing the model
+only to satisfy Lean. Implement in small verified increments and
+compare code to the independently stated contracts and requirements.
+
+**Existing-code agent workflow:** inspect source, tests, APIs and
+requirements across relevant repositories. Keep an **evidence
+ledger** mapping important modeled Causes, inputs, selected
+VDP members, suppliers, Operations, contexts and consequences
+back to concrete source locations, observed behavior or explicit
+external assumptions. Independently compare actual code paths
+with the checked model and report any omitted checks or
+unjustified assumptions. Do not confuse a claim about
+intended architecture with a claim that code implements it.
+
+**Proof-feedback asymmetry:** a passing Lean certificate
+proves only the stated model-relative obligations, not
+correct understanding of code. An *undischarged mandatory
+proof* means the agent **has not established** its
+claimed architectural analysis; treat that as a serious
+diagnostic of possible misunderstanding and block any
+claim of completed verification. Distinguish (1) an
+explicit Lean counterexample or falsified obligation,
+(2) a failed/incomplete tactic or missing proof, and
+(3) unsupported model-to-code correspondence. Only
+(1) demonstrates a specific formal contract violation;
+(2) can arise from proof complexity, tooling or an
+unsupported language feature, and (3) requires
+independent source evidence. None should be silently
+turned into an accepted proof with assumptions
+chosen solely for convenience.
+
+**Human-review handoff: compress routine proofs, expose reasoning on
+demand.** Expect a large number of machine-generated local
+declarations and proof attempts; do not expect a human reviewer
+to read them all line by line. When presenting an architecture
+or a review result, produce an **inspectable review package**:
+
+- A compact, faithful Cause/VDP/Operation/Cone/Effect diagram,
+  with important distinct supplier occurrences retained.
+- A concise statement of the **intended behavior**,
+  the most important sufficient conditions/invariants,
+  and exact Lean theorem/certificate references that
+  establish each *model-relative* claim.
+- A traceable evidence map back to code, requirements
+  or explicitly declared external premises for each
+  architecture-critical assumption.
+- A clear separation of **proved**, **not proved**,
+  **blocked by proof/tool limitations**, and
+  **not checked for code conformance**. Surface
+  counterexamples and unresolved model cases rather
+  than burying them in routine proof output.
+- A drill-down path: when a reviewer asks why a VDP
+  member exists, where a supplier originates, how
+  a tensor partner is guaranteed, or which Effect
+  theorem proves a consequence, show the precise
+  model declarations, theorem statements and
+  relevant code or test locations.
+
+The human's primary review job is **adequacy and
+sufficiency of the architectural obligations**:
+the correct behavioral questions, scope, boundary,
+threats, constraints and missing scenarios.
+Lean checks proofs *relative to stated premises*;
+neither the human-facing diagram nor a pile of
+green certificates establishes that the chosen
+requirements or model-to-code correspondence
+are complete. Do not overwhelm the reviewer with
+raw proof output when a concise diagram and
+traceable claims suffice, and do not hide a
+missing proof behind a polished diagram.
+
+**Anti-proof-gaming rule:** do not shrink a carrier,
+remove an error case, split a member into fictitious
+future-aware cases, invent a supplier, assume a
+correlation, postulate missing code behavior, or
+weaken an Effect merely to achieve a green build.
+Preserve independent requirements and record
+external premises. If new distinctions are
+semantically legitimate, justify their meanings,
+provenance and completeness; then rerun proof
+and code-comparison checks.
+
+**Assurance scope:** the API's certificates are
+scoped, and global all-generated-Expression/Cone
+coverage is still NOT AUTOMATICALLY VERIFIED.
+A successful model certificate without a separately
+substantiated model-to-code mapping cannot establish
+real system correctness.
 
 Model the **a priori space of semantic possibilities** and their member-level
 architectural consequences, not concrete runtime executions. Lean checks the
