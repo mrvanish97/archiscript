@@ -45,6 +45,63 @@ the agent's own prose confidence.
                                       actual mismatches; verify again
 ```
 
+### Human attention is for architectural adequacy, not proof bookkeeping
+
+An AI agent can generate and revise substantial numbers of local
+semantic declarations, supplier cases and Lean proof obligations,
+while Lean checks each submitted proof. This is intended to
+**shift human effort from repetitive local modeling errors
+toward higher-level judgment**: whether requirements and
+scenario boundaries are sufficient, which assumptions are
+credible, which invariants matter, and which architectural
+risks deserve investigation. It does not make exhaustive
+global architecture coverage automatic or make proof search
+free of limits.
+
+The agent should hand the human a **progressively inspectable
+review package**, rather than a wall of Lean declarations:
+
+```text
+  Requirements / code evidence
+              |
+              v
+     AI-generated architecture
+     + many scoped Lean obligations
+              |
+      Lean checks each proof
+              |
+              v
+    CONCISE HUMAN REVIEW VIEW
+    - small Cause / VDP / Operation / Cone / Effect diagram
+    - important invariants and proven consequences
+    - exact proof and source-evidence references
+    - assumptions, gaps, failed obligations, open questions
+              |
+              v
+       Human examines sufficiency,
+       missing cases and key risks
+              |
+       asks: "Why this member?"
+             "Where is the supplier?"
+             "Which theorem proves that?"
+              |
+              v
+       Agent exposes the precise
+       Lean proof, model definition,
+       counterexample or source path
+```
+
+A diagram is a **navigation and explanation layer** over the
+formal model, not an alternative to it. For any reviewed claim,
+the agent must make the underlying definition, exact proven
+statement, certificate scope and supporting code/requirements
+evidence inspectable on demand. The human should be able to
+challenge **sufficient conditions** for the *intended*
+system behavior without manually reproducing every routine
+partition or tuple proof. A formally verified but irrelevant
+invariant is not a substitute for reviewing whether the
+**right invariant** was selected.
+
 **The diagnostic asymmetry matters.** A **passing** Lean certificate
 establishes the proved propositions about the declared model, **not**
 that an agent has accurately understood requirements or source code.
