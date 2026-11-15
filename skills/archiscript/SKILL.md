@@ -24,10 +24,16 @@ carrier of possibilities; its members are **not** the
 runtime classes or messages a component must already
 possess. For each architecture, apply this discipline
 when constructing the model *and* when criticizing it.
-External failures (network outage, AZ failure, timeout,
-race, meteor strike) are candidate semantic distinctions
-or justified neighboring-Cone factors, not automatically
-unmodeled nondeterministic arrows. Follow these steps:
+Common procedural-slippage prompts include: **"What if
+the network fails?"**, **"What if an AZ goes down?"**,
+**"What if a meteorite destroys the server?"**,
+**"What if a request times out or another worker intervenes?"**
+and **"How can one deterministic Operation describe an
+unpredictable outcome?"** These are prompts to identify
+semantically distinct full scenarios or justified
+neighboring-Cone suppliers, **not** automatic evidence
+for nondeterministic member-level Operations.
+Follow these steps:
 1. Ask whether the factor is **already present**
    as a semantic distinction in the declared
    scenario carrier/VDP. An `Up | Down`
