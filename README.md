@@ -49,15 +49,22 @@ through a typed tensor.
                 Response VDP
 ```
 
-The common misunderstanding is **procedural slippage**:
-a human or AI agent begins reviewing semantic possibilities
-but switches to mentally executing software, demanding
-that a component already know which possible scenario
-will occur. That changes the question. Network failure,
-resource contention or even a meteorite disabling a server
-can be modeled through the architecturally relevant
-semantic distinctions, **provided the declared boundary
-and source assumptions really justify them**.
+### Procedural slippage
+
+**Procedural slippage** occurs when a human or AI agent starts
+with an *a priori* semantic model but silently switches to
+thinking about the steps of a running program. VDP members
+are then mistaken for runtime values that a component must
+already observe, and a semantic Operation is wrongly expected
+to predict which future scenario will occur.
+
+That changes the question. A network failure, resource
+contention or even a meteorite disabling a server can
+be modeled through the architecturally relevant semantic
+distinctions, **provided the declared boundary and source
+assumptions really justify them**. The possibility of such
+events does not, by itself, demand a nondeterministic
+member-level Operation or a simulation of physical time.
 
 This is not a simulator, a guarantee that every real-world
 failure was enumerated, or a proof of implementation
