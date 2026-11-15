@@ -281,6 +281,34 @@ classification**: include the relevant information in an appropriate
 carrier or justified input/supplier. The missing policy information must
 not be concealed as a nondeterministic Operation arrow.
 
+#### Does this produce a "Frankenstein" Request carrier containing errors and successes?
+
+**Not literally in this sketch.** Its carrier is still `String`.
+`Invalid`, `ValidAndPermitted` and `ValidAndDenied` are **predicates
+classifying strings**, not success/error values stored inside the
+request. `Success`, `InvalidInput` and the other response regions
+belong to a **different Response VDP**, on a separately justified
+response carrier. A response representation that includes both
+successful and unsuccessful results is not itself problematic.
+
+**But it can become a Frankenstein *semantic model*.** If permission
+actually depends on a user, resource, policy version or service-held
+fact, a naked `String` cannot truthfully distinguish
+`ValidAndPermitted` from `ValidAndDenied` without a justified,
+fixed predicate on strings. Merely tagging the input `WillSucceed`
+or `WillFail` to make an Operation functional would **smuggle the
+decision into the source** instead of explaining it. An a priori
+classification does not license inventing an oracle.
+
+Use a richer request/context carrier **when those facts are genuinely
+part of that input**, or supply the needed information from separately
+declared Causes and Operations with explicit provenance and relevant
+tensor-context proofs. If the real architecture determines permission
+from the string alone under a fixed policy, the simpler three-region
+`String` example remains valid. The right question is **where the
+distinguishing information actually comes from**, not how to force
+all future outcomes into the request.
+
 #### A service that can be available or unavailable
 
 Now suppose a separate declared external Cause supplies a `ServiceStatus`
