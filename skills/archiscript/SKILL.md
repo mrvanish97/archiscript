@@ -26,10 +26,11 @@ possess. For each architecture, apply this discipline
 when constructing the model *and* when criticizing it.
 Common procedural-slippage prompts include: **"What if
 the network fails?"**, **"What if an AZ goes down?"**,
-**"What if a meteorite destroys the server?"**,
-**"What if a request times out or another worker intervenes?"**
-and **"How can one deterministic Operation describe an
-unpredictable outcome?"** These are prompts to identify
+**"What if a request times out or another worker intervenes?"**,
+**"How can one deterministic Operation describe an
+unpredictable outcome?"**, and, at the deliberately
+extreme end, **"What if a meteorite destroys the server?"**
+These are prompts to identify
 semantically distinct full scenarios or justified
 neighboring-Cone suppliers, **not** automatic evidence
 for nondeterministic member-level Operations.
