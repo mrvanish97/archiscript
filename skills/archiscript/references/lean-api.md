@@ -74,6 +74,9 @@ entry/observation route; `oneEntry` and `nontrivial` are mandatory.
 `Evaluates` is its relational form. `Evaluates.deterministic`,
 `Evaluates.supplier` and `defined_consequence` are proved. `InCone` requires the
 specified originating root and preserves its identity.
+`effect_image_of_assignment` and `effect_projection_of_assignment` reuse a
+proved stationary interpretation for full Effect relations/projections; their
+premises do not hold for arbitrary cyclic or occurrence-sensitive models.
 
 `isInputContext` derives ownership from real supplier provenance. `incoming`
 is independent of current join acceptance. `reachInput` includes the stated
