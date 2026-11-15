@@ -66,20 +66,93 @@ Report mandatory invariant violations separately from optional global
 coverage, manual inventory assumptions, real-world adequacy, and runtime
 liveness. Cite the violated Lean contract before proposing a semantic change.
 
-**Temporal composition scope (standard 0.7.0: NOT AUTOMATICALLY VERIFIED):**
-This applies both to repeated invocations of the **same** Cone and
-to ordering/overlap/freshness across **different** Cones. A common
-`World`, tensor input and `reachEffect` tuple do not provide
-timestamps, repeated event identities, `happens-before` or an
-atomicity/serializability guarantee. Do not manufacture two runtime
-invocations by reusing a Cause's canonical origin or by multiplying
-Effect coordinates. An author may define **external temporal/trace
-semantics** with explicit invocation identities, time-indexed states,
-interleavings and assumptions, then prove additional Lean theorems
-about joint states or at-most-once behavior. These proofs are valid
-only relative to that explicitly stated model and are **not part
-of the default ArchiScript certificate**. See the
-[temporal Cone FAQ](../../README.md#can-repeated-executions-of-one-cone-or-executions-of-different-cones-be-related-across-time).
+**A priori concurrency, shared-state feedback and cyclic tensors
+(0.8.0 committed feature; NOT YET END-TO-END DEMONSTRATED):**
+Do **not** require an architect to invent separate Causes,
+multiple Cones, a physical clock or an external execution
+simulator merely to analyze possible contender/resource states.
+A planned pattern has **one Cause and one Cone**, a
+`Request ⊗ State` tensor input, and a feedback route
+which also produces the same declared State VDP.
+The tensor's admissible joint members and the Cone's
+Effect are semantic possibilities, not a scheduler.
+Consult the [README's preserved ASCII diagram and
+explanation](../../README.md#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor)
+and [the 0.8.0 acceptance criteria](../../plans/0.8.0.md).
+
+**Reviewer checklist for this pattern:** check that the
+two uses of State are occurrences of a genuine
+declared VDP, that the actual generator inventory and
+any fan-out are explicit, and that the typed cycle
+has one entry and justified auxiliary suppliers.
+At **every** supported coherent cyclic tensor input,
+including all finite unfoldings, verify full
+`ReachInput = AdmInput` (E) and exact independent
+incoming factor images / admissible tuple projections
+(P). A selected VDP member is **not automatically**
+an incoming member. Keep the precondition of
+`CertifiedDeclaredArchitecture.input_partner`:
+the relevant supplier image needs justified finite
+Cause-rooted provenance and `InputSources`.
+Do not demand a concrete initial State **value**
+merely to state these universal relations; equally,
+do not pretend a rootless feedback loop is grounded.
+
+**Effect and implementation status:** the ASCII
+diagram's `Decision VDP ⊗ State VDP` is a proposed
+analytical Effect with terminal and typed cyclic
+boundary roles, **not** an Effect that may be
+chosen independently of the derived histories.
+Require actual `effectCoverage`, `ConeValid`,
+and Effect provenance/tuple proofs. The existing
+`CyclicCone` and `CorrelatedJoin` regressions
+prove their features **separately**: the combined
+feedback-tensor one-Cone architecture has **not
+yet been shown to compile and certify**. It may
+work already; test this first. Project commitment:
+deliver such certification in **0.8.0**, or retain
+the committed feature in later versions until
+the necessary verifier changes are complete.
+Until then report **PLANNED / NOT YET VERIFIED**.
+
+**Distributed-system / cross-Cone shared-VDP review (0.8.0
+formal-foundations goal; NOT YET VERIFIED for this combined case):**
+Do not treat the absence of an explicit clock, scheduler or trace
+logic as a blanket inability to study distributed systems.
+Different Cones can have distinct source/member images in the
+**same declared State VDP** and those images can be compared
+through explicitly justified tensor tuples, supplier provenance
+and P/E. The images need not be equal, nor must the joint
+relation be the full Cartesian product. This is an
+*a priori* semantic question and does not require an
+external temporal model by default. See the
+[distributed-systems FAQ and two-Cone diagram](../../README.md#can-archiscript-analyze-distributed-system-conflicts-without-a-time-simulator).
+
+Do **not** claim that equal VDP types automatically identify
+a physical shared resource or that multiple producers
+automatically merge writes. A tensor is not an implicit
+state-update combiner or conflict resolver. Preserve
+per-occurrence provenance, distinct ownership and
+source image constraints; for an actual input Operation
+require full contextual P/E, and for an Effect use the
+correct derived coordinate/tuple semantics. The
+N-Cone compositional account is an **open 0.8.0 research
+commitment**, not a proved current capability; avoid
+both overclaiming categorical completeness and falsely
+demanding N hard-coded `Resolve` operations or a global
+time simulator. Physical linearizability, atomicity and
+runtime event order remain separate claims when asked.
+
+**Separate runtime claim:** A VDP-level analysis
+of conflicting states does **not** by itself prove
+that physical workers overlap, run in any order,
+acquire exclusive database locks, commit atomically
+or satisfy liveness. These properties can be
+modeled separately in Lean when required; such
+external temporal/trace analysis is **optional**
+for the a priori one-Cone semantic problem,
+and is not supplied automatically by the 0.7.0
+certificate.
 
 ## A priori semantic modeling / anti-hidden-branching
 
@@ -207,6 +280,193 @@ orphan/parity and explicit external-supplier cases. Their current declarations
 and [evaluation cases](references/evaluation-cases.md) are authoritative;
 the possibility-space example alone is not an architecture certificate.
 
+## Constructive study patterns: reuse the structure, verify the claim
+
+These are **learning templates for agents**, not copied Lean definitions.
+The diagrams show intended typed supplier paths; *only the cited
+checked Lean examples* establish current certification. When adapting
+one, first specify the carrier and member meanings, then the exact
+generator inventory and sources, then contextual P/E, Effect
+provenance and the certificate. Treat each occurrence independently
+even when two paths use the same VDP. Do not take an ASCII arrow,
+a nominal VDP equality or an illustrative tuple relation as proof.
+
+### Pattern A — correlated fan-out and a verified tensor join (supported)
+
+```text
+             Cause -> Source VDP
+                        |
+                   +----+----+
+                   |         |
+                opLeft    opRight
+                   |         |
+                   v         v
+                Left VDP   Right VDP
+                   |         |
+                   +----⊗----+
+                        |
+                  join Operation
+                        |
+                        v
+                    Joined VDP
+```
+
+**Start from** [`CorrelatedJoin.lean`](../../ArchiScriptExamples/CorrelatedJoin.lean):
+`diagonalCertified` has correlated `(false,false)`,
+`(true,true)` inputs, while `constantCertified`
+permits `(false,true)`, `(true,true)` because the
+right supplier always produces `true`. The full
+abstract `Bool ⊗ Bool` still has four index pairs;
+`Reach=Adm` includes only actual, justified tuples.
+**Adapt:** change the independent `rightMeaning` map,
+update the authored admissibility relation and prove
+projections (P), full tuple equality (E), root
+histories and Effect. **Do not** set admissibility
+equal to whatever reaches the join by definition.
+
+### Pattern B — external input into another Cone (supported)
+
+```text
+  Cone A / Cause A                    Cone B / Cause B
+        |                                   |
+        v                                   v
+     A VDP ----------------+             B VDP
+     (owned by A)          |                |
+                          +-------⊗--------+
+                                  |
+                           joined Operation
+                           (owned by Cone B)
+                                  |
+                                  v
+                               Result VDP
+```
+
+**Start from** [`CrossCone.lean`](../../ArchiScriptExamples/CrossCone.lean),
+which certifies a cross-Cone tensor whose external A
+factor has its own cyclic supplier history. One
+Operation may consume both factors without claiming
+that both Causes physically execute together.
+**Adapt:** keep `owner`, distinct canonical roots,
+supplier histories, the local input-factor requirement,
+full `P/E` and separate Cone Effects correct.
+This is a cross-Cone **dependency**, not a proof of
+joint writes to one physical shared resource.
+
+### Pattern C — own-State feedback through a tensor (0.8.0 planned)
+
+```text
+   ONE Cone / Cause
+           |
+        Request VDP
+           |
+           v
+       Request ⊗ State VDP <------+ State VDP
+           |                               ^
+           v                               |
+      Operation(s) --> Decision VDP        |
+           |                               |
+           +------> updated State VDP -----+
+                                |
+           Effect: terminal Decision
+                  ⊗ typed cyclic State observation
+```
+
+This is the **planned** combination, **NOT YET
+END-TO-END VERIFIED**. See the
+[canonical full ASCII diagram and explanation](../../README.md#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor)
+and [0.8.0 acceptance criteria](../../plans/0.8.0.md).
+[`CyclicCone.lean`](../../ArchiScriptExamples/CyclicCone.lean)
+proves cycles, and Pattern A proves tensors, **not their
+combination here**. **Adapt/investigate:** add a
+genuine typed `CycleBoundary`, explicit State supplier,
+all finite coherent cyclic input contexts, independent
+factor incoming images, P/E and derived terminal/cyclic
+Effect coordinates. The diagram does not itself
+provide a grounded State supplier; no particular
+initial State *value* or external timeline is needed
+merely to state the universal contracts.
+
+### Pattern D — two or N Cones, same State VDP, different images (research)
+
+```text
+  Cone A -> State VDP          Cone B -> State VDP
+            I_A                       I_B
+         {Free,Locked}             {Locked,Done}
+               |                       |
+               +-----------⊗-----------+
+                           |
+                    joint tuples R
+                 (P/E and provenance?)
+```
+
+**0.8.0 research / NOT YET VERIFIED as common shared
+resource behavior.** `State VDP` is the same
+declared *partition*; `I_A` and `I_B` are possibly
+**different incoming member images** of distinct
+producer occurrences. A candidate
+`R = {(Free,Locked), (Locked,Done)}` covers both
+projections but is **not established by the diagram**.
+If a real input join is declared, prove its exact P/E;
+if only an analytical Effect is claimed, prove its
+derived coordinates and full relation. A tensor gives
+a pair of values, not one merged State, a winning
+writer or a shared physical storage identity.
+
+**Scale by studying arbitrary finite N**, not by
+creating a separate hard-coded N-way `Resolve`.
+Pairwise feasibility is insufficient for global
+feasibility: for three Bool-valued factors, all
+three pairwise constraints `a ≠ b`, `b ≠ c`
+and `a ≠ c` have individually satisfying pairs,
+but **no common Boolean triple** satisfies all
+three. A proposed N-way rule must retain full
+joint consistency and supplier identities.
+Consult the [cross-Cone research goal](../../plans/0.8.0.md)
+and use Pattern B only as the *already checked*
+external-source baseline, not as a proof of
+shared-resource merging.
+
+### Pattern E — coproduct as a tagged value, not competing producers (supported algebra)
+
+```text
+  Request VDP ⊗ ServiceStatus VDP
+                 |
+             Operation
+                 |
+                 v
+       Response VDP (Sum Success Error)
+              inl | inr
+         one tagged result per defined source member
+
+  NOT: independent Success producer --+
+                                       +--> implicit "pick one"
+       independent Error producer -----+
+```
+
+**Start from** [`Coproduct.lean`](../../ArchiScript/Coproduct.lean)
+and the [coproduct FAQ](../../README.md#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
+A valid sum is the **carrier of one tagged semantic
+value**, not a source-selection rule or an
+`Architecture.Inputs` supplier join.
+**Adapt:** justify tags and all relevant source
+distinctions, then define member-level
+`Operation.run : X.MemberIndex → Option Y.MemberIndex`
+and prove the selected partition obligations.
+The algebra is checked; whether a particular
+tagging faithfully represents the external
+boundary is a separate author-review obligation.
+
+**Learning rule:** prefer a proven example as a
+starting point, preserve its specific proof
+obligations when changing `Node`, `owner`, `Cause`,
+`Generator`, `context`, `admissibleInput` or
+`effectAnalysis`, and label every new combination
+of individually supported primitives **unproven**
+until its own Lean certificate and negative
+regressions pass. Never fill a missing guarantee
+with an unchecked axiom, an invented Cause, an
+implicit branch or an assumed join.
+
 ## Establish the semantics
 
 1. Start from the complete meaningful carrier, retaining invalid, absent,
@@ -296,6 +556,13 @@ from inhabited verification. `CertifiedDeclaredArchitecture.input_partner`
 produces a supported full context and an Adm-and-Reach tuple containing each
 member witnessed by an independent `supplierImage`. A bare unused product
 receives no architectural verdict.
+
+For the **planned one-Cone cyclic tensor input case**, do not
+claim the existing universal P/E plus cycle machinery has been
+proved sufficient until the
+[0.8.0 end-to-end regression](../../plans/0.8.0.md)
+passes; see the
+[ASCII diagram in README](../../README.md#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor).
 
 For cycles, supply a typed `Term.CycleBoundary` at the chosen observation point:
 a real route with one typed entry hole and explicit auxiliary suppliers.
