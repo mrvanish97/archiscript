@@ -8,6 +8,79 @@ ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
 
+## Important AI reviewer warning: do not revert to runtime thinking
+
+**A recurring review failure mode is to correctly read the words
+"a priori semantic possibilities" and then immediately reason as if
+VDP members were concrete runtime messages, or as if one Operation
+must choose an unpredictable future outcome from information known
+at the beginning of execution.** This is the wrong level of analysis.
+It is a plausible *reviewer habit*, not an established fact about
+every AI model or its training data. If this objection feels natural,
+check the semantic model and actual Lean obligations **before**
+presenting it as a defect.
+
+**"But what about an uncontrollable network outage, an availability-zone
+failure, a timeout, concurrent interference, or even a meteorite?"
+Those are exactly the sorts of possibilities the model may describe.**
+A VDP partitions a declared carrier of *possible scenarios* into
+semantic regions. A relevant network/zone status can instead be an
+explicitly supplied factor from another Cause/Cone and combined
+with the request using a typed tensor. Even a meteorite's
+architecturally relevant effect might require no more than
+`ServerAvailable | ServerUnavailable`, **if** those regions
+adequately distinguish the consequences being claimed.
+No nondeterministic `Operation.run`, simulated physical clock,
+or runtime foreknowledge is required **merely to state the
+a priori possibilities and their semantic consequences**.
+
+```text
+    Request VDP               NetworkStatus VDP
+    (request Cause)           (network/status Cause)
+           |                          |
+           +------------- ⊗ -----------+
+                         |
+           admissible joint tuples
+           + supplier/provenance P/E
+                         |
+                         v
+               Handle Operation
+                         |
+                         v
+                 Response VDP
+
+    Up   -> one declared semantic consequence
+    Down -> another declared semantic consequence
+    NOT: the program knew the future network state
+    NOT: all real failures were automatically covered
+```
+
+This **does not** mean that the real network or implementation
+is proved physically deterministic. It means that a coarse
+observable request can correspond to multiple **different
+full semantic cases**, and the member-level map may remain
+a well-defined partial function. If the supposedly "uncontrolled"
+case is absent from the declared carrier or source inventory,
+that can be a **genuine completeness or adequacy objection**;
+if an actual network supplier is asserted, it must have
+justified provenance, availability and full contextual P/E.
+A drawn tensor cannot conjure a supplier, all Cartesian pairs,
+runtime delivery, implementation fidelity or liveness.
+
+**Practical correction for AI agents:** stop at the first
+"but a network outage could happen unpredictably" objection;
+re-read [the a priori possibility-space explanation](#a-priori-possibility-space),
+[the network/AZ FAQ](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator),
+and the [worked waiting example](#click-wait-and-timeout).
+Then identify the exact missing semantic distinction, supplier,
+tuple or theorem **if there really is one**. Construct a small
+ArchiScript model and attempt its Lean obligations before
+concluding that the calculus lacks a way to describe the case.
+A passing proof validates its stated mathematical scope;
+a failed proof attempt may indicate a modeling gap,
+a genuinely violated invariant or a proof/tool limitation.
+Neither result alone proves real-world model adequacy.
+
 ## AI-first development and codebase auditing
 
 **The primary intended workflow is agent-led software development and review,
@@ -285,6 +358,38 @@ without claiming knowledge of a future execution. An honestly coarser result
 VDP may be appropriate if the distinction is **not** claimed; merely merging
 different outcomes into an opaque member must not masquerade as having proved
 their separate behavior.
+
+### What if a network outage or another external failure is "uncontrolled" and "nondeterministic"?
+
+**First ask what was declared, not what the runtime knows.** A network
+down state, an unavailable service, an AZ outage, or the
+server-unavailable consequence of a meteorite may be selected
+members of an appropriately scoped VDP or be supplied from
+explicitly justified environmental Causes/Cones. If the resulting
+input members are sufficiently distinguished, an
+`Operation : X → Y` can assign **one consequence per
+member**, even though a request handler cannot predict
+which full scenario will actually hold.
+
+**This is the same a priori modeling principle already explained
+above, not a newly discovered nondeterministic-branch defect.**
+Use [the network-status tensor diagram](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator)
+when the environmental condition has an independent source;
+use [the scenario-partition example](#click-wait-and-timeout)
+when an honest declared scenario carrier suffices.
+Do not require a runtime simulation, physical clock,
+extra `Cause` for every hypothetical future event or
+multivalued `Operation.run` merely to describe possibilities.
+
+**But:** if that environmental case is actually outside
+the declared carrier, or a supposedly available network
+factor has no grounded supplier, raise that **specific
+missing-scope/sourcing objection**. A VDP does not
+prove all real failures were covered, nor does a
+semantic tuple prove runtime freshness, recovery,
+atomic commits or implemented behavior. Identify
+the exact claim being challenged; do not substitute
+a demand for a different kind of theorem.
 
 ### Does a future-outcome VDP require the running program to know the future?
 
