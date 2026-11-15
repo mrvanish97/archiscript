@@ -12,6 +12,8 @@ try to discharge its mandatory Lean obligations, correct unsupported
 assumptions, and either implement against the model or audit existing
 code against it.
 
+## Procedural slippage: a modeling and review failure mode
+
 **Core modeling discipline — avoid procedural slippage.**
 ArchiScript works with **a priori semantic possibilities**,
 not an execution trace. Human authors, AI agents and reviewers
