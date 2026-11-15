@@ -168,6 +168,85 @@ inadmissible tuple reachable. See
 [`SharedTargetJoin`](ArchiScriptExamples/SharedTargetJoin.lean) and
 [`ContractCoverage`](ArchiScriptTests/ContractCoverage.lean).
 
+### Can a coproduct combine two independent supplier branches into one alternative response?
+
+**No: a coproduct is a tagged alternative of semantic values, not an
+architectural join or a runtime branch selector.** This is precisely
+where tensor and coproduct play different roles:
+
+```text
+SUPPORTED: independent supplier factors + ONE response value
+
+  Request VDP              ServiceStatus VDP
+       |                           |
+       +---------- tensor ---------+
+                     |
+                     v
+          ONE declared Operation
+                     |
+                     v
+                Response VDP
+       Carrier = Sum SuccessPayload ErrorPayload
+                /                         \
+       Success member(s)             Error member(s)
+
+  A response is tagged Success OR Error, not both.
+
+NOT SUPPORTED AS AN IMPLICIT "SUM JOIN":
+
+  independently produced Success VDP  ---> ?
+                                             +---> "choose one"
+  independently produced Error VDP    ---> ?
+
+  No automatic supplier coproduct, mutual exclusion, ordering,
+  scheduler, or selected-result Operation exists in that sketch.
+```
+
+The distinction is visible in the API.
+[`Partition.coproduct`](ArchiScript/Coproduct.lean) has carrier
+`Sum P.Carrier Q.Carrier` and member indices
+`Sum P.MemberIndex Q.MemberIndex`, preserving the tag.
+[`Architecture.Inputs`](ArchiScript/Architecture.lean) admits
+`unit`, `node` and `tensor` supplier structures, **not** a
+`coproduct` constructor for independent producers.
+A `Response` VDP may use `SuccessVDP.coproduct ErrorVDP` as its
+single target VDP; its error summand can itself have distinct
+`ValidationError`, `PermissionDenied` and `ServiceUnavailable`
+members. Each selected member still requires the ordinary Subdomain
+inhabitedness, disjointness and coverage evidence. The result type
+being a sum does **not** prove that all real API outcomes are modeled.
+
+For example, one `process : Operation (Request.tensor ServiceStatus) Response`
+can map each fully distinguished input member to `some (.inl successIndex)`
+or `some (.inr errorIndex)`, or to `none`. The particular choice
+must be determined by that Operation's declared member-level input
+semantics; it is not an implicit nondeterministic fork. The full
+supplier provenance and input P/E obligations still apply.
+
+**Do not interpret two independently declared Operations** producing
+success-shaped and error-shaped values as a single exclusive
+`Success OR Error` just because their target carrier can be
+written as a coproduct. They remain distinct structural routes;
+both could have consequences under a common boundary world.
+If the intended architecture has exactly one response, specify
+and justify that single response-producing route and its semantics.
+Forcing a coproduct onto two independent suppliers supplies neither
+exclusivity nor a hidden dispatch Operation.
+
+This is **not a ban on legitimate coproduct algebra**.
+[`Operation.coproductInl`, `coproductInr`, `copair` and
+`coproductMap`](ArchiScript/Coproduct.lean) operate on tagged
+semantic alternatives. In particular, `copair` consumes an
+**already coproduct-typed input**, selecting the appropriate
+member map from its existing tag; it does not merge two simultaneous
+independent arrivals or invent a scheduling decision. Coproducts
+can model alternative *request* types too, not only responses.
+
+The [authorization-service example](#why-can-an-authorization-service-be-a-tensor-factor-if-the-requests-outcome-is-already-semantically-distinguished)
+shows why a request/status **tensor input** can lead to a
+success/error **coproduct carrier** without any hidden runtime
+branching.
+
 ### Does a verified tensor input make the outgoing Operation a total function?
 
 **No.** The P/E obligations verify the **supplier input relation**, not the
@@ -421,6 +500,9 @@ not require `some` for every reachable pair. `none` is mathematical
 undefinedness, not a runtime event or an `Absent` VDP member. Response
 members must themselves be justified regions of an appropriate response
 carrier; they do not bypass Subdomain proofs.
+For why this one response may have a **coproduct** carrier but cannot
+be reconstructed by summing independent success/error suppliers, see
+[the coproduct-versus-supplier-join FAQ](#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
 
 The entry `(ValidAndPermitted, Unavailable) → ServiceUnavailable` is the
 instructive case: the request belongs to a permitted semantic region,
