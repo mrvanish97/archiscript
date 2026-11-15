@@ -12,12 +12,16 @@ try to discharge its mandatory Lean obligations, correct unsupported
 assumptions, and either implement against the model or audit existing
 code against it.
 
-**Mandatory reviewer reset — VDPs are not runtime event classes.**
-AI agents sometimes revert to familiar step-by-step,
-implementation-oriented reasoning when discussing a
-mathematical a priori architecture. This is a
-**review failure mode to correct**. Before
-criticizing ArchiScript for "uncontrolled
+**Procedural slippage — mandatory reviewer reset.**
+Both human reviewers and AI agents can shift
+from a priori semantic reasoning into mentally
+executing a program. This **procedural slippage**
+makes them mistake VDP members for concrete
+runtime event classes, or demand that one
+Operation predict which possible scenario will
+occur. It is a category error to correct,
+not evidence of a failed architectural proof.
+Before criticizing ArchiScript for "uncontrolled
 nondeterminism" (network outage, zone failure,
 timeout, race, meteor strike), apply this rule:
 
@@ -84,7 +88,7 @@ models them; check P/E and provenance.
 Only a concrete omitted distinction
 or unjustified guarantee is a valid
 defect." For additional worked
-context see [the reviewer warning](../../README.md#important-ai-reviewer-warning-do-not-revert-to-runtime-thinking)
+context see [the reviewer warning](../../README.md#procedural-slippage-do-not-confuse-semantic-possibilities-with-execution)
 and [network FAQ](../../README.md#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator).
 This instruction is **self-contained**;
 the agent must be able to apply it
