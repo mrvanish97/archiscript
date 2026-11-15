@@ -251,6 +251,185 @@ and [`ProjectReference`](ArchiScriptExamples/ProjectReference.lean).
 Observing a runtime value can identify a previously declared region; it
 does not create the region after the fact.
 
+### Why can an authorization service be a tensor factor if the request's outcome is already semantically distinguished?
+
+**The a priori classification of possibilities is not an account of when a
+running program learned the answer.** ArchiScript distinguishes (1) what
+semantic cases exist, (2) which declared suppliers and architectural
+dependencies participate in an outcome, and (3) what partial Operations
+say about consequences. An Operation cannot invent an undisclosed
+`Success`/`Error` choice for one unchanged source member; conversely,
+the model does not assert that a real service has already executed.
+
+Consider a **particular, justified permission policy** in which `V(s)`
+means that a string is valid and `P(s)` means that the string is permitted.
+A source `Request` VDP over the *full* carrier `String` may select:
+
+```text
+Request VDP (carrier: String; every member is Subdomain String)
+  Invalid                 := not V(s)
+  ValidAndPermitted       := V(s) and P(s)
+  ValidAndDenied          := V(s) and not P(s)
+```
+
+All three selected regions must be inhabited, disjoint and cover the
+carrier. This says **which case a value belongs to under the stated
+semantics**, not whether the implementation has checked it yet. If the
+same string can be permitted for one user, resource or policy version and
+denied for another, then `P : String → Prop` is **not a justified complete
+classification**: include the relevant information in an appropriate
+carrier or justified input/supplier. The missing policy information must
+not be concealed as a nondeterministic Operation arrow.
+
+#### A service that can be available or unavailable
+
+Now suppose a separate declared external Cause supplies a `ServiceStatus`
+VDP. Its carrier describes the relevant service-condition evidence, with
+two justified, inhabited regions `Available` and `Unavailable`.
+For instance, an external *service-status report* may be the Cause, with
+an appropriate declared boundary/context for the intended decision.
+A developer/DevOps deployment can explain why a service exists, but
+**completion of deployment is not proof of its later availability**.
+If the Cause is merely a completed-deployment event, a single `Deployed`
+member can express that much, not both live service states.
+
+One **possible architecture sketch**, not a compiled Lean fixture:
+
+```text
+Cause: requestArrived                Cause: serviceStatusReported
+         |                                       |
+  Request VDP (String)                  ServiceStatus VDP
+  - Invalid                             - Available
+  - ValidAndPermitted                   - Unavailable
+  - ValidAndDenied                               |
+         |                                       |
+         +---------------- tensor --------------+
+                             |
+              process : Request ⊗ ServiceStatus
+                         → Response
+                             |
+                         Response VDP
+                         - Success
+                         - InvalidInput
+                         - PermissionDenied
+                         - ServiceUnavailable
+```
+
+There are **six nominal tensor members** (three times two), not an
+implicit instruction to run six cases. For example, an architect might
+declare this **single** partial member map, shown here as fully defined
+for illustration:
+
+| Request member | Service Available | Service Unavailable |
+| --- | --- | --- |
+| `Invalid` | `some InvalidInput` | `some InvalidInput` |
+| `ValidAndPermitted` | `some Success` | `some ServiceUnavailable` |
+| `ValidAndDenied` | `some PermissionDenied` | `some ServiceUnavailable` |
+
+This is one **design choice**, not an ArchiScript rule about error
+precedence. It assumes invalid input can be rejected without the
+authorization service, while handling a valid request depends on that
+service even if the request's semantic permission classification is
+already determined. A different justified architecture might prioritize
+`PermissionDenied` when the service is unavailable, or map selected
+pairs to `none`. The Operation is **still partial by type**; a certified
+tensor input does not require `some` for every reachable pair.
+`none` is undefinedness, not a runtime event or an `Absent` VDP member.
+The response members must themselves be justified regions of a suitable
+response carrier; they are not magic labels that bypass Subdomain proofs.
+
+The entry `(ValidAndPermitted, Unavailable) → ServiceUnavailable` is the
+instructive case: the request belongs to a permitted semantic region,
+yet the architectural consequence is an error because a **separate
+required dependency is unavailable**. Permission, availability and
+the actual response are different assertions. One can know the
+semantically appropriate outcome *in the model* without claiming a
+running implementation already knows or produces it.
+
+#### What does tensor verification require here?
+
+For an actual joined generator input, derive the incoming member images
+from both **specific supplier histories**. The contract verifies the
+projections of the complete admissibility relation against those
+independently obtained images (P) and the **entire** reachable relation
+against the declared admissible relation (E):
+
+```text
+P:  projection_i(Adm_t) = independentlyIncomingImage_i
+E:  Reach_t = Adm_t           on complete tuples, not just pairs
+```
+
+If both Causes genuinely supply all their stated members in independent
+admissible worlds, and the join's context imposes no correlation,
+`Reach_t = Adm_t` **can** contain all six pairs. For example
+`(Invalid, Unavailable)` and `(ValidAndPermitted, Unavailable)`
+are perfectly meaningful pairs. Their presence does **not** establish
+that an unavailable service was called or that a validator ran first.
+If the sources are correlated or context restricts their co-availability,
+only the supported subset belongs in `Reach_t`, and `Adm_t` must agree.
+Drawing the tensor alone proves none of these claims.
+
+P does **not** demand every Cartesian pair. It demands that each
+*actually incoming* member at every factor has at least one admissible
+complete partner, without inventing impossible partners. E checks
+full-tuple equality and can expose a claimed pairing that the declared
+supplier/world semantics cannot realize. Neither contract makes the
+outgoing Operation total, guarantees service execution, or introduces
+clock/scheduling/happens-before semantics. See
+[`InputValid`, `InputSources` and `defined_consequence`](ArchiScript/Consequence.lean)
+and [`CrossCone`](ArchiScriptExamples/CrossCone.lean).
+
+#### Why not model separate Validation and Permission VDPs?
+
+That is also legitimate **if the two factors and their actual suppliers
+are meaningful**. But `{Valid, Invalid} ⊗ {Permitted, Denied}`
+has four nominal pairs, including `(Invalid, Denied)` and
+`(Invalid, Permitted)`. The input contract must explain which pairs
+are actually reachable and admitted; it does not delete unwanted
+tensor members. In an architecture audit, `(Invalid, Denied)` may
+raise the question: *was invalid input incorrectly passed to an
+authorization check after validation, or does `Denied` simply mean a
+general refusal?* In new design it may suggest a needless stage,
+but it is **not automatically a bug**. A tensor or common Effect
+does not, by itself, prove that validation preceded authorization.
+A sequential forwarding claim needs the corresponding declared
+producer/Operation path and its semantics.
+
+Likewise, declaring `SuccessMessage` and `ErrorMessage` as **two
+separate terminal Effect coordinates** is different from making them
+**alternative members of one Response VDP**. If each coordinate has an
+individually possible result but they cannot coexist in any admissible
+world, the observable Cone's full-Effect projection/inhabitedness
+obligations can expose that mismatch. `none` from a partial Operation
+does not supply an implicit "no message" member. The correct
+representation depends on whether the intended observation is one
+alternative result or two independently meaningful consequences.
+
+#### When is a one-member service VDP enough?
+
+If the intended fact is only "a deployment has completed" or "this
+dependency is declared present", a one-member VDP such as `Deployed`
+may be perfectly meaningful. Tensoring it with the three-member
+request VDP gives **three member pairs**: a typed dependency with
+explicit provenance but no extra decision alternatives. It does not
+represent `Unavailable` or explain outages. A **two-member**
+`Available/Unavailable` VDP is needed when the architecture really
+distinguishes those states, together with a justifiable supplier that
+can account for them. Neither an arbitrary invented Cause nor the
+mere presence of a service box gives the model independent evidence.
+
+**Design lesson.** A single refined request VDP, separate semantic
+Validation/Permission factors, and a request VDP tensor a service-status
+VDP are *different architectural decompositions*. No one form is
+universally preferable. The calculus can check their declared partitions,
+partial maps, supplier provenance, tensor-context P/E obligations and
+observable Effect claims; it cannot choose the right service boundary,
+verify real deployment health, discover omitted real-world conditions
+or prove runtime implementation conformance. Its a priori purpose is
+to make the architect's assumptions and resulting consequences
+explicit enough to challenge **before** or **during** implementation
+review.
+
 ### Can repeated Causes, cycles, or timeouts be simulated by adding arrows?
 
 **Not without modeling the added assumptions.** One Cause in the current

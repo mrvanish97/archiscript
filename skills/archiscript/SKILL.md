@@ -75,6 +75,13 @@ string, be pairwise disjoint and each be inhabited. A permission distinction nee
 justified predicate over the carrier or an explicitly sourced dependency;
 do not invent facts unavailable to a string-only input.
 
+For a worked comparison of an a priori request classification, a separate
+`Available/Unavailable` service-status supplier, and the resulting tensor
+Operation, see the
+[authorization-service FAQ](../../README.md#why-can-an-authorization-service-be-a-tensor-factor-if-the-requests-outcome-is-already-semantically-distinguished).
+The service factor does not invent permissions; it must have its own
+justifiable Cause/supplier and does not establish physical invocation.
+
 This derivation is logical funneling, **not** a runtime validation pipeline.
 Neither a global taxonomy nor a tree-shaped VDP is mandatory: flat
 selections, independent trees, overlapping supporting Subdomains and
