@@ -64,12 +64,12 @@ This shift produces a recognizable series of objections:
 >
 > **"What if an availability zone goes down?"**
 >
-> **"What if a meteorite destroys the server?"**
->
 > **"What if a request times out, or another worker intervenes?"**
 >
 > **"How can one deterministic Operation describe such unpredictable,
 > complex or apparently nondeterministic consequences?"**
+>
+> **"And what if a meteorite destroys the server?"**
 
 **These are precisely the kinds of semantic possibilities that
 ArchiScript is designed to distinguish.** Such questions do not,
