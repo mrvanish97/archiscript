@@ -115,6 +115,34 @@ the committed feature in later versions until
 the necessary verifier changes are complete.
 Until then report **PLANNED / NOT YET VERIFIED**.
 
+**Distributed-system / cross-Cone shared-VDP review (0.8.0
+formal-foundations goal; NOT YET VERIFIED for this combined case):**
+Do not treat the absence of an explicit clock, scheduler or trace
+logic as a blanket inability to study distributed systems.
+Different Cones can have distinct source/member images in the
+**same declared State VDP** and those images can be compared
+through explicitly justified tensor tuples, supplier provenance
+and P/E. The images need not be equal, nor must the joint
+relation be the full Cartesian product. This is an
+*a priori* semantic question and does not require an
+external temporal model by default. See the
+[distributed-systems FAQ and two-Cone diagram](../../README.md#can-archiscript-analyze-distributed-system-conflicts-without-a-time-simulator).
+
+Do **not** claim that equal VDP types automatically identify
+a physical shared resource or that multiple producers
+automatically merge writes. A tensor is not an implicit
+state-update combiner or conflict resolver. Preserve
+per-occurrence provenance, distinct ownership and
+source image constraints; for an actual input Operation
+require full contextual P/E, and for an Effect use the
+correct derived coordinate/tuple semantics. The
+N-Cone compositional account is an **open 0.8.0 research
+commitment**, not a proved current capability; avoid
+both overclaiming categorical completeness and falsely
+demanding N hard-coded `Resolve` operations or a global
+time simulator. Physical linearizability, atomicity and
+runtime event order remain separate claims when asked.
+
 **Separate runtime claim:** A VDP-level analysis
 of conflicting states does **not** by itself prove
 that physical workers overlap, run in any order,

@@ -774,6 +774,93 @@ Those **runtime** claims need justified additional
 semantics; they are not a reason to demand a timeline
 for the semantic tensor analysis described here.
 
+### Can ArchiScript analyze distributed-system conflicts without a time simulator?
+
+**Yes as an architectural modeling direction: distributed-system
+contention, competing consequences and shared-resource conditions are
+natural candidates for *a priori* VDP/member, tensor, Operation,
+context and Cone/Effect analysis.** A physical clock, an event-trace
+simulator or separately authored temporal theorems are **not
+prerequisites** to state and prove semantic compatibility and
+consequence claims *when those claims can be expressed using the
+declared architecture*. It is misleading to dismiss ArchiScript
+as unsuitable for distributed systems merely because it does not
+ship with a scheduler.
+
+For example, two Causes may lead to **two independent supplier
+occurrences of the same declared `State VDP`**, while each Cone
+has a different reachable image:
+
+```text
+       CONE A                                 CONE B
+  Cause A -> Operation A                Cause B -> Operation B
+                 |                                     |
+                 v                                     v
+           State VDP                               State VDP
+         image I_A                                  image I_B
+       {Free, Locked}                            {Locked, Done}
+                 |                                     |
+                 +---------------- ⊗ ------------------+
+                                  |
+                                  v
+                        State VDP ⊗ State VDP
+                          joint member tuples
+                                  |
+                                  v
+                      admitted/reached relation R
+                      (explicit P/E + provenance)
+```
+
+Here `I_A` and `I_B` denote **different possible
+supplier-member images**, not different definitions of
+the VDP. There is no requirement that `I_A = I_B`.
+The joint relation `R` need not contain every Cartesian
+pair: the author must justify its full reachable/admissible
+tuples and marginal partners through the actual supplier
+histories, boundary and contexts. Merely drawing `⊗`
+does not produce a new merging Operation, decide which
+write "wins", or identify two values as one mutable
+storage cell. A concrete consuming tensor Operation,
+if claimed, needs its own declared producer route and
+the normal contextual P/E checks; an analytical Effect
+has separate derived-coordinate/provenance obligations.
+
+The more general question for **N independent Cones**
+is whether their potentially different images can be
+analyzed *compositionally*, without hard-coding a
+separate N-way `Resolve` or an ever-growing product
+of every possible event. This is a targeted
+[0.8.0 formal-foundations research task](plans/0.8.0.md):
+determine whether existing monoidal/tensor constructions,
+provenance and contracts suffice, and prove the exact
+consequences or introduce a justified refinement only
+when counterexamples require it. No generic N-way
+shared-resource theorem has yet been established.
+
+**Status: promising and explicitly planned, NOT YET
+END-TO-END VERIFIED for the shared-VDP cross-Cone
+scenario.** Current `CrossCone`, `CorrelatedJoin`
+and `CyclicCone` Lean examples support important
+individual ingredients, not certification of this
+specific form of resource sharing at arbitrary N.
+The [one-Cone cyclic-tensor case above](#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor)
+is a separate committed 0.8.0 implementation target;
+cross-Cone sharing is a 0.8.0 research and formalization
+goal. Both may turn out expressible without a new
+language primitive; do not advertise that as proved
+before the required Lean examples/theorems exist.
+
+**Assurance boundary:** a priori analysis of conflicts
+is not identical to proof of deployed distributed
+execution: physical resource identity, mutually
+exclusive writes, atomic commits, linearizability,
+message delivery and real-time ordering require
+adequate declared assumptions and, for implementation
+claims, separate conformance evidence. A timestamped
+trace is useful only if the *particular property*
+needs it; it is not a universal extra requirement
+for distributed-system analysis in ArchiScript.
+
 ### Can repeated executions of one Cone or executions of different Cones be related across time?
 
 **Distinguish competing semantic states from temporal
@@ -789,9 +876,13 @@ is a **committed 0.8.0 goal**, **not yet shown to be
 certifiable** with the current code.
 
 Different Causes/Cones can also participate in justified
-cross-Cone tensor relations. Their common `World`
-records semantic compatibility, **not** actual
-simultaneous execution or timestamps.
+cross-Cone tensor relations, including potentially different
+reachable images of the **same declared State VDP**.
+See [the distributed-system/shared-state FAQ](#can-archiscript-analyze-distributed-system-conflicts-without-a-time-simulator)
+for the two-Cone sketch and the 0.8.0 N-Cone research
+boundary. Their common `World` records semantic
+compatibility, **not** actual simultaneous execution
+or timestamps.
 
 ```text
   SEMANTIC question (no timeline required):
