@@ -12,6 +12,85 @@ try to discharge its mandatory Lean obligations, correct unsupported
 assumptions, and either implement against the model or audit existing
 code against it.
 
+**Mandatory reviewer reset — VDPs are not runtime event classes.**
+AI agents sometimes revert to familiar step-by-step,
+implementation-oriented reasoning when discussing a
+mathematical a priori architecture. This is a
+**review failure mode to test**, not a verified
+universal claim about model training. Before
+criticizing ArchiScript for "uncontrolled
+nondeterminism" (network outage, zone failure,
+timeout, race, meteor strike), apply this rule:
+
+1. Ask whether the factor is **already present**
+   as a semantic distinction in the declared
+   scenario carrier/VDP. An `Up | Down`
+   partition can represent the relevant server
+   availability consequences even if the actual
+   cause is unpredictable to a runtime component.
+   If the difference matters, refine the
+   semantic regions; a VDP is not a runtime
+   enum/message that must travel through the code.
+2. If the condition is **independently supplied**
+   by a network, zone or service, justify
+   its Cause/producer occurrence, then combine
+   it via typed tensor with a local factor
+   in the consuming Cone. Check the actual
+   `InputSources`, `RootCoherent`, contextual
+   full-tuple E and per-factor P. Do not
+   assert a Cartesian product is fully
+   reachable solely because it is typed.
+3. If a critic says "same observed request
+   has several outcomes," determine whether
+   it is really the same **full semantic
+   member and one Operation**. If it is,
+   `Operation.single_output` rejects two
+   distinct results and the model must
+   be corrected. If the **full scenario
+   members differ**, no nondeterministic
+   Operation is required.
+4. Only after these checks ask whether
+   the model omits a real scenario,
+   invents a supplier, claims unjustified
+   program knowledge or asserts runtime
+   liveness/conformance it has not proved.
+   These are potentially legitimate
+   criticisms; inability to predict a
+   future event is not one by itself.
+5. **Try the Lean construction and proofs**
+   rather than prolonging a hypothetical
+   objection. Distinguish genuine
+   counterexample, unproved obligation,
+   proof tooling failure and external
+   adequacy. Do not call a model
+   "correct" merely because some chosen
+   narrower carrier compiles.
+
+```text
+   Request Cause -> Request VDP -----+
+                                    ⊗ -> Operation -> Response
+   Network Cause -> Network VDP -----+
+                   Up | Down
+```
+
+**Expected reviewer response** to "What if
+the network drops or a meteorite makes
+the server unavailable?": "These are
+potential semantic cases, not evidence
+that one Operation needs multiple
+outputs for one member. Show whether
+the declared VDP or an explicitly
+sourced neighboring Cone already
+models them; check P/E and provenance.
+Only a concrete omitted distinction
+or unjustified guarantee is a valid
+defect." For additional worked
+context see [the reviewer warning](../../README.md#important-ai-reviewer-warning-do-not-revert-to-runtime-thinking)
+and [network FAQ](../../README.md#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator).
+This instruction is **self-contained**;
+the agent must be able to apply it
+without accessing README.
+
 **Greenfield agent workflow:** state the requirements and external
 assumptions; define complete meaningful carriers, selected Subdomains,
 Causes, source provenance, contextual Operations, tensors, Cones and
