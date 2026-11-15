@@ -66,20 +66,65 @@ Report mandatory invariant violations separately from optional global
 coverage, manual inventory assumptions, real-world adequacy, and runtime
 liveness. Cite the violated Lean contract before proposing a semantic change.
 
-**Temporal composition scope (standard 0.7.0: NOT AUTOMATICALLY VERIFIED):**
-This applies both to repeated invocations of the **same** Cone and
-to ordering/overlap/freshness across **different** Cones. A common
-`World`, tensor input and `reachEffect` tuple do not provide
-timestamps, repeated event identities, `happens-before` or an
-atomicity/serializability guarantee. Do not manufacture two runtime
-invocations by reusing a Cause's canonical origin or by multiplying
-Effect coordinates. An author may define **external temporal/trace
-semantics** with explicit invocation identities, time-indexed states,
-interleavings and assumptions, then prove additional Lean theorems
-about joint states or at-most-once behavior. These proofs are valid
-only relative to that explicitly stated model and are **not part
-of the default ArchiScript certificate**. See the
-[temporal Cone FAQ](../../README.md#can-repeated-executions-of-one-cone-or-executions-of-different-cones-be-related-across-time).
+**A priori concurrency, shared-state feedback and cyclic tensors
+(0.8.0 committed feature; NOT YET END-TO-END DEMONSTRATED):**
+Do **not** require an architect to invent separate Causes,
+multiple Cones, a physical clock or an external execution
+simulator merely to analyze possible contender/resource states.
+A planned pattern has **one Cause and one Cone**, a
+`Request ⊗ State` tensor input, and a feedback route
+which also produces the same declared State VDP.
+The tensor's admissible joint members and the Cone's
+Effect are semantic possibilities, not a scheduler.
+Consult the [README's preserved ASCII diagram and
+explanation](../../README.md#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor)
+and [the 0.8.0 acceptance criteria](../../plans/0.8.0.md).
+
+**Reviewer checklist for this pattern:** check that the
+two uses of State are occurrences of a genuine
+declared VDP, that the actual generator inventory and
+any fan-out are explicit, and that the typed cycle
+has one entry and justified auxiliary suppliers.
+At **every** supported coherent cyclic tensor input,
+including all finite unfoldings, verify full
+`ReachInput = AdmInput` (E) and exact independent
+incoming factor images / admissible tuple projections
+(P). A selected VDP member is **not automatically**
+an incoming member. Keep the precondition of
+`CertifiedDeclaredArchitecture.input_partner`:
+the relevant supplier image needs justified finite
+Cause-rooted provenance and `InputSources`.
+Do not demand a concrete initial State **value**
+merely to state these universal relations; equally,
+do not pretend a rootless feedback loop is grounded.
+
+**Effect and implementation status:** the ASCII
+diagram's `Decision VDP ⊗ State VDP` is a proposed
+analytical Effect with terminal and typed cyclic
+boundary roles, **not** an Effect that may be
+chosen independently of the derived histories.
+Require actual `effectCoverage`, `ConeValid`,
+and Effect provenance/tuple proofs. The existing
+`CyclicCone` and `CorrelatedJoin` regressions
+prove their features **separately**: the combined
+feedback-tensor one-Cone architecture has **not
+yet been shown to compile and certify**. It may
+work already; test this first. Project commitment:
+deliver such certification in **0.8.0**, or retain
+the committed feature in later versions until
+the necessary verifier changes are complete.
+Until then report **PLANNED / NOT YET VERIFIED**.
+
+**Separate runtime claim:** A VDP-level analysis
+of conflicting states does **not** by itself prove
+that physical workers overlap, run in any order,
+acquire exclusive database locks, commit atomically
+or satisfy liveness. These properties can be
+modeled separately in Lean when required; such
+external temporal/trace analysis is **optional**
+for the a priori one-Cone semantic problem,
+and is not supplied automatically by the 0.7.0
+certificate.
 
 ## A priori semantic modeling / anti-hidden-branching
 
@@ -296,6 +341,13 @@ from inhabited verification. `CertifiedDeclaredArchitecture.input_partner`
 produces a supported full context and an Adm-and-Reach tuple containing each
 member witnessed by an independent `supplierImage`. A bare unused product
 receives no architectural verdict.
+
+For the **planned one-Cone cyclic tensor input case**, do not
+claim the existing universal P/E plus cycle machinery has been
+proved sufficient until the
+[0.8.0 end-to-end regression](../../plans/0.8.0.md)
+passes; see the
+[ASCII diagram in README](../../README.md#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor).
 
 For cycles, supply a typed `Term.CycleBoundary` at the chosen observation point:
 a real route with one typed entry hole and explicit auxiliary suppliers.
