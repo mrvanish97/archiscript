@@ -43,3 +43,11 @@ closure. Reachable sets stabilize while Operation powers keep alternating.
 A fixed-point calculation on a reduced state space requires an exactness
 proof. Keep all root identity and correlations needed by the final query.
 Memoizing only an Operation and one member is not generally sufficient.
+
+`Term.history_injective` recovers typed producer terms from their structural
+history. `Expression.supply_preserves_provenance` lifts distinct histories
+through any finite unmarked shared suffix; every downstream Operation is still
+declared once. Operation equality, equal member images and local algebraic
+normalization do not identify those histories. `SharedTargets` provides complete
+scoped certificates; `SharedTargetJoin` separately proves the full input-context
+obligations of an explicitly supplied C ⊗ C → R.

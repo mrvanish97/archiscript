@@ -9,4 +9,4 @@ def absentCauseEvidence : CertifiedDeclaredArchitecture where
   inputs := certified.inputs
   cones := certified.cones
   boundariesComplete := certified.boundariesComplete
-  terminalOccurrencesFaithful := certified.terminalOccurrencesFaithful
+  effectCoverage := certified.effectCoverage

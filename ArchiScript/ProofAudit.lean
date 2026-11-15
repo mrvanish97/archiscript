@@ -1,9 +1,9 @@
-import Lean
+import ArchiScript.Provenance.Derive
 
 /-! Development/release tooling. This module is intentionally not imported by
 the public calculus. The audit inspects compiled transitive dependencies. -/
 namespace ArchiScript.ProofAudit
-open Lean Elab Command
+open Lean Elab Command Meta
 
 initialize certificateAttribute : TagAttribute ←
   registerTagAttribute `archiscript_certificate "A closed concrete architecture certificate to audit"
@@ -39,6 +39,52 @@ private partial def contractDependencies (env : Environment) (todo : List Name)
         | none => []
       contractDependencies env (used ++ rest) (seen.insert name)
 
+/-- Inspect the actual closed record, including opaque aliases. An unavailable
+or conditional implementation is not silently accepted as an audited contract. -/
+private partial def recordValue (env : Environment) (record : Name) (value : Expr) : MetaM Expr := do
+  let rec expose (fuel : Nat) (value : Expr) : MetaM Expr := do
+    if fuel = 0 then throwError "CONTRACT_AUDIT could not expose {record}"
+    let value ← withTransparency .all (whnf value)
+    if value.isAppOf (record ++ `mk) then return value
+    match value with
+    | .proj parent field input =>
+      let input ← recordValue env parent input
+      expose (fuel - 1) (.proj parent field input)
+    | _ =>
+      if let .const name levels := value.getAppFn then
+        if let some info := env.find? name then
+          if let some body := info.value? true then
+            let body := body.instantiateLevelParams info.levelParams levels
+            return ← expose (fuel - 1) (mkAppN body value.getAppArgs)
+      throwError "CONTRACT_AUDIT cannot inspect installed {record} contracts"
+  expose 128 value
+
+private def recordField (env : Environment) (record : Name) (value : Expr)
+    (field : Name) : MetaM Expr := do
+  let value ← recordValue env record value
+  let fields := getStructureFields env record
+  let some index := fields.findIdx? (· == field)
+    | throwError "CONTRACT_AUDIT unknown field {record}.{field}"
+  let arguments := value.getAppArgs
+  let parameters := arguments.size - fields.size
+  return arguments[parameters + index]!
+
+private def installedContracts (env : Environment) (name : Name) (info : ConstantInfo) :
+    CommandElabM Unit := do
+  if info.type.isForall then return
+  liftTermElabM do
+    let type ← withTransparency .all (whnf info.type)
+    let certificate := type.isConstOf `ArchiScript.CertifiedDeclaredArchitecture
+    if !certificate && !type.isConstOf `ArchiScript.DeclaredArchitecture then return
+    let value := mkConst name (info.levelParams.map mkLevelParam)
+    let model ← if certificate then
+      recordField env `ArchiScript.CertifiedDeclaredArchitecture value `model
+      else pure value
+    for field in [`admissibleInput, `admissibleEffect] do
+      let contract ← recordField env `ArchiScript.DeclaredArchitecture model field
+      if contractDependencies env contract.getUsedConstants.toList then
+        logError m!"CONTRACT_AUDIT {name}.{field} depends on Reach/evaluation; independent evidence is absent"
+
 /-- Audit all project declarations, including private and local ones, rather
 than an author-selected certificate shortlist. JSON lines are machine readable.
 Local warning suppression cannot conceal a dependency on `sorryAx`. -/
@@ -59,6 +105,7 @@ elab "#audit_archiscript" : command => do
           logError m!"CERTIFICATE_AUDIT {name} does not have the closed certificate type"
       if contractAttribute.hasTag env name && contractDependencies env [name] then
         logError m!"CONTRACT_AUDIT {name} depends on Reach/evaluation; independent evidence is absent"
+      installedContracts env name info
       logInfo <| Json.compress <| Json.mkObj [
         ("declaration", toJson name.toString),
         ("type", toJson (toString info.type)),

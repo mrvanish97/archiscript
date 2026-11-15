@@ -38,6 +38,7 @@ abbrev signature : ArchitectureSignature where
   owner | .a => false | .b | .c => true
   start_owner := by intro c; cases c <;> rfl
   Generator := Arrow
+  generatorDecidableEq := inferInstance
   generators := [.swap, .join]
   generators_complete := by intro g; cases g <;> simp
   input | .swap => .node .a | .join => .tensor (.node .a) (.node .b)
@@ -65,8 +66,11 @@ abbrev marked : (n : Port) → Option (ArchitectureSignature.Term.CycleBoundary 
   | .a => some cycleBoundary
   | .b | .c => none
 
+abbrev effectBasis : signature.ProvenanceAnalysis marked :=
+  derive_provenance([()], 1)
+
 @[archiscript_contract] def effectAdmissible (c : Bool) :
-    (signature.effectInputs marked c).vdp.MemberIndex → Prop := fun _ => True
+    (signature.effectInputs effectBasis c).vdp.MemberIndex → Prop := fun _ => True
 
 abbrev model : DeclaredArchitecture where
   signature := signature
@@ -75,6 +79,7 @@ abbrev model : DeclaredArchitecture where
   context := fun _ _ _ => True
   admissibleInput := inputAdmissible
   cyclicBoundary := marked
+  effectAnalysis := effectBasis
   effectContext := fun _ _ _ => True
   admissibleEffect := effectAdmissible
 
@@ -190,11 +195,33 @@ theorem aValue_origin (a : Bool) : model.InCone false (aValue a) := by
 theorem cValue_origin (a : Bool) : model.InCone true (cValue a) := by
   cases a <;> exact ⟨Or.inr ⟨rfl, rfl⟩, ⟨fun impossible => Bool.noConfusion impossible, fun _ => rfl⟩⟩
 
+theorem aValue_provenance (a : Bool) : (aValue a).provenance marked = ProducerHistory.cause false () := by
+  cases a <;> rfl
+
+theorem cValue_provenance (a : Bool) : (cValue a).provenance marked =
+    ProducerHistory.operation Arrow.join (.tensor (.cause false ()) (.cause true ())) := by
+  cases a <;> rfl
+
+theorem terminal_provenance (c value : Bool) : model.EffectProvenance c
+    (match c with | false => .tensor (aValue value) .unit | true => .tensor (cValue value) .unit) := by
+  cases c <;> intro i <;> cases i with
+  | inl i =>
+    cases i
+    first
+      | change ((aValue value).supplier ()).provenance marked = ProducerHistory.cause false ()
+        rw [ArchitectureSignature.Term.supplier_node]
+        exact aValue_provenance value
+      | change ((cValue value).supplier ()).provenance marked =
+          ProducerHistory.operation Arrow.join (.tensor (.cause false ()) (.cause true ()))
+        rw [ArchitectureSignature.Term.supplier_node]
+        exact cValue_provenance value
+  | inr impossible => exact Empty.elim impossible
+
 theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : model.reachEffect c tuple := by
   cases c with
   | false =>
     rcases tuple with ⟨a, u⟩; cases u
-    refine ⟨.tensor (aValue a) .unit, ?_, world false, rfl, ?_, trivial⟩
+    refine ⟨.tensor (aValue a) .unit, ?_, terminal_provenance false a, world false, rfl, ?_, trivial⟩
     · intro i
       cases i with
       | inl i =>
@@ -208,7 +235,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
       rfl
   | true =>
     rcases tuple with ⟨⟨a, b⟩, u⟩; cases u
-    refine ⟨.tensor (cValue a) .unit, ?_, world b, rfl, ?_, trivial⟩
+    refine ⟨.tensor (cValue a) .unit, ?_, terminal_provenance true a, world b, rfl, ?_, trivial⟩
     · intro i
       cases i with
       | inl i =>
@@ -224,6 +251,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨false⟩
+  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
   inputs := by
     intro g t _
     exact .verified (input_valid g t) ⟨expected g t false, (input_image g t _).mpr ⟨false, rfl⟩⟩
@@ -238,7 +266,8 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
         | inl i =>
           cases i
           exact ⟨fun _ => ⟨(a, ()), trivial, rfl⟩,
-            fun _ => ⟨aValue a, aValue_origin a, world false, rfl, aValue_evaluation a false⟩⟩
+            fun _ => ⟨aValue a, aValue_origin a, aValue_provenance a,
+              world false, rfl, aValue_evaluation a false⟩⟩
         | inr impossible => exact Empty.elim impossible
     | true =>
       refine ⟨by decide, ⟨((false, false), ()), effectReach true _⟩, ?_, ?_⟩
@@ -248,11 +277,9 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
         | inl i =>
           cases i
           exact ⟨fun _ => ⟨(pair, ()), trivial, rfl⟩,
-            fun _ => ⟨cValue pair.1, cValue_origin _, world pair.2, rfl, cValue_evaluation _ _⟩⟩
+            fun _ => ⟨cValue pair.1, cValue_origin _, cValue_provenance _,
+              world pair.2, rfl, cValue_evaluation _ _⟩⟩
         | inr impossible => exact Empty.elim impossible
-  terminalOccurrencesFaithful := model.distinctTerminalProducers_of_injective (by
-    intro g h same
-    cases g <;> cases h <;> cases same <;> rfl)
   boundariesComplete := by
     intro c n owns
     cases n with

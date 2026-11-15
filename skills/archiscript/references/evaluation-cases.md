@@ -26,9 +26,11 @@ diagnostics and run separately.
 | Missing Cause inventory | Mandatory `causeNonempty` prevents an empty architecture certificate |
 | Direct or transitive missing proof / custom axiom | Compiled dependency audit rejects the result |
 | Conditional result labeled concrete | Certificate audit rejects unsupplied parameters |
-| Admissibility defined from Reach | Tagged contract dependency audit rejects it |
+| Admissibility defined from Reach | Actual-field audit rejects untagged, indirect, inline and opaque complete certificates; negatives allow only CONTRACT_AUDIT errors |
 | Selected family claims completeness | Scoped certificate and explicit unverified global status remain distinct |
-| Two terminal arrows with the same VDP | Separate correlated Effect coordinates; an unmarked merged slot fails mandatory identity evidence |
+| Two arrows targeting the same nominal C | Certified one-Cause Cone, two derived positions; equal/different images and correlated joint relation |
+| One shared multi-step h;k suffix | Both histories survive one authored downstream graph |
+| Collapsed coordinate or fake shared-target join | Missing basis closure, wrong producer provenance or missing tensor supplier fails |
 | Entry plus feedback at a marked boundary | Typed return allows one deliberate observation; repeated visits enlarge its image |
 
 The shipped gate is:

@@ -3,6 +3,8 @@ import ArchiScriptTests.Reachability
 import ArchiScriptTests.TensorVerification
 import ArchiScriptTests.Provenance
 import ArchiScriptTests.TerminalOccurrences
+import ArchiScriptTests.ContractAudit
+import ArchiScriptTests.SharedTargetCycles
 import ArchiScriptTests.SemanticFoundation
 import ArchiScript.Review
 import ArchiScript

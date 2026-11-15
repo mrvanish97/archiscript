@@ -43,8 +43,12 @@ capitalization of the package name does not spell `ArchiScript` correctly.
 
 `#audit_archiscript` emits declaration types and axiom dependencies. It rejects
 `sorryAx` transitively, custom axioms, extra trusted-computation axioms, tagged
-certificates with unsupplied parameters and tagged contracts referencing the
-Reach implementation. Source hashes reject a verification result if sources
+certificates with unsupplied parameters and standalone tagged contracts
+referencing Reach. It also exposes the actual installed admissibility fields of
+every closed model/certificate, including untagged, indirect, inline and opaque
+forms. It rejects uninspectable closed records. Negative audit fixtures construct
+complete certificates and permit only `CONTRACT_AUDIT` errors, so an unrelated
+missing proof cannot masquerade as enforcement. Source hashes reject a verification result if sources
 change during the check. A textual search for missing-proof tokens is not a
 substitute for the dependency audit.
 
@@ -52,3 +56,10 @@ Named external semantic predicates can remain conditional. A theorem with a
 hypothesis is a valid conditional theorem; it is not a closed concrete
 certificate until the hypothesis is supplied. Independent contract authorship
 and real-world adequacy remain external judgments even when an audit passes.
+
+For shared-target histories, keep one graph and derive candidate data with
+`derive_provenance`; never clone nodes to make a proof succeed. Prove `Valid`
+for that candidate, rather than accepting a fuel bound or unchanged image as
+closure. `Term.history_injective` and `Expression.supply_preserves_provenance`
+provide structural proofs independently of member equality. The helper produces
+no theorem; every certificate still supplies kernel-checked evidence.

@@ -26,6 +26,7 @@ abbrev signature : ArchitectureSignature where
   owner := id
   start_owner := fun _ => rfl
   Generator := Unit
+  generatorDecidableEq := inferInstance
   generators := [()]
   generators_complete := by intro g; cases g; simp
   input := fun _ => .tensor (.node .local) (.tensor (.node .one) (.node .two))
@@ -45,6 +46,7 @@ abbrev model : DeclaredArchitecture where
   context := fun _ _ _ => True
   admissibleInput := fun _ _ => contract
   cyclicBoundary := fun _ => none
+  effectAnalysis := ⟨[false, true], []⟩
   effectContext := fun _ _ _ => True
   admissibleEffect := fun _ _ => False
 

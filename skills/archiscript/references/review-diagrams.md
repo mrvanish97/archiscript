@@ -22,7 +22,14 @@ join may reach only two diagonal tuples. Label `Reach = Adm` with the actual
 proof and owning context. A diagram must not prune mathematical members or
 create an Operation from common-source fan-out to a product.
 
-Use distinct labels for two occurrences with the same VDP. A prior `B`, an
+Keep one declared C and one shared h;k in the topology view. A derived-path
+view may annotate the f/p and g/q histories, but those labels are explanatory,
+not mandatory named uses or cloned nodes. Show two terminal positions of C (or
+E after the shared suffix), together with the proved joint relation even when
+their images agree. An analytical Effect product does not add a join Operation;
+show an actual C ⊗ C → R arrow only when registered and fully supplied.
+
+Use distinct explanatory labels for two occurrences with the same VDP. A prior `B`, an
 external producer's `B`, and a cyclic generation of `B` are separate provenance
 claims. Derived dependency edges through a tensor factor are not categorical
 composition and do not establish a return cycle.

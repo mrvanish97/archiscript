@@ -705,7 +705,13 @@ def projectedControllerStateOperation :
   forgetInventoryMutationDetail publishMutation).isSome
 
 /-! Actual primitive mutation consumers also have linear presentations. Their
-nominal targets stay distinct from algebraically equal representations. -/
+nominal targets stay distinct from algebraically equal representations.
+This algebra/projection fixture does not assert producer identity from VDP or
+Operation equality. In a declared Cone, one shared consumer can accept distinct
+producer derivations; `Expression.supply_preserves_provenance` retains their
+histories through any unmarked suffix. SharedTargets checks that case with one
+graph and complete scoped certificates. No analytical product here declares an
+extra join or a complete Cone certificate for ReservationController. -/
 namespace Linear
 
 inductive Object where | mutation | state | write | publish | inventory

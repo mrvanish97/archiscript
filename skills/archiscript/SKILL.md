@@ -47,8 +47,8 @@ certificate. It runs the transitive proof audit.
 ## Declare consequences and prove their contracts
 
 Use `ArchitectureSignature` for the closed primitive, Cause, node, domain and
-split inventories. Node identity and factor position preserve occurrences even
-when VDP values or names coincide. Each generator contains its actual typed
+split inventories. Generator identities and automatically derived histories
+preserve occurrences even when nominal nodes, VDPs and member images coincide. Each generator contains its actual typed
 `Inputs`; all factor suppliers must exist. Its local-factor proof is required.
 
 `Expression` is exclusively a finite linear chain over registered names and
@@ -80,17 +80,25 @@ Reference semantics includes all finite derivations, including cross-Cone
 recursive dependencies. It does not imply termination, eventual identity,
 execution order or physical storage.
 
-The derived Cone Effect contains all natural terminal node occurrences and
-marked cyclic boundaries. `BoundariesComplete` and `ConeValid` are required;
-the latter includes nonempty effects, exact full-tuple agreement and independent
-upstream projections. Distinct boundary nodes survive even if their VDPs agree.
+`effectNodes` finds boundary points; it does not enumerate complete coordinates.
+Supply `effectAnalysis : ProvenanceAnalysis cyclicBoundary`, with explicit roots
+and derived history entries. Certification requires `effectCoverage : Valid`:
+all roots, seeds, every full-source expansion and realized normalized histories.
+Its soundness/completeness proofs cover every finite supported supplier derivation.
+`effectCoordinates` pairs each boundary with each retained history; repeated C
+positions are valid. `BoundariesComplete` and `ConeValid` require nonempty effects,
+exact full-tuple agreement and independent upstream projections.
 `causeNonempty` is mandatory for `CertifiedDeclaredArchitecture`; an empty Cause
 inventory cannot pass as a complete architecture.
 
 A finite computation needs a complete enumeration of semantic configurations,
 not merely finite VDP members. `Reachability.FiniteAnalysis.certify` returns an
 exact result only after checking closure. `ExactAbstraction` must connect it to
-the architectural relation. An unchanged terminal image is not a stopping test.
+the architectural relation. An unchanged terminal image is not a stopping test. The provenance basis also
+needs finite roots and closure of normalized histories; finite VDP members do
+not imply that condition. The optional `derive_provenance([roots], fuel)` helper
+(import `ArchiScript.Provenance.Derive`) caches candidate data only. Too little
+fuel fails the required coverage proof; no domain claim or proof is generated.
 
 ## Verify and communicate
 
@@ -102,8 +110,11 @@ This runs the pinned build, public smoke, transitive axiom audit, negative
 fixtures and kernel replay. Reports under `.lake/reports` identify checked
 sources and commands. Builds treat warnings as errors. Audit rejects direct or
 transitive `sorryAx`, unauthorized axioms and tagged conditional certificates.
-Tagged contracts cannot depend on the implementation's Reach/evaluation API;
-independent business judgment remains an author responsibility, not a theorem.
+Actual installed input/effect contracts of all closed models and certificates
+are checked regardless of tags, including inline, indirect and opaque aliases.
+Uninspectable closed records are rejected. Tags additionally check standalone
+predicates and conditional results. The check conservatively follows transitive
+implementation dependencies; it cannot establish independent business meaning.
 
 Use **draft** for incomplete declarations, **conditional** for conclusions with
 unsupplied assumptions, and **certified declared contexts** only for completed,
@@ -119,7 +130,12 @@ coverage exception separately on every complete-model handoff.
 - Human-facing views: [review-diagrams.md](references/review-diagrams.md).
 - Optional legacy review tooling: [review-packs.md](references/review-packs.md).
 
-Natural terminal producers must remain distinct: the mandatory
-`terminalOccurrencesFaithful` proof prevents two independent arrows from being
-collapsed into one unmarked terminal slot. A typed cyclic marker explicitly
-selects the boundary at which repeated entries/feedback visits are aggregated.
+Shared targets preserve distinct producer derivations automatically. One C
+and one shared h;k declaration can yield two Effect coordinates of the same VDP;
+equal members, images or suffixes do not merge those coordinates. Only an
+explicit, fully supplied tensor-source Operation performs an architectural join.
+The candidate Effect tensor is an analytical product, not that Operation.
+`effectCoverage` checks a seeded, closed and realized finite provenance basis;
+`EffectProvenance` prevents substituting a different producer in a coordinate.
+Typed cyclic markers separately aggregate repeated traversals of their actual
+return routes, while reference reachability retains every finite traversal.

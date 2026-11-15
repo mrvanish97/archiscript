@@ -11,6 +11,8 @@ import ArchiScriptExamples.ReservationController
 import ArchiScriptExamples.ProjectReference
 import ArchiScriptExamples.SimpleCone
 import ArchiScriptExamples.CyclicCone
+import ArchiScriptExamples.SharedTargetJoin
+import ArchiScriptExamples.SharedTargets
 import ArchiScriptExamples.CorrelatedJoin
 import ArchiScriptExamples.CrossCone
 import ArchiScriptExamples.MutualCones

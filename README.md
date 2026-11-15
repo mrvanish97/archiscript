@@ -75,13 +75,18 @@ or resource-effect semantics is introduced.
 
 A cycle needs a real typed entry and observation boundary. `Term.CycleBoundary`
 records a nontrivial return with one entry hole and explicit auxiliary suppliers.
-All finite traversals contribute to one boundary image. They do not create one
-terminal tensor factor per iteration.
+Repeated traversals of that return contribute to the selected boundary image;
+they do not add a factor per iteration. Distinct producer entries remain distinct,
+including when they enter the very same marked node.
 
 Reachable sets may stabilize while the Operation continues alternating.
 [The swap example](ArchiScriptExamples/CyclicCone.lean) proves both facts and
 connects its boundary image to a finite exact analysis through `ExactAbstraction`.
 A finite VDP alphabet does not imply finitely many occurrence histories.
+The complete Effect certificate currently requires finite roots and a seeded,
+closed, realized finite normalized-history basis (`effectCoverage`).
+The optional `derive_provenance` helper caches candidate data; it does not supply
+this proof or infer closure from a fuel limit.
 `FiniteAnalysis.certify` checks closure of the entire analyzed state before
 returning an `Exact` result; an unchanged terminal projection is insufficient.
 
@@ -127,9 +132,11 @@ rejects changing sources, direct/transitive `sorryAx`, custom axioms, extra trus
 computation axioms and tagged conditional certificates disguised as concrete ones.
 The conventional allowlist is `propext`, `Classical.choice`, `Quot.sound`.
 
-Tagged admissibility predicates are also checked for dependencies on the Reach
-implementation. This prevents a direct self-confirming definition; mathematical
-set equality cannot prove independent human business judgment.
+The audit inspects the actual admissibility fields of every closed model and
+certificate, regardless of tags, following inline, indirect and opaque aliases.
+It rejects dependencies on reference Reach/evaluation and fails closed if a
+closed record cannot be inspected. Mathematical set equality and this conservative
+implementation check cannot prove independent human business judgment.
 
 ## Examples and authoring
 
@@ -137,7 +144,9 @@ set equality cannot prove independent human business judgment.
 - [Correlated join](ArchiScriptExamples/CorrelatedJoin.lean): common-source diagonal and constant non-surjective supplier.
 - [External cyclic supplier](ArchiScriptExamples/CrossCone.lean): one local and one external factor with typed cyclic observation.
 - [Mutually dependent Cones](ArchiScriptExamples/MutualCones.lean): joint reference semantics and certified finite query analysis.
-- [Distinct terminal occurrences](ArchiScriptTests/TerminalOccurrences.lean): two sinks with the same VDP retain separate correlated Effect coordinates.
+- [Shared targets](ArchiScriptExamples/SharedTargets.lean): certified one-Cause Cones with one C, one h;k suffix, two derived coordinates, equal/different images and joint correlations.
+- [Explicit shared-target join](ArchiScriptExamples/SharedTargetJoin.lean): one registered C ⊗ C → R, with exact full-tuple and projection proofs for every input context; this fixture does not claim a complete Cone certificate.
+- [Terminal regressions](ArchiScriptTests/TerminalOccurrences.lean): shared-target coordinates and rejection of a collapsed supplier.
 - [ReservationController](ArchiScriptExamples/ReservationController.lean): retained algebraic stress model, with nonlinear Presentations and linear primitive-consumer routes.
 - [Migration and release evidence](docs/0.7.0-release.md): file dispositions, assumptions, tests, gate status and limitations.
 - [Next-version backlog](plans/0.8.0.md): universal coverage and scoped analysis improvements.
@@ -151,7 +160,12 @@ review packs are draft projections, not new Cone certificates.
 See [CONTRIBUTING.md](CONTRIBUTING.md) for the repository's PR/merge policy and
 [LICENSE](LICENSE) for licensing.
 
-Natural terminal producers must remain distinct: the mandatory
-`terminalOccurrencesFaithful` proof prevents two independent arrows from being
-collapsed into one unmarked terminal slot. A typed cyclic marker explicitly
-selects the boundary at which repeated entries/feedback visits are aggregated.
+Shared targets preserve distinct producer derivations automatically. One C
+and one shared h;k declaration can yield two Effect coordinates of the same VDP;
+equal members, images or suffixes do not merge those coordinates. Only an
+explicit, fully supplied tensor-source Operation performs an architectural join.
+The candidate Effect tensor is an analytical product, not that Operation.
+`effectCoverage` checks a seeded, closed and realized finite provenance basis;
+`EffectProvenance` prevents substituting a different producer in a coordinate.
+Typed cyclic markers separately aggregate repeated traversals of their actual
+return routes, while reference reachability retains every finite traversal.

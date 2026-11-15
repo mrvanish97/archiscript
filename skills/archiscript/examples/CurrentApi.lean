@@ -40,6 +40,7 @@ abbrev signature : ArchitectureSignature where
   owner := fun _ => ()
   start_owner := fun _ => rfl
   Generator := Unit
+  generatorDecidableEq := inferInstance
   generators := [()]
   generators_complete := by intro g; cases g; simp
   input := fun _ => .node .input
@@ -50,6 +51,9 @@ abbrev signature : ArchitectureSignature where
 @[archiscript_contract] def inputAdmissible (_ : signature.Generator)
     (_ : signature.Occurrence (.node .input)) (_ : Bool) : Prop := True
 
+abbrev effectBasis : signature.ProvenanceAnalysis (fun _ => none) :=
+  derive_provenance([()], 1)
+
 @[archiscript_contract] def effectAdmissible (_ : Unit) (_ : Bool × Unit) : Prop := True
 
 abbrev model : DeclaredArchitecture where
@@ -59,6 +63,7 @@ abbrev model : DeclaredArchitecture where
   context := fun _ _ _ => True
   admissibleInput := inputAdmissible
   cyclicBoundary := fun _ => none
+  effectAnalysis := effectBasis
   effectContext := fun _ _ _ => True
   admissibleEffect := effectAdmissible
 
@@ -91,10 +96,16 @@ theorem terminalOrigin (i : (model.effect ()).Position) :
     exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
   | inr impossible => exact Empty.elim impossible
 
+theorem terminalProvenance : model.EffectProvenance () terminal := by
+  intro i
+  cases i with
+  | inl i => cases i; rfl
+  | inr impossible => exact Empty.elim impossible
+
 theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEffect () tuple := by
   rcases tuple with ⟨value, u⟩
   cases u
-  exact ⟨terminal, terminalOrigin, world value, trivial, evaluation _ terminal, trivial⟩
+  exact ⟨terminal, terminalOrigin, terminalProvenance, world value, trivial, evaluation _ terminal, trivial⟩
 
 theorem effectIncoming (i : (model.effect ()).Position)
     (value : (signature.object ((model.effect ()).nodeAt i)).MemberIndex) :
@@ -102,13 +113,14 @@ theorem effectIncoming (i : (model.effect ()).Position)
   cases i with
   | inl i =>
     cases i
-    exact ⟨terminal.supplier (.inl ()), terminalOrigin _,
+    exact ⟨terminal.supplier (.inl ()), terminalOrigin _, rfl,
       world value, trivial, evaluation _ _⟩
   | inr impossible => exact Empty.elim impossible
 
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨()⟩
+  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
   inputs := by
     intro g t _
     cases g
@@ -130,8 +142,6 @@ theorem effectIncoming (i : (model.effect ()).Position)
         cases i
         exact ⟨fun _ => ⟨(value, ()), trivial, rfl⟩, fun _ => effectIncoming _ _⟩
       | inr impossible => exact Empty.elim impossible
-  terminalOccurrencesFaithful := model.distinctTerminalProducers_of_injective
-    (fun _ _ _ => Subsingleton.elim _ _)
   boundariesComplete := by
     intro c n _
     cases c

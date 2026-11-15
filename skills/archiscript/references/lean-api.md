@@ -55,7 +55,7 @@ or provenance equivalence.
 `ArchitectureSignature` contains exhaustive lists for `Node`, `Cause` and
 `Generator`, verified `object` VDPs, the closed `domains` and `splits` inventories,
 `memberDeclared`, `RootInstance`, `origin`, `start`, `owner`, typed generator
-`input`/`output`/`operation`, and `localFactor`.
+`input`/`output`/`operation`, `generatorDecidableEq`, and `localFactor`.
 
 `Inputs` is supplier syntax on an existing generator: `unit`, `node`, `tensor`.
 `vdp` gives the full mathematical object; `Position`, `nodeAt`, `coordinate`
@@ -69,7 +69,7 @@ producer derivations preserve provenance. `Term.supplier` selects a factor.
 entry/observation route; `oneEntry` and `nontrivial` are mandatory.
 
 `DeclaredArchitecture` supplies `boundary`, `boundaryNonempty`, `context`,
-`admissibleInput`, `cyclicBoundary`, `effectContext`, `admissibleEffect`.
+`admissibleInput`, `cyclicBoundary`, `effectAnalysis`, `effectContext`, `admissibleEffect`.
 `evaluate` is a noncomputable reference denotation of finite derivations;
 `Evaluates` is its relational form. `Evaluates.deterministic`,
 `Evaluates.supplier` and `defined_consequence` are proved. `InCone` requires the
@@ -80,14 +80,25 @@ is independent of current join acceptance. `reachInput` includes the stated
 availability context. `InputValid` requires exact agreement and projections;
 `InputStatus` distinguishes inhabited verification from proved unreachability.
 
-`effectNodes` derives terminal and cyclic-boundary occurrences from the closed
-inventory. `effect`, `effectIncoming`, `reachEffect`, `ConeValid` and
-`BoundariesComplete` expose the required Cone obligations. Empty effects cannot
-receive a successful certificate through the tensor unit.
+`effectNodes` derives boundary nodes. `Term.history` is injective on typed
+occurrences (`history_injective`). `Term.provenance` normalizes only matched
+marked typed returns; it preserves other producer histories.
+`Expression.supply_preserves_provenance` proves preservation through any finite
+unmarked shared suffix, with one declaration of every downstream Operation.
+
+`ProvenanceAnalysis` contains roots and a finite cache of (Cause, Node, History).
+`Valid` requires root completeness plus `Seeded`, `Closed`, `Realized`; `complete`
+and `sound` connect the cache to all finite local-root supplier derivations.
+`effectCoordinates` derives (Node, History) positions, and `effectInputs` their
+full tensor. `EffectProvenance` binds each actual supplier to its position;
+`effectIncoming` and `reachEffect` require it. `terminal_positions` proves that
+every supported boundary derivation has a coordinate. `effect_realized` gives
+actual typed suppliers, without claiming reachable values or runtime execution.
+`ConeValid` and `BoundariesComplete` retain the full semantic obligations.
+Empty effects cannot receive a successful certificate through the tensor unit.
 
 `CertifiedDeclaredArchitecture` requires `model`, `causeNonempty`, universal `inputs`, `cones`
-and `boundariesComplete`, plus `terminalOccurrencesFaithful` for distinct natural
-terminal producers. Its scope is declared contexts. **Global
+and `boundariesComplete`, plus `effectCoverage : model.effectAnalysis.Valid`. Its scope is declared contexts. **Global
 Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
 
 `CertifiedDeclaredArchitecture.hasCone` proves the existence of an actual valid
@@ -111,7 +122,22 @@ closed results with `@[archiscript_certificate]` and independent predicates with
 including private declarations, and rejects unauthorized transitive axioms.
 Conventional `propext`, `Classical.choice`, `Quot.sound` are the only allowlist.
 
-Natural terminal producers must remain distinct: the mandatory
-`terminalOccurrencesFaithful` proof prevents two independent arrows from being
-collapsed into one unmarked terminal slot. A typed cyclic marker explicitly
-selects the boundary at which repeated entries/feedback visits are aggregated.
+Shared targets preserve distinct producer derivations automatically. One C
+and one shared h;k declaration can yield two Effect coordinates of the same VDP;
+equal members, images or suffixes do not merge those coordinates. Only an
+explicit, fully supplied tensor-source Operation performs an architectural join.
+The candidate Effect tensor is an analytical product, not that Operation.
+`effectCoverage` checks a seeded, closed and realized finite provenance basis;
+`EffectProvenance` prevents substituting a different producer in a coordinate.
+Typed cyclic markers separately aggregate repeated traversals of their actual
+return routes, while reference reachability retains every finite traversal.
+
+The optional `ArchiScript.Provenance.Derive` import provides
+`derive_provenance([roots], fuel)`. It normalizes candidate data one cached layer
+at a time; `Valid` is still proved by ordinary kernel reduction. A finite closed
+normalized-history basis is a supported-fragment obligation, separate from
+finite member values and from the deferred global Cone/Expression coverage.
+The audit exposes actual admissibility fields of every closed declared model
+and certificate, follows opaque/indirect aliases, and rejects uninspectable
+records. Attributes do not opt a closed record out of this check. Conditional
+factories are inspected at their concrete closed instantiations.

@@ -6,4 +6,4 @@ def skipped : CertifiedDeclaredArchitecture where
   causeNonempty := certified.causeNonempty
   cones := certified.cones
   boundariesComplete := certified.boundariesComplete
-  terminalOccurrencesFaithful := certified.terminalOccurrencesFaithful
+  effectCoverage := certified.effectCoverage

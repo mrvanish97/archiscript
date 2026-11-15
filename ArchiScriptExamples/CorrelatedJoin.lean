@@ -40,6 +40,7 @@ abbrev signature (rightMeaning : Bool → Bool) : ArchitectureSignature where
   owner := fun _ => ()
   start_owner := fun _ => rfl
   Generator := Arrow
+  generatorDecidableEq := inferInstance
   generators := [.left, .right, .join]
   generators_complete := by intro g; cases g <;> simp
   input
@@ -67,6 +68,9 @@ abbrev signature (rightMeaning : Bool → Bool) : ArchitectureSignature where
   | .left | .right => fun _ => True
   | .join => fun pair => pair.2 = rightMeaning pair.1
 
+abbrev effectBasis (f : Bool → Bool) : (signature f).ProvenanceAnalysis (fun _ => none) :=
+  derive_provenance([()], 2)
+
 @[archiscript_contract] def effectAdmissible (rightMeaning : Bool → Bool) (_ : Unit)
     (tuple : (Bool × Bool) × Unit) : Prop := tuple.1.2 = rightMeaning tuple.1.1
 
@@ -77,6 +81,7 @@ abbrev model (rightMeaning : Bool → Bool) : DeclaredArchitecture where
   context := fun _ _ _ => True
   admissibleInput := inputAdmissible rightMeaning
   cyclicBoundary := fun _ => none
+  effectAnalysis := effectBasis rightMeaning
   effectContext := fun _ _ _ => True
   admissibleEffect := effectAdmissible rightMeaning
 
@@ -168,22 +173,46 @@ theorem terminal_origin (f : Bool → Bool) (i : ((model f).effect ()).Position)
     exact ⟨Or.inl ⟨rfl, rfl⟩, ⟨fun _ => rfl, fun _ => rfl⟩⟩
   | inr impossible => exact Empty.elim impossible
 
-theorem effect_exact (f : Bool → Bool) (tuple : ((model f).effect ()).vdp.MemberIndex) :
-    (model f).reachEffect () tuple ↔ effectAdmissible f () tuple := by
+theorem terminal_provenance (f : Bool → Bool) : (model f).EffectProvenance () (terminal f) := by
+  intro i
+  cases i with
+  | inl i => cases i; rfl
+  | inr impossible => exact Empty.elim impossible
+
+theorem effect_image (f : Bool → Bool) (tuple : (Bool × Bool) × Unit) :
+    (model f).reachEffect () tuple ↔ ∃ root, ((root, f root), ()) = tuple := by
+  have image := DeclaredArchitecture.effect_image_of_assignment (model f) ()
+    (fun w => values f (w () ())) (fun w _ t => evaluation f w t)
+    (terminal f) (terminal_origin f) (terminal_provenance f) (fun _ _ => trivial) tuple
   constructor
-  · rintro ⟨t, _, w, _, supplied, _⟩
-    have same := Option.some.inj ((evaluation f w t).symm.trans supplied)
-    cases same
-    rfl
-  · intro allowed
-    rcases tuple with ⟨⟨left, right⟩, u⟩; cases u
-    change right = f left at allowed
-    subst right
-    exact ⟨terminal f, terminal_origin f, world f left, trivial, evaluation f _ _, trivial⟩
+  · intro reached
+    obtain ⟨w, _, same⟩ := image.mp reached
+    exact ⟨w () (), same⟩
+  · rintro ⟨root, same⟩
+    exact image.mpr ⟨world f root, trivial, same⟩
+
+theorem effect_exact (f : Bool → Bool) (tuple : (Bool × Bool) × Unit) :
+    (model f).reachEffect () tuple ↔ effectAdmissible f () tuple := by
+  apply Iff.trans (effect_image f tuple)
+  change (∃ root, ((root, f root), ()) = tuple) ↔ tuple.1.2 = f tuple.1.1
+  constructor
+  · rintro ⟨root, same⟩; cases same; rfl
+  · rcases tuple with ⟨⟨left, right⟩, u⟩; cases u
+    intro allowed
+    exact ⟨left, Prod.ext (Prod.ext rfl allowed.symm) rfl⟩
+
+theorem effect_projection (f : Bool → Bool) (i : ((model f).effect ()).Position)
+    (member : ((signature f).object (((model f).effect ()).nodeAt i)).MemberIndex) :
+    (model f).effectIncoming () i member ↔
+      ∃ tuple, (model f).admissibleEffect () tuple ∧ ((model f).effect ()).coordinate tuple i = member :=
+  DeclaredArchitecture.effect_projection_of_assignment (model f) ()
+    (fun w => values f (w () ())) (fun w _ t => evaluation f w t)
+    (fun _ _ => rfl) (effect_exact f) i member
 
 def certificate (f : Bool → Bool) : CertifiedDeclaredArchitecture where
   model := model f
   causeNonempty := ⟨()⟩
+  effectCoverage := ⟨by intro root; cases root; simp, by exact of_decide_eq_true rfl⟩
   inputs := by
     intro g t _
     exact .verified (input_valid f g t)
@@ -194,27 +223,7 @@ def certificate (f : Bool → Bool) : CertifiedDeclaredArchitecture where
     refine ⟨?_, ⟨((false, f false), ()), (effect_exact f _).mpr rfl⟩, effect_exact f, ?_⟩
     · change [Port.joined] ≠ []
       decide
-    intro i pair
-    cases i with
-    | inl i =>
-      cases i
-      constructor
-      · rintro ⟨t, _, w, _, supplied⟩
-        have same := Option.some.inj ((evaluation f w t).symm.trans supplied)
-        exact ⟨(pair, ()), by cases same; rfl, rfl⟩
-      · rintro ⟨tuple, allowed, same⟩
-        have eq : pair.2 = f pair.1 := by
-          change tuple.1 = pair at same
-          change tuple.1.2 = f tuple.1.1 at allowed
-          rw [same] at allowed
-          exact allowed
-        refine ⟨(terminal f).supplier (.inl ()), terminal_origin f _, world f pair.1, trivial, ?_⟩
-        have h := evaluation f (world f pair.1) ((terminal f).supplier (.inl ()))
-        exact h.trans (congrArg some (Prod.ext rfl eq.symm))
-    | inr impossible => exact Empty.elim impossible
-  terminalOccurrencesFaithful := (model f).distinctTerminalProducers_of_injective (by
-    intro g h same
-    cases g <;> cases h <;> cases same <;> rfl)
+    exact effect_projection f
   boundariesComplete := by
     intro c n _; cases c
     refine ⟨Port.joined, ?_, ?_⟩

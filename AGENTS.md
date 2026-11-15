@@ -69,9 +69,15 @@ or proposed departures explicitly.
   terminal-boundary proofs. Proved-unreachable contexts are separate from
   inhabited verified uses. Empty effects cannot pass as a meaningful tensor-unit
   success. A raw declaration cannot be sent to the certified consumer.
-- Natural terminal arrows need distinct occurrence slots. The mandatory
-  `terminalOccurrencesFaithful` proof rejects silent merging; a typed cyclic
-  marker explicitly identifies the boundary whose repeated visits are aggregated.
+- Follow handoff §7.3.1: f/g may target the same nominal C and reuse one h;k
+  declaration. Preserve automatically derived histories; never require unique
+  named uses, cloned VDPs/graphs or injective generator outputs. The mandatory
+  `effectCoverage` proves a seeded, closed, realized finite provenance basis;
+  `EffectProvenance` binds actual suppliers to its coordinates. Equal values,
+  images and suffixes do not merge positions. A genuine join needs an explicit,
+  fully sourced tensor-input Operation. The analytical Effect tensor adds none.
+  Typed cyclic return markers separately aggregate repeat visits; finite member
+  sets alone do not prove that a finite normalized-history basis exists.
 - **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Do not claim
   universal generated-path coverage from these scoped certificates. Automation
   is explicitly deferred to the next version. Real-world inventory completeness
@@ -94,8 +100,10 @@ or proposed departures explicitly.
   negative fixtures. `sorryAx`, custom axioms and extra computation axioms are
   rejected by the audit; a source-token search is insufficient. Tag concrete
   closed certificates and independent admissibility declarations for additional
-  assumption/dependency checks. Conditional reusable theorems are not concrete
-  architecture certificates.
+  assumption/dependency checks. The release audit also inspects actual installed
+  contracts of every closed model/certificate regardless of tags, follows aliases
+  and rejects uninspectable closed records. Independent business meaning remains
+  a human obligation. Conditional factories are checked at closed instantiation.
 - When public algebra, Expression or consequence APIs change, update the full
   authoring skill, API reference, diagrams, public-only smoke, dedicated tests
   and ReservationController presentation stress example together.

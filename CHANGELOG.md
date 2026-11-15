@@ -11,6 +11,13 @@
 - Added closed inventories, finite provenance derivations, typed cyclic
   entry/Effect boundaries, contextual supplier images, exact full-tuple contracts
   and mandatory scoped architecture certificates.
+- Corrected shared-target semantics per handoff §7.3.1: automatically derived
+  producer histories preserve two positions of one VDP through a single shared
+  downstream chain. Removed generator-output uniqueness; added checked finite
+  provenance coverage and explicit supplier-to-coordinate evidence.
+- Made the release audit inspect actual installed contracts of all closed models
+  and certificates, including untagged, inline, indirect and opaque forms. Added
+  complete-certificate bypass regressions and collapsed/fake-join negatives.
 - Added proof-backed finite saturation, exact-abstraction obligations, tuple and
   orphan diagnostics, transitive axiom auditing, negative proof-bypass fixtures,
   kernel replay and a checked-source verification report.

@@ -27,6 +27,7 @@ abbrev signature : ArchitectureSignature where
   owner := fun _ => ()
   start_owner := fun _ => rfl
   Generator := Unit
+  generatorDecidableEq := inferInstance
   generators := [()]
   generators_complete := by intro g; cases g; simp
   input := fun _ => .node ()
@@ -51,6 +52,9 @@ def alternating : Nat → Bool
 @[archiscript_contract] def inputAdmissible (_ : Unit)
     (t : signature.Occurrence (.node ())) (b : Bool) : Prop := b = alternating t.operations
 
+abbrev effectBasis : signature.ProvenanceAnalysis (fun _ => some boundary) :=
+  derive_provenance([()], 0)
+
 @[archiscript_contract] def effectAdmissible (_ : Unit) (_ : Bool × Unit) : Prop := True
 
 abbrev model : DeclaredArchitecture where
@@ -60,6 +64,7 @@ abbrev model : DeclaredArchitecture where
   context := fun _ _ _ => True
   admissibleInput := inputAdmissible
   cyclicBoundary := fun _ => some boundary
+  effectAnalysis := effectBasis
   effectContext := fun _ _ _ => True
   admissibleEffect := effectAdmissible
 
@@ -130,9 +135,23 @@ theorem observed_evaluation (b : Bool) : model.Evaluates initial (observed b) b 
 
 def terminal (b : Bool) : signature.Occurrence (model.effect ()) := .tensor (observed b) .unit
 
+theorem observedProvenance (b : Bool) : (observed b).provenance model.cyclicBoundary =
+    ProducerHistory.cause () () := by
+  cases b <;> rfl
+
+theorem terminalProvenance (b : Bool) : model.EffectProvenance () (terminal b) := by
+  intro i
+  cases i with
+  | inl i =>
+    cases i
+    change ((observed b).supplier ()).provenance model.cyclicBoundary = ProducerHistory.cause () ()
+    rw [ArchitectureSignature.Term.supplier_node]
+    exact observedProvenance b
+  | inr impossible => exact Empty.elim impossible
+
 theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEffect () tuple := by
   rcases tuple with ⟨b, u⟩; cases u
-  refine ⟨terminal b, ?_, initial, rfl, ?_, trivial⟩
+  refine ⟨terminal b, ?_, terminalProvenance b, initial, rfl, ?_, trivial⟩
   · intro i
     cases i with
     | inl i =>
@@ -149,6 +168,7 @@ theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEff
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨()⟩
+  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
   inputs := by
     intro g t _; cases g
     refine .verified ⟨input_exact t, ?_⟩ ?_
@@ -166,10 +186,8 @@ theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEff
       | inl i =>
         cases i
         exact ⟨fun _ => ⟨(b, ()), trivial, rfl⟩,
-          fun _ => ⟨observed b, origin _, initial, rfl, observed_evaluation b⟩⟩
+          fun _ => ⟨observed b, origin _, observedProvenance b, initial, rfl, observed_evaluation b⟩⟩
       | inr impossible => exact Empty.elim impossible
-  terminalOccurrencesFaithful := model.distinctTerminalProducers_of_injective
-    (fun _ _ _ => Subsingleton.elim _ _)
   boundariesComplete := by
     intro c n _; cases c; cases n
     refine ⟨(), ?_, .refl _⟩
