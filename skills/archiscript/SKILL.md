@@ -25,7 +25,13 @@ real-world Operations and requirements remain an author responsibility.
 ## Reviewer FAQ / defect triage
 
 Before describing an ArchiScript limitation as a bug, consult the
-[Reviewer FAQ](../../README.md#reviewer-faq-recurring-semantic-and-scope-questions).
+[Reviewer FAQ in the repository README](../../README.md#reviewer-faq-recurring-semantic-and-scope-questions).
+When this skill is installed independently of the repository, that relative
+path may not exist. In that case, use the
+[canonical README FAQ on GitHub](https://github.com/mrvanish97/archiscript/blob/main/README.md#reviewer-faq-recurring-semantic-and-scope-questions)
+if network access is available. If neither source is accessible, apply the
+self-contained rules below and do **not** claim to have read the FAQ.
+Do not duplicate the complete FAQ inside this skill.
 **Do not conflate** (1) two target members for one source member of **one**
 Operation, which is forbidden by `Operation.single_output`, (2) multiple
 declared outgoing Operations, which are legal and non-exclusive, and
