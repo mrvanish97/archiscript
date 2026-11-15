@@ -675,79 +675,146 @@ See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean),
 [`CyclicCone`](ArchiScriptExamples/CyclicCone.lean) and
 [`Provenance`](ArchiScript/Provenance.lean).
 
-### Can repeated executions of one Cone or executions of different Cones be related across time?
+### Can one Cone analyze conflicting or concurrent resource states through a cyclic tensor?
 
-**Not automatically in ArchiScript 0.7.0.** A Cone describes the
-architecturally declared consequences of one concrete external Cause
-event with its canonical origin; it is **not** a process instance,
-execution trace, timer or scheduler. The reference `World` assigns
-semantic members to declared Causes/root instances, but does not add
-timestamps, before/after transitions, overlapping executions or
-automatic replication of a Cause into arbitrarily many invocations.
-Typed cycles and repeated finite derivations do not supply such
-temporal structure either.
+**This exact pattern is PLANNED for 0.8.0, NOT YET DEMONSTRATED
+by a compiling, certified Lean model.** It may already work with
+today's primitives; the project commits to making it supported
+in 0.8.0, or retaining the commitment in a subsequent version
+if delivery needs staging. This roadmap commitment is **not**
+a claim of already proved feasibility or an existing certificate.
 
-This applies to **both** repeated invocations of the *same*
-architecture/Cone and temporal relations between **different** Cones.
-Different Causes and cross-Cone tensor joins are supported when their
-suppliers and common declared world are justified; that common world
-records **semantic compatibility, not physical simultaneity,
-causal ordering, freshness or a timeline**. In particular, one
-request's service-status factor being `Available` does not prove
-when the status was observed or that it remained fresh.
+The intended architecture can have **one Cause and one Cone**:
+a shared-resource State VDP participates in the tensor input
+and also arises from an Operation on the Cone's feedback path.
+This is an *a priori* semantic analysis of competing conditions,
+not a simulation of workers or a temporal event trace.
 
 ```text
-ONE architecture, two external invocations -- NOT implicit in one Cone:
-
-  Payment webhook #A: ledger=false ----> decision=fulfill
-  Payment webhook #B: ledger=false ----> decision=fulfill
-                        (possible overlapping observations)
-
-  The single-observation decision theorem can hold for both.
-  It does NOT prove at-most-once fulfillment across both invocations.
-
-
-TWO different Cones -- time not implicit in a tensor:
-
-  Cone: Request arrived                Cone: Status reported
-         event at t2                          event at t1
-                \                              /
-                 \-- Request (x) Status -------/
-                     (semantic supplier join)
-
-  The join by itself does NOT prove t1 < t2, freshness, or
-  whether these events physically overlap.
+                          ONE CONE
+                             |
+                  Cause: webhookArrived
+                             |
+                             v
+                        Request VDP
+                             |
+                             v
+      +----------------------------------+     +------------------+
+      |      Request VDP x State VDP     |<----|     State VDP    |<--+
+      |            tensor input          |     | possible members |   |
+      +-----------------+----------------+     +------------------+   |
+                        |                                           |
+                        v                                           |
+                    Operation(s)                                    |
+                    /          \                                    |
+                   v            v                                   |
+             Decision VDP     State VDP (updated) ------------------+
+                   |            |
+                   +------+-----+
+                          |
+                          v
+          EFFECT: Decision VDP x State VDP
+          (terminal + typed cyclic observation boundary)
 ```
 
-**An author can add temporal semantics externally and prove new
-theorems in Lean.** For example, define invocation identities,
-event-to-Cone/architecture assignments, observation or ledger states
-at times, a transition/trace relation, permitted interleavings and
-explicit atomicity or uniqueness assumptions. Then prove precisely
-stated properties about **joint states at different moments**,
-including repeated invocations of one Cone, relationships among
-different Cones, and safety properties such as "at most one
-fulfillment is committed for a payment identifier". The choice of
-time model (e.g. discrete steps or a partial `happens-before`
-order) and the mapping to existing ArchiScript declarations must
-themselves be justified. A theorem establishes what follows **from
-those additional definitions and assumptions**, not actual DB or
-scheduler conformance.
+Both State labels refer to the **same declared VDP at distinct
+supplier/output occurrences**. `x` denotes tensor (`⊗`).
+`Operation(s)` must be explicit: one `Operation.run` cannot
+nondeterministically yield two outputs. The suggested Effect
+combines a terminal Decision and a typed cyclic State
+observation **only if its coordinates and histories are
+actually derived by the provenance analysis**.
 
-It is also possible to explicitly model two distinct concrete
-external events as separate Causes when the closed architectural
-inventory warrants that; this is not the same as obtaining a
-general-purpose, repeatable invocation semantics for free.
+The intended input completeness conditions for every coherent
+supported cyclic tensor use `t` are:
 
-**Guarantee boundary: NOT AUTOMATICALLY VERIFIED.** The standard
-0.7.0 ArchiScript API/certificate does not supply a multi-invocation
-temporal composition, a concurrency/serializability checker,
-a global ordering or liveness theorem, or an automatic test for
-joint states at different times. The author-written external Lean
-model is a legitimate **additional layer**, not something forbidden
-by ArchiScript and not a guarantee supplied by the current core.
-See [`ArchitectureSignature.World` and `Term`](ArchiScript/Architecture.lean)
-and [`DeclaredArchitecture.reachEffect`](ArchiScript/Consequence.lean).
+```text
+  E: ReachInput(g,t) = AdmInput(g,t)   (complete tuples)
+  P: Incoming(t,i,m) iff
+       exists tuple in AdmInput(g,t) with coordinate i = m
+```
+
+For every **actually incoming** Request member, there must
+be at least one admissible/reachable State partner; likewise
+for actually incoming State members. The full tensor is a
+candidate Cartesian product, while correlation may exclude
+cross-pairs. **Being a selected VDP member does not itself
+prove incoming reachability** under the declared Cause/world
+boundary. The existing
+[`CertifiedDeclaredArchitecture.input_partner`](ArchiScript/Consequence.lean)
+requires a grounded supplier image.
+
+No **particular initial resource-state value** or external
+timeline is required to formulate these universal semantic
+obligations. However, the feedback arrow and its inhabited
+State VDP cannot create a supplier from nothing. Finite
+Cause-rooted `RootCoherent` provenance and `InputSources`
+are still required, even when the supplier is obtained
+entirely within the same Cone. A rootless self-feeding
+cycle does not become reachable by assumption. All finite
+supported cyclic unfoldings must be checked, not just
+the visible loop in the diagram.
+
+**Existing ingredients, not yet a verified combination:**
+[`CyclicCone`](ArchiScriptExamples/CyclicCone.lean)
+demonstrates a certified cycle;
+[`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean)
+demonstrates correlated tensor inputs. The 0.7.0 core also
+has contextual P/E, mandatory source accounting and
+provenance-sensitive Effects. No established example proves
+that the **combined feedback-tensor pattern** works with
+the present algorithm. The [0.8.0 plan](plans/0.8.0.md)
+commits to an end-to-end certification, negative tests,
+and any required completeness/provenance changes.
+
+**Boundary:** This a priori analysis does not by itself
+prove that two physical workers cannot both commit, or
+that a database is atomic, linearizable or serializable.
+Those **runtime** claims need justified additional
+semantics; they are not a reason to demand a timeline
+for the semantic tensor analysis described here.
+
+### Can repeated executions of one Cone or executions of different Cones be related across time?
+
+**Distinguish competing semantic states from temporal
+properties of physical executions.** Conflict/contender
+states can be declared *a priori* in VDPs and evaluated
+through contextual tensors, Operations, cyclic supplier
+routes and Consequence/Effect relations. An architect
+does **not** have to create extra Causes/Cones or
+independently model a clock just to analyze the
+permitted `Request ⊗ State` combinations. The intended
+[one-Cone cyclic tensor example](#can-one-cone-analyze-conflicting-or-concurrent-resource-states-through-a-cyclic-tensor)
+is a **committed 0.8.0 goal**, **not yet shown to be
+certifiable** with the current code.
+
+Different Causes/Cones can also participate in justified
+cross-Cone tensor relations. Their common `World`
+records semantic compatibility, **not** actual
+simultaneous execution or timestamps.
+
+```text
+  SEMANTIC question (no timeline required):
+     Request(r) x State(s)
+               |
+        allowed joint tuple? (P/E)
+               |
+        consequence and Effect?
+
+  TEMPORAL question (additional semantics):
+     Did run A happen before B?
+     Could two physical workers both commit?
+     Are actual database transactions atomic?
+```
+
+The standard 0.7.0 certificate does not automatically
+prove physical interleavings, scheduling, repeat
+invocations, happens-before, liveness, serializability
+or deployed code conformance. An author may separately
+define temporal/trace relations in Lean **when the
+property demands them**, but this is *optional*, not
+a prerequisite for a priori VDP conflict-state analysis.
+See [`InputValid` and `ConeValid`](ArchiScript/Consequence.lean).
 
 ### Can a scoped certificate accept a disconnected node or rootless cycle?
 
