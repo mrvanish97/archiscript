@@ -12,6 +12,127 @@ try to discharge its mandatory Lean obligations, correct unsupported
 assumptions, and either implement against the model or audit existing
 code against it.
 
+## Procedural slippage: a modeling and review failure mode
+
+**Core modeling discipline — avoid procedural slippage.**
+ArchiScript works with **a priori semantic possibilities**,
+not an execution trace. Human authors, AI agents and reviewers
+can slip from semantic reasoning into mentally executing
+software and demand that one `Operation` predict an
+unobservable future event. A `VDP` partitions a declared
+carrier of possibilities; its members are **not** the
+runtime classes or messages a component must already
+possess. For each architecture, apply this discipline
+when constructing the model *and* when criticizing it.
+Common procedural-slippage prompts include: **"What if
+the network fails?"**, **"What if an AZ goes down?"**,
+**"What if a request times out or another worker intervenes?"**,
+**"How can one deterministic Operation describe an
+unpredictable outcome?"**, and, at the deliberately
+extreme end, **"What if a meteorite destroys the server?"**
+These are prompts to identify
+semantically distinct full scenarios or justified
+neighboring-Cone suppliers, **not** automatic evidence
+for nondeterministic member-level Operations.
+**How the language itself pushes back:** the response to
+procedural slippage is not merely better prose.
+`Operation.single_output` prevents one
+`Operation.run` from mapping the same member to
+two distinct target members. `InputSources`,
+provenance and contextual `InputValid`
+demand sourced tensor factors, full
+`ReachInput = AdmInput` (E) and exact
+incoming-factor projections (P). For an
+**observable** Cone, `ConeValid` requires a
+nonempty reachable full Effect tuple,
+`ReachEffect = AdmEffect` and exact
+Effect-coordinate projections, with
+supplier provenance. Thus an arbitrary
+Effect tensor does **not** prove all its
+Cartesian tuples reachable: only justified
+joint tuples count. Unobservable Cones
+use an explicitly checked alternative.
+Missing obligations block the respective
+certification claim; a successful scoped
+proof never guarantees a complete or
+truthful real-world model, and global
+Expression/Cone coverage is still not
+automatic. In actual authoring, use the
+Lean error or counterexample to locate
+the missing distinction/source/relation,
+rather than falling back to procedural
+simulation or disguising a branch.
+
+Follow these steps:
+1. Ask whether the factor is **already present**
+   as a semantic distinction in the declared
+   scenario carrier/VDP. An `Up | Down`
+   partition can represent the relevant server
+   availability consequences even if the actual
+   cause is unpredictable to a runtime component.
+   If the difference matters, refine the
+   semantic regions; a VDP is not a runtime
+   enum/message that must travel through the code.
+2. If the condition is **independently supplied**
+   by a network, zone or service, justify
+   its Cause/producer occurrence, then combine
+   it via typed tensor with a local factor
+   in the consuming Cone. Check the actual
+   `InputSources`, `RootCoherent`, contextual
+   full-tuple E and per-factor P. Do not
+   assert a Cartesian product is fully
+   reachable solely because it is typed.
+3. If a critic says "same observed request
+   has several outcomes," determine whether
+   it is really the same **full semantic
+   member and one Operation**. If it is,
+   `Operation.single_output` rejects two
+   distinct results and the model must
+   be corrected. If the **full scenario
+   members differ**, no nondeterministic
+   Operation is required.
+4. Only after these checks ask whether
+   the model omits a real scenario,
+   invents a supplier, claims unjustified
+   program knowledge or asserts runtime
+   liveness/conformance it has not proved.
+   These are potentially legitimate
+   criticisms; inability to predict a
+   future event is not one by itself.
+5. **Try the Lean construction and proofs**
+   rather than prolonging a hypothetical
+   objection. Distinguish genuine
+   counterexample, unproved obligation,
+   proof tooling failure and external
+   adequacy. Do not call a model
+   "correct" merely because some chosen
+   narrower carrier compiles.
+
+```text
+   Request Cause -> Request VDP -----+
+                                    ⊗ -> Operation -> Response
+   Network Cause -> Network VDP -----+
+                   Up | Down
+```
+
+**Expected modeling/review response** to "What if
+the network drops or a meteorite makes
+the server unavailable?": "These are
+potential semantic cases, not evidence
+that one Operation needs multiple
+outputs for one member. Show whether
+the declared VDP or an explicitly
+sourced neighboring Cone already
+models them; check P/E and provenance.
+Only a concrete omitted distinction
+or unjustified guarantee is a valid
+defect." For additional worked
+context see [the reviewer warning](../../README.md#core-principle-semantic-possibilities-before-execution)
+and [network FAQ](../../README.md#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator).
+This instruction is **self-contained**;
+the agent must be able to apply it
+without accessing README.
+
 **Greenfield agent workflow:** state the requirements and external
 assumptions; define complete meaningful carriers, selected Subdomains,
 Causes, source provenance, contextual Operations, tensors, Cones and

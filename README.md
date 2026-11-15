@@ -8,6 +8,156 @@ ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
 
+## Core principle: semantic possibilities before execution
+
+ArchiScript starts with **the complete meaningful possibilities of an
+architectural situation**, not with a program stepping through
+instructions and discovering an outcome. A `VDP` (Value Domain
+Partition) divides a declared carrier into inhabited, disjoint,
+exhaustive semantic regions. These are **not** runtime message
+classes, observable states that a component must know in advance,
+or instructions to execute. A member-level `Operation` is a
+partial function between semantic regions; its determinacy
+is a property of the **declared full semantic distinction**,
+not a claim that runtime inputs reveal the future.
+
+This change of perspective is central to ArchiScript's value.
+The same visible request can be part of distinct complete
+semantic scenarios: the network is available or unavailable;
+a service responds or times out; an availability zone
+survives or fails. Those are possibilities to **describe
+and distinguish a priori**, not unpredictable branches that
+force a single `Operation` to have several outputs for
+one member. Relevant environmental conditions may be
+modeled within an honestly scoped scenario carrier,
+or supplied by neighboring Causes/Cones and combined
+through a typed tensor.
+
+```text
+  Request VDP                 NetworkStatus VDP
+  (request Cause)             (network Cause)
+       |                            |
+       +------------- ⊗ ------------+
+                     |
+            admitted joint tuples
+        (grounded suppliers + P/E)
+                     |
+                     v
+                 Operation
+                     |
+                     v
+                Response VDP
+```
+
+### Procedural slippage
+
+**Procedural slippage** occurs when a human or AI agent starts
+with an *a priori* semantic model but silently switches to
+thinking about the steps of a running program. VDP members
+are then mistaken for runtime values that a component must
+already observe, and a semantic Operation is wrongly expected
+to predict which future scenario will occur.
+
+This shift produces a recognizable series of objections:
+
+> **"But what if the network suddenly fails?"**
+>
+> **"What if an availability zone goes down?"**
+>
+> **"What if a request times out, or another worker intervenes?"**
+>
+> **"How can one deterministic Operation describe such unpredictable,
+> complex or apparently nondeterministic consequences?"**
+>
+> **"And what if a meteorite destroys the server?"**
+
+**These are precisely the kinds of semantic possibilities that
+ArchiScript is designed to distinguish.** Such questions do not,
+by themselves, reveal a need for a nondeterministic primitive.
+An architect can describe an appropriate scenario partition,
+or declare a separate Network/Zone/Resource Cause and VDP
+whose justified supplier feeds the consuming Cone through a
+tensor. Even a meteorite can matter simply as a
+`ServerAvailable / ServerUnavailable` distinction when that
+is sufficient for the particular architectural question.
+The cause may be unpredictable to a runtime observer;
+the declared **full semantic cases** can still have
+well-defined member-level consequences.
+
+For example, `Request ⊗ NetworkStatus` distinguishes
+`(ValidRequest, Up)` from `(ValidRequest, Down)`.
+They are distinct **tensor input members**, not two
+conflicting outputs of one source member. One
+`Operation.run` may map them respectively to
+`Success` and `NetworkError`, without claiming that
+a deployed handler knows future network conditions.
+The model must still prove supplier provenance,
+actual contextual P/E, and appropriate assumptions.
+If the cases are not yet distinguished, that is a
+concrete task for architecture modeling, not a
+reason to demand an unrestricted branch or clock.
+
+**ArchiScript is deliberately structured to resist procedural
+slippage during construction, not just to explain it away in
+review.** Several constraints force an agent or author to
+account for the relevant semantic cases:
+
+1. **One Operation, one target member per source member.**
+   `Operation.run : X.MemberIndex → Option Y.MemberIndex`
+   cannot silently map the same source member to
+   both `Success` and `NetworkError`. The model must
+   justify a finer scenario distinction, an additional
+   sourced tensor factor, or genuinely separate
+   Operations. A new member label alone is not proof
+   of a legitimate semantic distinction.
+2. **Explicit suppliers and full input tuples.**
+   A network/AZ factor needs genuine provenance;
+   `InputSources` and contextual `InputValid`
+   check availability and the full relation
+   `ReachInput = AdmInput` (E), plus exact projections
+   of independently incoming member images (P).
+   Neither a missing supplier nor an invented
+   combination may be concealed by the tensor.
+3. **Consequences cannot be guessed from the diagram.**
+   Each observable Cone's `ConeValid` requires a
+   nonempty, genuinely reachable full Effect tuple,
+   equality `ReachEffect = AdmEffect`, and exact
+   projections to its incoming Effect coordinates.
+   The Effect is derived with supplier/provenance
+   constraints; it is **not** a freely asserted
+   outcome product. Explicitly unobservable Cones
+   have different checked obligations. Not every
+   Cartesian pair of Effect members must be
+   reachable; inadmissible cross-pairs remain
+   excluded by the declared contexts.
+4. **Proof feedback exposes unsupported shortcuts.**
+   Missing distinctions, provenance, tuple partners
+   or unjustified Effect claims lead to unfulfilled
+   obligations when the relevant contract applies.
+   This gives AI agents a constructive route:
+   refine the model, justify the source, inspect
+   a counterexample and retry Lean, rather than
+   simulating events or declaring an unspecified
+   nondeterministic branch.
+
+These safeguards make procedural misconceptions
+**harder to encode as certified claims**, but they
+do not automatically prove that the author chose
+the right real-world boundary, declared every
+relevant Cause or matched an implementation.
+Current certificates also do **not** establish
+global all-generated-Expression/Cone coverage.
+
+This is not a simulator, a guarantee that every real-world
+failure was enumerated, or a proof of implementation
+conformance, eventual delivery or physical determinism.
+Actual supplier provenance, full contextual `P/E`,
+and the stated assurance scope remain proof obligations.
+See the [possibility-space explanation](#a-priori-possibility-space),
+[network/AZ example](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator)
+and [review FAQ](#what-if-a-network-outage-or-another-external-failure-is-uncontrolled-and-nondeterministic)
+for details.
+
 ## AI-first development and codebase auditing
 
 **The primary intended workflow is agent-led software development and review,
@@ -285,6 +435,38 @@ without claiming knowledge of a future execution. An honestly coarser result
 VDP may be appropriate if the distinction is **not** claimed; merely merging
 different outcomes into an opaque member must not masquerade as having proved
 their separate behavior.
+
+### What if a network outage or another external failure is "uncontrolled" and "nondeterministic"?
+
+**First ask what was declared, not what the runtime knows.** A network
+down state, an unavailable service, an AZ outage, or the
+server-unavailable consequence of a meteorite may be selected
+members of an appropriately scoped VDP or be supplied from
+explicitly justified environmental Causes/Cones. If the resulting
+input members are sufficiently distinguished, an
+`Operation : X → Y` can assign **one consequence per
+member**, even though a request handler cannot predict
+which full scenario will actually hold.
+
+**This is the same a priori modeling principle already explained
+above, not a newly discovered nondeterministic-branch defect.**
+Use [the network-status tensor diagram](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator)
+when the environmental condition has an independent source;
+use [the scenario-partition example](#click-wait-and-timeout)
+when an honest declared scenario carrier suffices.
+Do not require a runtime simulation, physical clock,
+extra `Cause` for every hypothetical future event or
+multivalued `Operation.run` merely to describe possibilities.
+
+**But:** if that environmental case is actually outside
+the declared carrier, or a supposedly available network
+factor has no grounded supplier, raise that **specific
+missing-scope/sourcing objection**. A VDP does not
+prove all real failures were covered, nor does a
+semantic tuple prove runtime freshness, recovery,
+atomic commits or implemented behavior. Identify
+the exact claim being challenged; do not substitute
+a demand for a different kind of theorem.
 
 ### Does a future-outcome VDP require the running program to know the future?
 
