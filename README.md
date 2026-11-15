@@ -667,6 +667,80 @@ See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean),
 [`CyclicCone`](ArchiScriptExamples/CyclicCone.lean) and
 [`Provenance`](ArchiScript/Provenance.lean).
 
+### Can repeated executions of one Cone or executions of different Cones be related across time?
+
+**Not automatically in ArchiScript 0.7.0.** A Cone describes the
+architecturally declared consequences of one concrete external Cause
+event with its canonical origin; it is **not** a process instance,
+execution trace, timer or scheduler. The reference `World` assigns
+semantic members to declared Causes/root instances, but does not add
+timestamps, before/after transitions, overlapping executions or
+automatic replication of a Cause into arbitrarily many invocations.
+Typed cycles and repeated finite derivations do not supply such
+temporal structure either.
+
+This applies to **both** repeated invocations of the *same*
+architecture/Cone and temporal relations between **different** Cones.
+Different Causes and cross-Cone tensor joins are supported when their
+suppliers and common declared world are justified; that common world
+records **semantic compatibility, not physical simultaneity,
+causal ordering, freshness or a timeline**. In particular, one
+request's service-status factor being `Available` does not prove
+when the status was observed or that it remained fresh.
+
+```text
+ONE architecture, two external invocations -- NOT implicit in one Cone:
+
+  Payment webhook #A: ledger=false ----> decision=fulfill
+  Payment webhook #B: ledger=false ----> decision=fulfill
+                        (possible overlapping observations)
+
+  The single-observation decision theorem can hold for both.
+  It does NOT prove at-most-once fulfillment across both invocations.
+
+
+TWO different Cones -- time not implicit in a tensor:
+
+  Cone: Request arrived                Cone: Status reported
+         event at t2                          event at t1
+                \                              /
+                 \-- Request (x) Status -------/
+                     (semantic supplier join)
+
+  The join by itself does NOT prove t1 < t2, freshness, or
+  whether these events physically overlap.
+```
+
+**An author can add temporal semantics externally and prove new
+theorems in Lean.** For example, define invocation identities,
+event-to-Cone/architecture assignments, observation or ledger states
+at times, a transition/trace relation, permitted interleavings and
+explicit atomicity or uniqueness assumptions. Then prove precisely
+stated properties about **joint states at different moments**,
+including repeated invocations of one Cone, relationships among
+different Cones, and safety properties such as "at most one
+fulfillment is committed for a payment identifier". The choice of
+time model (e.g. discrete steps or a partial `happens-before`
+order) and the mapping to existing ArchiScript declarations must
+themselves be justified. A theorem establishes what follows **from
+those additional definitions and assumptions**, not actual DB or
+scheduler conformance.
+
+It is also possible to explicitly model two distinct concrete
+external events as separate Causes when the closed architectural
+inventory warrants that; this is not the same as obtaining a
+general-purpose, repeatable invocation semantics for free.
+
+**Guarantee boundary: NOT AUTOMATICALLY VERIFIED.** The standard
+0.7.0 ArchiScript API/certificate does not supply a multi-invocation
+temporal composition, a concurrency/serializability checker,
+a global ordering or liveness theorem, or an automatic test for
+joint states at different times. The author-written external Lean
+model is a legitimate **additional layer**, not something forbidden
+by ArchiScript and not a guarantee supplied by the current core.
+See [`ArchitectureSignature.World` and `Term`](ArchiScript/Architecture.lean)
+and [`DeclaredArchitecture.reachEffect`](ArchiScript/Consequence.lean).
+
 ### Can a scoped certificate accept a disconnected node or rootless cycle?
 
 **Yes, without proving that component has an executable producer.**
