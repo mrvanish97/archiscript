@@ -48,6 +48,46 @@ independent source evidence. None should be silently
 turned into an accepted proof with assumptions
 chosen solely for convenience.
 
+**Human-review handoff: compress routine proofs, expose reasoning on
+demand.** Expect a large number of machine-generated local
+declarations and proof attempts; do not expect a human reviewer
+to read them all line by line. When presenting an architecture
+or a review result, produce an **inspectable review package**:
+
+- A compact, faithful Cause/VDP/Operation/Cone/Effect diagram,
+  with important distinct supplier occurrences retained.
+- A concise statement of the **intended behavior**,
+  the most important sufficient conditions/invariants,
+  and exact Lean theorem/certificate references that
+  establish each *model-relative* claim.
+- A traceable evidence map back to code, requirements
+  or explicitly declared external premises for each
+  architecture-critical assumption.
+- A clear separation of **proved**, **not proved**,
+  **blocked by proof/tool limitations**, and
+  **not checked for code conformance**. Surface
+  counterexamples and unresolved model cases rather
+  than burying them in routine proof output.
+- A drill-down path: when a reviewer asks why a VDP
+  member exists, where a supplier originates, how
+  a tensor partner is guaranteed, or which Effect
+  theorem proves a consequence, show the precise
+  model declarations, theorem statements and
+  relevant code or test locations.
+
+The human's primary review job is **adequacy and
+sufficiency of the architectural obligations**:
+the correct behavioral questions, scope, boundary,
+threats, constraints and missing scenarios.
+Lean checks proofs *relative to stated premises*;
+neither the human-facing diagram nor a pile of
+green certificates establishes that the chosen
+requirements or model-to-code correspondence
+are complete. Do not overwhelm the reviewer with
+raw proof output when a concise diagram and
+traceable claims suffice, and do not hide a
+missing proof behind a polished diagram.
+
 **Anti-proof-gaming rule:** do not shrink a carrier,
 remove an error case, split a member into fictitious
 future-aware cases, invent a supplier, assume a
