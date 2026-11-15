@@ -8,78 +8,66 @@ ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
 
-## Procedural slippage: do not confuse semantic possibilities with execution
+## Core principle: semantic possibilities before execution
 
-**Procedural slippage** is a common error in architecture review
-by both humans and AI agents: the reviewer reads "a priori semantic
-possibilities" but then switches to mentally executing a program,
-treating VDP members as concrete runtime messages or asking one
-Operation to choose a future outcome using only information available
-at the beginning of execution. **That changes the object of
-analysis.** When this objection arises, first check the declared
-semantic carrier, supplier paths and actual Lean obligations
-**before** presenting it as a defect.
+ArchiScript starts with **the complete meaningful possibilities of an
+architectural situation**, not with a program stepping through
+instructions and discovering an outcome. A `VDP` (Value Domain
+Partition) divides a declared carrier into inhabited, disjoint,
+exhaustive semantic regions. These are **not** runtime message
+classes, observable states that a component must know in advance,
+or instructions to execute. A member-level `Operation` is a
+partial function between semantic regions; its determinacy
+is a property of the **declared full semantic distinction**,
+not a claim that runtime inputs reveal the future.
 
-**"But what about an uncontrollable network outage, an availability-zone
-failure, a timeout, concurrent interference, or even a meteorite?"
-Those are exactly the sorts of possibilities the model may describe.**
-A VDP partitions a declared carrier of *possible scenarios* into
-semantic regions. A relevant network/zone status can instead be an
-explicitly supplied factor from another Cause/Cone and combined
-with the request using a typed tensor. Even a meteorite's
-architecturally relevant effect might require no more than
-`ServerAvailable | ServerUnavailable`, **if** those regions
-adequately distinguish the consequences being claimed.
-No nondeterministic `Operation.run`, simulated physical clock,
-or runtime foreknowledge is required **merely to state the
-a priori possibilities and their semantic consequences**.
+This change of perspective is central to ArchiScript's value.
+The same visible request can be part of distinct complete
+semantic scenarios: the network is available or unavailable;
+a service responds or times out; an availability zone
+survives or fails. Those are possibilities to **describe
+and distinguish a priori**, not unpredictable branches that
+force a single `Operation` to have several outputs for
+one member. Relevant environmental conditions may be
+modeled within an honestly scoped scenario carrier,
+or supplied by neighboring Causes/Cones and combined
+through a typed tensor.
 
 ```text
-    Request VDP               NetworkStatus VDP
-    (request Cause)           (network/status Cause)
-           |                          |
-           +------------- ⊗ -----------+
-                         |
-           admissible joint tuples
-           + supplier/provenance P/E
-                         |
-                         v
-               Handle Operation
-                         |
-                         v
-                 Response VDP
-
-    Up   -> one declared semantic consequence
-    Down -> another declared semantic consequence
-    NOT: the program knew the future network state
-    NOT: all real failures were automatically covered
+  Request VDP                 NetworkStatus VDP
+  (request Cause)             (network Cause)
+       |                            |
+       +------------- ⊗ ------------+
+                     |
+            admitted joint tuples
+        (grounded suppliers + P/E)
+                     |
+                     v
+                 Operation
+                     |
+                     v
+                Response VDP
 ```
 
-This **does not** mean that the real network or implementation
-is proved physically deterministic. It means that a coarse
-observable request can correspond to multiple **different
-full semantic cases**, and the member-level map may remain
-a well-defined partial function. If the supposedly "uncontrolled"
-case is absent from the declared carrier or source inventory,
-that can be a **genuine completeness or adequacy objection**;
-if an actual network supplier is asserted, it must have
-justified provenance, availability and full contextual P/E.
-A drawn tensor cannot conjure a supplier, all Cartesian pairs,
-runtime delivery, implementation fidelity or liveness.
+The common misunderstanding is **procedural slippage**:
+a human or AI agent begins reviewing semantic possibilities
+but switches to mentally executing software, demanding
+that a component already know which possible scenario
+will occur. That changes the question. Network failure,
+resource contention or even a meteorite disabling a server
+can be modeled through the architecturally relevant
+semantic distinctions, **provided the declared boundary
+and source assumptions really justify them**.
 
-**Practical correction for AI agents:** stop at the first
-"but a network outage could happen unpredictably" objection;
-re-read [the a priori possibility-space explanation](#a-priori-possibility-space),
-[the network/AZ FAQ](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator),
-and the [worked waiting example](#click-wait-and-timeout).
-Then identify the exact missing semantic distinction, supplier,
-tuple or theorem **if there really is one**. Construct a small
-ArchiScript model and attempt its Lean obligations before
-concluding that the calculus lacks a way to describe the case.
-A passing proof validates its stated mathematical scope;
-a failed proof attempt may indicate a modeling gap,
-a genuinely violated invariant or a proof/tool limitation.
-Neither result alone proves real-world model adequacy.
+This is not a simulator, a guarantee that every real-world
+failure was enumerated, or a proof of implementation
+conformance, eventual delivery or physical determinism.
+Actual supplier provenance, full contextual `P/E`,
+and the stated assurance scope remain proof obligations.
+See the [possibility-space explanation](#a-priori-possibility-space),
+[network/AZ example](#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator)
+and [review FAQ](#what-if-a-network-outage-or-another-external-failure-is-uncontrolled-and-nondeterministic)
+for details.
 
 ## AI-first development and codebase auditing
 
