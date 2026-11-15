@@ -66,6 +66,21 @@ Report mandatory invariant violations separately from optional global
 coverage, manual inventory assumptions, real-world adequacy, and runtime
 liveness. Cite the violated Lean contract before proposing a semantic change.
 
+**Temporal composition scope (standard 0.7.0: NOT AUTOMATICALLY VERIFIED):**
+This applies both to repeated invocations of the **same** Cone and
+to ordering/overlap/freshness across **different** Cones. A common
+`World`, tensor input and `reachEffect` tuple do not provide
+timestamps, repeated event identities, `happens-before` or an
+atomicity/serializability guarantee. Do not manufacture two runtime
+invocations by reusing a Cause's canonical origin or by multiplying
+Effect coordinates. An author may define **external temporal/trace
+semantics** with explicit invocation identities, time-indexed states,
+interleavings and assumptions, then prove additional Lean theorems
+about joint states or at-most-once behavior. These proofs are valid
+only relative to that explicitly stated model and are **not part
+of the default ArchiScript certificate**. See the
+[temporal Cone FAQ](../../README.md#can-repeated-executions-of-one-cone-or-executions-of-different-cones-be-related-across-time).
+
 ## A priori semantic modeling / anti-hidden-branching
 
 ### Subdomains, selected members and logical refinement
