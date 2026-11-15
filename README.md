@@ -158,13 +158,51 @@ automatically a *same instant*. See
 **No.** A VDP tensor is the full mathematical Cartesian product. An *actual
 architectural join* needs one explicitly declared Operation with a tensor
 source and independently derived suppliers for each factor. The certified
-context must prove exact full-tuple `Reach = Adm` and projection coverage
-using upstream images. Simply seeing two branches, the same nominal target,
+**input** context must prove exact full-tuple `Reach = Adm` and projection
+coverage using independently derived upstream images. These obligations
+concern which input tuples can be supplied together; they do **not** demand
+that the consuming Operation be defined on every such tuple. Simply seeing
+two branches, the same nominal target,
 or an analytical Effect tensor cannot create that Operation or make an
 inadmissible tuple reachable. See
 [`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean),
 [`SharedTargetJoin`](ArchiScriptExamples/SharedTargetJoin.lean) and
 [`ContractCoverage`](ArchiScriptTests/ContractCoverage.lean).
+
+### Does a verified tensor input make the outgoing Operation a total function?
+
+**No.** The P/E obligations verify the **supplier input relation**, not the
+definedness of the Operation that consumes it. At a supported tensor input
+context `t`, P checks that every independently incoming factor member has
+a partner in a full admissible tuple, without inventing any incoming
+projections. E checks equality of the **full n-ary** reachable and admissible
+tuple relations: `Reach_t = Adm_t`. Pairwise projections alone are not E;
+neither P nor E says that the entire Cartesian product is reachable.
+
+The consuming `g : Operation (X.tensor Y) Z` remains an ordinary **partial
+member map**, `g.run : (X.tensor Y).MemberIndex → Option Z.MemberIndex`.
+Even an input tuple in both `Reach_t` and `Adm_t` may map to `none`.
+For example, with independently justified incoming images and correlated
+supplier semantics, the following is consistent at the level of one
+verified input context (illustrative notation, not Lean syntax):
+
+```text
+Full tensor members:  (x0,y0), (x0,y1), (x1,y0), (x1,y1)
+Reach_t = Adm_t:     {(x0,y0), (x1,y1)}
+
+g(x0,y0) = some z0
+g(x1,y1) = none       # valid partiality on a reachable, admitted input
+```
+
+The images of both input factors are fully accounted for in admissible
+partners; the cross-pairs are not declared reachable. No rule demands
+`g(x1,y1) = some ...` or totality on the full tensor. An **asserted
+downstream consequence** requires an actually defined mapping along its
+producer route, which is a separate question. `none` is mathematical
+undefinedness, **not** evidence that a runtime invocation did not happen.
+See [`InputValid` and `defined_consequence`](ArchiScript/Consequence.lean),
+[`Operation.run`](ArchiScript/Operation.lean), and
+[`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean).
 
 ### What is the difference between a carrier, a Subdomain, and a selected VDP member?
 
@@ -548,6 +586,10 @@ assumptions remain part of the evidence.
 
 Neither an Operation nor a supplier must reach every member of its target VDP.
 `Adm` and `Reach` may be proper subsets of the unchanged full product.
+Crucially, these input-relation obligations **do not require the consuming
+Operation to be total**, even on admitted and reachable full tuples:
+`g.run tuple = none` remains permitted. P/E checks the complete tensor
+input relation, not the definedness or surjectivity of `g.run`.
 
 ### Correlation, partners and complete tuples
 

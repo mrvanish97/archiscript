@@ -122,7 +122,9 @@ it in apparent implementation behavior.
    $\operatorname{Reach}_t=\operatorname{Adm}_t$, or report the failed/unsupported
    obligations. P is necessary coverage, not sufficient joint behavior. Apply
    both to internal and cross-Cone joins, supported cyclic contexts and terminal
-   Effects. A missing factor must surface even when no complete input term can
+   Effects. **P/E is a statement about the complete supplier-input relation, not
+   totality of the consuming Operation**: `g.run` may return `none` even for a
+   reachable admitted tensor tuple. A missing factor must surface even when no complete input term can
    be built; never erase the declared use or define its images from accepted
    tuples. Do not set `Adm := Reach` or assume its proof through an unchecked axiom.
 5. Diagnose in order: incoming members with no admissible full partner;
@@ -237,7 +239,10 @@ E means every reachable tuple must be admitted **and every admitted tuple must
 be reachable**, including any impossible tuple mistakenly admitted by the author.
 Check full n-ary relations; pairwise compatibility and P alone are insufficient.
 The full tensor stays unchanged when Reach and Adm are proper subsets. Neither
-an Expression nor a factor must reach all target members.
+an Expression nor a factor must reach all target members. In particular,
+`InputValid` does not require `g.run` to be defined on every admitted tuple,
+or every member of the full tensor; see the
+[reviewer FAQ](../../README.md#does-a-verified-tensor-input-make-the-outgoing-operation-a-total-function).
 
 The certificate's universal `inputs` still checks every full coherent context;
 the grounding witnesses do not select or restrict those contexts.

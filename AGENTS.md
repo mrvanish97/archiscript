@@ -94,6 +94,8 @@ documented scope limits, external assumptions and optional improvements.
 - Determine incoming images independently from upstream supplier semantics.
   Require every incoming member to have a full admissible partner and exact
   full-tuple `Reach = Adm`. Do not impose surjectivity onto all factor members.
+  These are input-relation proofs, not a totality condition on the outgoing
+  partial Operation: it may be undefined even on an admitted reachable tuple.
   Pairwise checks do not establish an n-ary relation. Independent contract
   meaning and external boundary truth remain architect responsibilities.
 - Before quantifying over complete input terms, require `inputSources` for
