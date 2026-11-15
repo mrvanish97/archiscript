@@ -450,7 +450,7 @@ value**, not a source-selection rule or an
 `Architecture.Inputs` supplier join.
 **Adapt:** justify tags and all relevant source
 distinctions, then define member-level
-`Operation.run : MemberIndex → Option MemberIndex`
+`Operation.run : X.MemberIndex → Option Y.MemberIndex`
 and prove the selected partition obligations.
 The algebra is checked; whether a particular
 tagging faithfully represents the external
