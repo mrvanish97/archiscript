@@ -8,15 +8,17 @@ ArchiScript makes architectural ignorance visible as an unmet semantic or proof
 obligation. An omitted outcome should not disappear behind a convenient carrier,
 a hidden member branch, an invented waiting loop or an unexplained tensor join.
 
-## Important AI reviewer warning: do not revert to runtime thinking
+## Procedural slippage: do not confuse semantic possibilities with execution
 
-**A recurring review failure mode is to correctly read the words
-"a priori semantic possibilities" and then immediately reason as if
-VDP members were concrete runtime messages, or as if one Operation
-must choose an unpredictable future outcome from information known
-at the beginning of execution.** This is the wrong level of analysis.
-When this objection arises, check the semantic model and actual
-Lean obligations **before** presenting it as a defect.
+**Procedural slippage** is a common error in architecture review
+by both humans and AI agents: the reviewer reads "a priori semantic
+possibilities" but then switches to mentally executing a program,
+treating VDP members as concrete runtime messages or asking one
+Operation to choose a future outcome using only information available
+at the beginning of execution. **That changes the object of
+analysis.** When this objection arises, first check the declared
+semantic carrier, supplier paths and actual Lean obligations
+**before** presenting it as a defect.
 
 **"But what about an uncontrollable network outage, an availability-zone
 failure, a timeout, concurrent interference, or even a meteorite?"
