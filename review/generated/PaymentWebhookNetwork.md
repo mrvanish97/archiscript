@@ -1,6 +1,6 @@
 # PaymentWebhookNetwork: one model, several review views
 
-Model revision: `bdadf3604c42`
+Model revision: `e95b5114a0a1`
 
 Review state: **draft** · implementation gate: **CLOSED**
 
