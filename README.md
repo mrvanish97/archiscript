@@ -286,6 +286,70 @@ VDP may be appropriate if the distinction is **not** claimed; merely merging
 different outcomes into an opaque member must not masquerade as having proved
 their separate behavior.
 
+### Does a future-outcome VDP require the running program to know the future?
+
+**No. This is a category error between a priori semantic possibility and
+runtime information.** A `VDP` is a partition of a declared value carrier
+into semantic Subdomains, **not** a set of runtime classes, messages,
+objects, or tags that an implementation must already possess or transmit.
+A model may describe a possible complete scenario without claiming that
+a component can observe or predict it at the start of execution.
+
+An example of an **invalid review objection**:
+
+> "The program has not yet learned when the service will be ready, so
+> distinguishing `ShortWait`, `LongWait`, and `Timeout` is artificial
+> determinism that hides real nondeterminism."
+
+This confuses the **mathematical classification of possible scenarios**
+with an **executable function operating on information currently
+available to one component**. In
+[`PossibilitySpace.lean`](ArchiScriptExamples/PossibilitySpace.lean),
+the mathematical carrier is `Scenario` with a waiting budget and
+`readyAfter : Option Nat`. The three selected regions partition
+that full declared carrier: short readiness, long readiness,
+and timeout (including no readiness). The `decide` Operation
+maps their **semantic member indices** to outcome members.
+Its functional mapping does **not** assert that a click handler
+has read `readyAfter`, knows future readiness, implements a
+waiting algorithm, or guarantees a timeout event.
+
+```text
+    DECLARED A PRIORI SCENARIO SPACE
+    Scenario(budget, readyAfter)
+           |
+           v
+      VDP partition
+       /    |     \
+    Short  Long   Timeout       (regions of possible scenarios)
+       \     |     /
+        member-level Operation
+                |
+          Success / Timeout     (semantic consequences)
+
+    NOT: click handler knows readyAfter when clicked
+    NOT: three runtime message classes must be transmitted
+    NOT: Lean proved eventual delivery or executable waiting
+```
+
+**A legitimate critique would be different:** the chosen scenario
+boundary may omit cancellation, errors, relevant network conditions,
+or other meaningful outcomes; `readyAfter` may be an unjustified
+environmental assumption for the intended scope; the author may
+incorrectly claim that the handler *has* this information; or a
+separate implementation-conformance/liveness claim may lack
+evidence. Those must be evaluated against the particular
+declared boundary and assertion. They are **not** established
+merely by pointing out that the program cannot know the future.
+
+**Reviewer discipline:** before labeling a formal example "hidden
+nondeterminism," quote the exact claim, identify the precise
+VDP member, supplier/Operation, or proof obligation allegedly
+violated, and distinguish **semantic classification** from
+**runtime observability**. See also
+[the a priori possibility-space explanation](#a-priori-possibility-space)
+and [the click/wait/timeout example](#click-wait-and-timeout).
+
 ### Does that ban branching architectures or multiple outgoing Operations?
 
 **No.** These are **different** declared Operations, not two results of one
