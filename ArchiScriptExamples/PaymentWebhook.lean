@@ -1,3 +1,4 @@
+import ArchiScriptExamples.ProofSupport
 import ArchiScript.Operation.Declaration
 import ArchiScript.Boundary
 
@@ -29,24 +30,12 @@ instance : MemberEnumeration InputMember where
   indices := [.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess]
   complete := by intro i; cases i <;> simp
 
-abbrev inputPartition : Partition where
-  Carrier := Input
-  MemberIndex := InputMember
-  carrierNonempty := ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩
-  classify x :=
+def inputPartitionLookup (x : Input) : InputMember :=
     if x.payload.eventId = "" then .malformed
     else if x.payload.status = "success" then
       if x.ledger.alreadyRecorded then .duplicateSuccess else .firstSuccess
     else if x.payload.status = "failed" then .failed
     else .unsupported
-  member_inhabited
-    | .malformed => ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩, rfl⟩
-    | .unsupported => ⟨⟨⟨"p1", "pending"⟩, ⟨false⟩⟩, rfl⟩
-    | .failed => ⟨⟨⟨"p1", "failed"⟩, ⟨false⟩⟩, rfl⟩
-    | .firstSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨false⟩⟩, rfl⟩
-    | .duplicateSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨true⟩⟩, rfl⟩
 
 /-- Human descriptions live beside their predicates; the descriptions are review text. -/
 structure InputRegion where
@@ -67,7 +56,7 @@ def inputRegion : InputMember → InputRegion
 
 def inputMembers (member : InputMember) : Domain Input := (inputRegion member).predicate
 
-theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := by
+theorem inputPartitionLookup_correct : ∀ i x, inputPartitionLookup x = i ↔ inputMembers i x := by
   intro i x
   rcases x with ⟨⟨eventId, status⟩, ⟨alreadyRecorded⟩⟩
   cases i <;>
@@ -75,8 +64,31 @@ theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := b
   by_cases hSuccess : status = "success" <;>
   by_cases hFailed : status = "failed" <;>
   cases alreadyRecorded <;>
-  simp [Partition.member, inputPartition, inputMembers, inputRegion,
+  simp [inputPartitionLookup, inputMembers, inputRegion,
     hId, hSuccess, hFailed] at *
+
+
+theorem inputPartitionLookup_inhabited : ∀ i : InputMember, ∃ x : Input, inputPartitionLookup x = i := fun
+    | .malformed => ⟨⟨⟨"", "success"⟩, ⟨false⟩⟩, rfl⟩
+    | .unsupported => ⟨⟨⟨"p1", "pending"⟩, ⟨false⟩⟩, rfl⟩
+    | .failed => ⟨⟨⟨"p1", "failed"⟩, ⟨false⟩⟩, rfl⟩
+    | .firstSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨false⟩⟩, rfl⟩
+    | .duplicateSuccess => ⟨⟨⟨"p1", "success"⟩, ⟨true⟩⟩, rfl⟩
+
+abbrev inputPartition : Partition :=
+  partitionOfRegions Input InputMember "inputPartition" inputMembers
+    (⟨[.malformed, .unsupported, .failed, .firstSuccess, .duplicateSuccess], by intro i; cases i <;> simp⟩) inputPartitionLookup inputPartitionLookup_correct
+    (by
+      intro i
+      obtain ⟨x, hx⟩ := inputPartitionLookup_inhabited i
+      exact ⟨x, (inputPartitionLookup_correct i x).mp hx⟩)
+    (by
+      obtain ⟨x, _⟩ := inputPartitionLookup_inhabited (Classical.choice (show Nonempty InputMember from ⟨.malformed⟩))
+      exact ⟨inputPartitionLookup x⟩)
+
+theorem inputPartition_has_members : inputPartition.HasMembers inputMembers := by
+  intro i x
+  rfl
 
 /-- Review and handoff carry the semantic member correspondence with the VDP. -/
 abbrev inputSemanticPartition : SemanticPartition where
@@ -109,14 +121,9 @@ instance : MemberEnumeration Decision where
   indices := [.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate]
   complete := by intro i; cases i <;> simp
 
-abbrev decisionPartition : Partition where
-  Carrier := Decision
-  MemberIndex := Decision
-  carrierNonempty := ⟨.reject⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev decisionPartition : Partition :=
+  Partition.closed Decision "Decision"
+    (⟨[.reject, .ignore, .recordFailure, .fulfill, .acknowledgeDuplicate], by intro i; cases i <;> simp⟩) (⟨.reject⟩)
 
 /-- Constructor equality states the members of this closed decision domain. -/
 abbrev decisionSemanticPartition : SemanticPartition where
@@ -145,14 +152,9 @@ instance : MemberEnumeration LedgerCommand where
   indices := [.recordFailure, .recordAndQueueFulfillment]
   complete := by intro i; cases i <;> simp
 
-abbrev ledgerCommandPartition : Partition where
-  Carrier := LedgerCommand
-  MemberIndex := LedgerCommand
-  carrierNonempty := ⟨.recordFailure⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.recordFailure, .recordAndQueueFulfillment], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev ledgerCommandPartition : Partition :=
+  Partition.closed LedgerCommand "LedgerCommand"
+    (⟨[.recordFailure, .recordAndQueueFulfillment], by intro i; cases i <;> simp⟩) (⟨.recordFailure⟩)
 
 /-- Constructor equality states the members of this closed command domain. -/
 abbrev ledgerCommandSemanticPartition : SemanticPartition where
@@ -287,6 +289,7 @@ theorem duplicate_requests_no_ledger_command :
 theorem same_event_different_ledger_member :
     inputPartition.classify ⟨⟨"p1", "success"⟩, ⟨false⟩⟩ = .firstSuccess ∧
     inputPartition.classify ⟨⟨"p1", "success"⟩, ⟨true⟩⟩ = .duplicateSuccess := by
-  constructor <;> rfl
+  constructor <;> apply (inputPartition.self_member _ _).mp <;>
+    simp [Partition.member, inputPartition, partitionOfRegions, Subdomain.root, inputMembers, inputRegion]
 
 end ArchiScriptExamples.PaymentWebhook

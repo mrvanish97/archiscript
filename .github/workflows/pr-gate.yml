@@ -31,14 +31,18 @@ jobs:
           test: false
           lint: false
 
-      - name: Lake build
-        run: lake build
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Negative Lean checks
-        run: bash scripts/check-negative.sh
+      - name: Lean proof and trust gate
+        run: uv run --no-project python scripts/verify-lean.py
 
-      - name: Skill API smoke
-        run: lake env lean skills/archiscript/examples/CurrentApi.lean
+      - name: Preserve proof reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-proof-reports
+          path: .lake/reports/
 
       - name: Review exporter smoke
         run: |
@@ -55,7 +59,7 @@ jobs:
           python-version: "3.12"
 
       - name: Python repository tests
-        run: python -m unittest discover -s scripts -p "test_*.py"
+        run: uv run --no-project python -m unittest discover -s scripts -p "test_*.py"
 
       - name: Set up Node
         uses: actions/setup-node@v4

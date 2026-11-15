@@ -11,24 +11,33 @@ ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "review/generated"
 REVIEW = ROOT / "review/payment-webhook-network.review.json"
 MODEL_SOURCES = (
-    "ArchiScript/Partition.lean",
-    "ArchiScript/Boundary.lean",
-    "ArchiScript/Operation.lean",
-    "ArchiScript/Operation/Declaration.lean",
-    "ArchiScriptExamples/PaymentWebhook.lean",
-    "ArchiScriptExamples/PaymentWebhookNetwork.lean",
+    *sorted(str(path.relative_to(ROOT)) for path in (ROOT / "ArchiScript").rglob("*.lean")),
+    'ArchiScript.lean',
+    'lean-toolchain',
+    'lakefile.toml',
+    'ArchiScriptExamples/ProofSupport.lean',
+    'ArchiScriptExamples/PaymentWebhook.lean',
+    'ArchiScriptExamples/PaymentWebhookNetwork.lean',
+    'scripts/export-webhook-network.lean',
+    'scripts/build-webhook-network-showcase.py',
 )
 
 
-def revision(projection, review):
+def source_fingerprint():
     digest = hashlib.sha256()
     for name in MODEL_SOURCES:
         digest.update(name.encode())
         digest.update((ROOT / name).read_bytes())
-    digest.update(json.dumps({"projection": projection, "review": review},
-                             sort_keys=True, ensure_ascii=False,
-                             separators=(",", ":")).encode())
-    return digest.hexdigest()[:12]
+    return digest.hexdigest()
+
+
+def revision(projection, review, checked_sources=None):
+    contract = {"sources": checked_sources or source_fingerprint(),
+                "projection": projection,
+                "review": {key: value for key, value in review.items()
+                           if key not in {"approval", "state"}}}
+    return hashlib.sha256(json.dumps(contract, sort_keys=True, ensure_ascii=False,
+                                    separators=(",", ":")).encode()).hexdigest()[:12]
 
 
 def export_projection():
@@ -63,6 +72,11 @@ def validate_definition(definition, member_id):
             raise ValueError(f"incomplete subdomain definition: {member_id}")
     elif status == "lean-predicate":
         return
+    elif status == "named":
+        parts = definition.get("parts", [])
+        if len(parts) != 1:
+            raise ValueError("named semantic definition requires one underlying definition")
+        validate_definition(parts[0], member_id)
     elif status in {"intersection", "union", "relative-complement"}:
         parts = definition.get("parts", [])
         if len(parts) != 2:
@@ -279,10 +293,13 @@ def markdown(projection, review, model_revision):
 
 
 def main():
+    checked_sources = source_fingerprint()
     projection = export_projection()
+    if checked_sources != source_fingerprint():
+        raise RuntimeError("model sources changed while the Lean projection was built")
     review = json.loads(REVIEW.read_text())
     validate(projection, review)
-    model_revision = revision(projection, review)
+    model_revision = revision(projection, review, checked_sources)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     snapshot = {"modelRevision": model_revision, "projection": projection, "review": review}
     (OUTPUT / "PaymentWebhookNetwork.snapshot.json").write_text(

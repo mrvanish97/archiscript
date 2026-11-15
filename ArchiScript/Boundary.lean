@@ -28,44 +28,11 @@ structure CarrierClosure (α : Type u) where
   values : List α
   complete : ∀ x : α, x ∈ values
 
-/-- A definition indexed by its exact Lean denotation. Composition cannot
-describe a different predicate from the one used by `HasMembers`. The atomic
-case is a Lean predicate, not a prose formula or a proof of external facts. -/
-inductive DomainDerivation (α : Type u) : Domain α → Type (u + 1) where
-  | predicate (meaning : Domain α) : DomainDerivation α meaning
-  | opaque (reason : String) (identified : reason ≠ "")
-      (meaning : Domain α) : DomainDerivation α meaning
-  | intersection {a b : Domain α} (left : DomainDerivation α a)
-      (right : DomainDerivation α b) :
-      DomainDerivation α (fun x => a x ∧ b x)
-  | union {a b : Domain α} (left : DomainDerivation α a)
-      (right : DomainDerivation α b) :
-      DomainDerivation α (fun x => a x ∨ b x)
-  | relativeComplement {parent excluded : Domain α}
-      (base : DomainDerivation α parent) (removed : DomainDerivation α excluded)
-      (contained : ∀ x, excluded x → parent x) :
-      DomainDerivation α (Domain.relativeComplement parent excluded contained)
-
-def DomainDerivation.hasOpaque {meaning : Domain α}
-    (definition : DomainDerivation α meaning) : Bool :=
-  match definition with
-  | .predicate _ => false
-  | .opaque _ _ _ => true
-  | .intersection left right | .union left right => left.hasOpaque || right.hasOpaque
-  | .relativeComplement base removed _ => base.hasOpaque || removed.hasOpaque
-
 structure SelectedMember (α : Type u) where
   meaning : Domain α
   definition : DomainDerivation α meaning
 
-/-- A supporting subdomain may overlap other regions and need not be a VDP
-member. Its base and containment are explicit even when meaning is opaque. -/
-structure NamedSubdomain (α : Type u) where
-  name : String
-  base : Domain α
-  meaning : Domain α
-  contained : ∀ x, meaning x → base x
-  definition : DomainDerivation α meaning
+abbrev NamedSubdomain := Subdomain
 
 /-- Review/handoff evidence. Low-level partitions remain freely constructible;
 this object records a carrier origin and the status of every selected member. -/

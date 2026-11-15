@@ -1,464 +1,100 @@
-# Small evaluation set
+# Observable authoring checks
 
-These cases are manual decision checks, not a behavioral benchmark or proof of
-automatic skill invocation. Review whether an answer makes the expected
-modeling decision and exposes missing assumptions.
+Use the public smoke and executable repository tests to evaluate an authoring
+change. Ordinary builds remain positive; negative files declare expected Lean
+diagnostics and run separately.
 
-1. **Missing invalid input**
-   - Prompt: “Model login input as either a known user or a new valid user.”
-   - Expected: reject the success-only carrier unless an upstream guarantee is
-     explicit. Ask what raw boundary is independently supplied and what forms
-     it admits; adding an `invalid` constructor alone is not evidence of
-     adequacy.
+## Possibility-space and local-contract checks
 
-2. **Unjustified parameter**
-   - Prompt: “Parameterize report generation by locale; every locale exposes
-     the same generate and download operations but produces different text.”
-   - Expected: use an ordinary partition/model; changed values do not change
-     outbound-operation availability.
+The [README's worked explanation](../../../README.md#click-wait-and-timeout)
+connects these cases to the architectural error: introducing an unexplained
+distinction after choosing an inadequate carrier or member map. These are
+observable mathematical checks, not runtime simulation tests.
 
-3. **Registry branch identity**
-   - Prompt: “Give two operations a branch named `existing`, then refer to the
-     first branch from a theorem.”
-   - Expected: distinct `(OperationName, BranchName)` addresses; resolve the
-     first through its registry and require explicit effect premises.
+| Scenario | Positive evidence / rejected shortcut |
+| --- | --- |
+| One click; short, long and timeout scenarios | [PossibilitySpace.lean](../../../ArchiScriptExamples/PossibilitySpace.lean): `Scenario` retains every natural budget and optional readiness delay; `scenarioSplit` proves inhabited, exhaustive, disjoint regions; `decide` is functional. Includes immediate readiness, deadline equality, late arrival and no arrival. This is a declared scenario boundary, not raw-input validation or a Cone certificate. |
+| One `Waiting` member; one Operation; two unequal outputs | [HiddenWaitingBranch.lean](../../../Test/Negative/HiddenWaitingBranch.lean): the successful branch compiles; the timeout branch on the same `decide` and `()` fails at its mapping proof. `PossibilitySpace.no_hidden_branch` proves the general contradiction using `Operation.single_output`. Do not invent a polling loop or reinterpret `none` to repair it. |
+| Multiple outgoing Operations | [CorrelatedJoin.lean](../../../ArchiScriptExamples/CorrelatedJoin.lean): distinct `.left` and `.right` generators share `sourceTrace`; `leftTrace` and `rightTrace` are legitimate producer paths, not the same-Operation contradiction or multiple invocations. |
+| Correlated diagonal join | In `CorrelatedJoin`, `input_exact id` and `input_valid id` establish the diagonal relation and both projections at the explicit `.join`. All four pairs remain in the mathematical tensor. A full-four-pair Adm would assert two unreachable tuples. |
+| Actual incoming orphan | [ContractCoverage.lean](../../../ArchiScriptTests/ContractCoverage.lean): `orphan_incoming` and `orphan_has_no_partner` expose a supplied member discarded by a narrow contract; `orphan_invalid` rejects `InputValid` and `orphan_not_unreachable` rejects either `InputStatus` alternative. [TensorVerification.lean](../../../ArchiScriptTests/TensorVerification.lean) also checks the finite `Verification.unpartnered` diagnostic. |
+| Invented incoming coordinate | `ContractCoverage.invented_projection` admits right-`false` although the actual right supplier is constant `true`; `invented_not_incoming` and `invented_invalid` reject that projection and typed `InputValid`. The nominal Bool VDP still contains `false`. Do not impose surjectivity or demand a partner for its unreachable member. |
+| Three-factor P and all pair projections pass; E fails | `ContractCoverage.parity_unary_projection` and `parity_projections` cover all unary and pair projections. `full_reach` supplies all eight triples; `parity_invalid` and `parity_status_rejected` reject the four-triple contract through the actual typed APIs. `TensorVerification.pairwise_is_insufficient` supplies `(false,false,true)` and finite tuple-difference diagnostics. |
+| Legitimate cross-Cone join | [CrossCone.lean](../../../ArchiScriptExamples/CrossCone.lean): distinct Boolean Causes have equal initial VDPs; `cValue` explicitly supplies `.join` from both, including the external cycle. `input_valid` and `certified` retain the declared boundary/availability conditions. Equal VDPs do not merge the sources. |
+| Repeated invocation disguised as internal fan-out | [RootCoherence.lean](../../../ArchiScriptTests/RootCoherence.lean): `mixed_input_not_context` and `mixed_result_not_inCone` reject canonical/noncanonical roots of one Cause, while `fanout_context`, `fanout_consequence`, `fanout_provenance_distinct` and `cross_context` preserve genuine paths and distinct-Cause joins. [MixedRootContext.lean](../../../Test/Negative/MixedRootContext.lean) fails only at the impossible coherence proof. No timed simulation API is implied. |
+| Nested external mixed roots | `RootCoherence.nested_owner_only_guard` shows that the owner's guard and local supplier witness pass; `nested_input_not_context` and `nested_result_not_inCone` reject the other Cause's hidden root conflict. Equal evaluations do not identify provenance or establish `RootCoherent`. |
+| Rooted X; unsourced Y; declared X ⊗ Y input | [SourceCoverage.lean](../../../ArchiScriptTests/SourceCoverage.lean): `suppliedX`, `missing_sources_rejected` and `no_certificate` prove the missing full input cannot erase the per-generator `inputSources` obligation. `unit_not_reached` and `no_observable_cone` reject empty-product success; changing only the Effect contract still leaves the source fault. |
+| Every independently incoming member needs a full partner | [Consequence.lean](../../../ArchiScript/Consequence.lean): `CertifiedDeclaredArchitecture.input_partner` produces a supported full context and a complete tuple in both Adm and Reach, with the supplied member at its position. Grounding witnesses do not restrict universal `inputs` to a selected context list. |
+| Source-only event, explicitly unobservable | `SourceCoverage.sourceOnly` certifies `ConeStatus.unobservable` using `sourceOnly_unobservable`; the Effect contract is empty and no unit tuple is reached. `hasCone` guarantees a checked status, not an observable `ConeValid`. |
+| All input images empty despite structural suppliers | [Unobservable.lean](../../../ArchiScriptTests/Unobservable.lean): `join_no_incoming` proves `InputSources.unreachable`; `input_status` supplies empty actual images, noTuple and noContract. `certified` proves unobservable status despite nonempty actual Effect positions. This is mathematical partiality, not runtime non-execution. |
+| Ungrounded cyclic component | [UngroundedCycle.lean](../../../ArchiScriptTests/UngroundedCycle.lean): `ungrounded` and `source_unreachable` prove there is no coherent rooted supplier, despite a real typed return route. `certified` uses explicit unobservable status; graph arrows alone create no reachability. |
+| Infinite raw roots, finite canonical-origin cache | `SourceCoverage.infiniteRootBasis_valid` proves a valid cache with `RootInstance := Nat` and roots `[0]`. Completeness covers each Cause's designated origin, not every raw root value. `RootCoherence` also checks that a cache list containing `true` still seeds only designated `false` roots. |
 
-4. **Legitimate Lean inductive label**
-   - Prompt: “Use `inductive RequestIndex | zero | positive` for a classifier.”
-   - Expected: allow it. Explicitly closed constructor domains and proof
-     induction are legitimate; unjustified generalization is the problem.
+A useful evaluation verdict has two parts: **Level A**, the precise conditional
+local obligations proved (P and E plus required inhabited/unreachable status),
+and **Level B**, the external boundary, omitted-cause, domain-contract and
+implementation assumptions still requiring architectural review. An independently
+authored Adm must precede the equality proof; `Adm := Reach` and unchecked axioms
+are not acceptable substitutes. E checks every full tuple: every reachable tuple
+must be admitted and **every admitted tuple must be reachable**. Impossible
+tuples admitted by mistake remain failures in Adm minus Reach. No case predicts a future PRNG/CSPRNG sample,
+assigns probability weights or proves timeout delivery, overall design quality
+or **global Cone/Expression coverage (NOT AUTOMATICALLY VERIFIED)**.
 
-5. **Purpose before syntax**
-   - Prompt: “What is ArchiScript for, and how should I model a project loader?”
-   - Expected: explain a checkable architectural contract; start from supplied
-     strings/URIs, derive semantic objects, then connect them with partial
-     arrows. Explain how composition exposes incompatible paths and distinguish
-     subdomain relationships from the operation graph and runtime order.
+## Manual inventory-review cases
 
-6. **Responsibility on one branch**
-   - Prompt: “Registration belongs to the API team, but creation belongs to the
-     storage team. An alias should keep those owners.”
-   - Expected: operation `responsibilityOwners`, branch override via `some`,
-     inheritance via `none`, canonical resolution for aliases. Keep team
-     responsibility separate from `SourceRef`; no invented effect guarantee.
+Apply the [skill's inventory audit](../SKILL.md#manual-audit-of-the-complete-declared-inventory)
+to the complete declared inventories before making architecture-wide claims:
 
-7. **Proportionate proofs**
-   - Prompt: “Add a theorem for every branch, alias, and contract field.”
-   - Expected: explain which statements harden requirements; use core laws and
-     fields directly for repetitions. Honor an explicit request for API tests
-     without presenting reflexivity as verification of production effects.
+| Case | Required author/reviewer response |
+| --- | --- |
+| `Cause → X`, isolated `Y ↔ E` | [UngroundedCycle.certified](../../../ArchiScriptTests/UngroundedCycle.lean) is accepted despite no canonical producer for Y/E. Flag the component; a green build, its typed marker and empty images do not prove inventory grounding. |
+| Unattached nodes without arrows | [SourceCoverage.sourceOnly](../../../ArchiScriptTests/SourceCoverage.lean) retains unrelated Y/E declarations in an accepted unobservable certificate. Enumerate these too; Cause-starting traversal alone misses them. |
+| Isolated component with no connecting dependency/context | Do not claim it necessarily changes unrelated rooted Expressions' reachable tuples. Report the coverage gap explicitly. |
+| Unrelated SCC owned by an observable Cone | Explain that `BoundariesComplete` may refuse the overall certificate for lack of a boundary path even when the rooted route's tuples are unchanged. A cyclic marker can change that structural result without establishing production. This is a documented limitation, not an additional compiled fixture. |
+| Unexplained disconnected declaration | Ask the architect to remove an accidental leftover, document an intentional unreachable/excluded component, or repair an omitted Cause/dependency. Record the disposition as author judgment and an unverified coverage assumption. |
+| Later connection to a join | Recheck mandatory source accounting and complete contextual P/E; live X with unsourced Y fails now and is not a deferred orphan/SCC diagnostic. |
 
-8. **Flat declaration with justified regions**
-   - Prompt: “My string VDP lists EmptyString, InvalidUri, and Uri, each defined
-     through the appropriate parent and complement. Must I add a taxonomy?”
-   - Expected: no. Check the selected members' correspondence, coverage, and
-     disjointness; accept the flat declaration. No extra tree or warning.
+Inventory-wide diagnostics and all-generated-Expression/Cone coverage are separate
+[0.8.0 tasks](../../../plans/0.8.0.md). Neither is supplied by this manual audit.
 
-9. **Independent overlapping subdomains**
-   - Prompt: “EmailPresent and NamePresent overlap. Must I change their definitions?”
-   - Expected: supporting subdomains can overlap and need not exhaust their
-     parent. Partition obligations apply only when selecting distinct VDP
-     members; use intersections/complements or grouping at that boundary.
+## Other semantic and proof regressions
 
-10. **Coarser architectural resolution**
-    - Prompt: “Two field predicates induce four combinations, but the consumer
-      only needs valid versus invalid.”
-    - Expected: retain the carrier and group the three failing regions into one
-      member. Explain that another VDP may expose all four; do not force a
-      one-leaf-per-region tree onto the coarser VDP.
+| Scenario | Expected evidence |
+| --- | --- |
+| Multiple trees with a shared root | Both splits prove coverage/disjointness despite inter-tree overlap |
+| Empty named region, gap, overlap, wrong parent | Construction or required proof fails; empty intermediate predicates remain legal |
+| Project-reference URI boundary | Eight success/failure leaves from verified ancestry; successful leaves do not cover Uri |
+| Infinite carrier / finite members | Nat example covers every natural without enumerating carrier values |
+| Empty string, array and absence values | Real inhabitants of explicitly chosen predicates |
+| Constant Boolean Operation | True-only image; False remains a member of the target |
+| Partial map | Undefined member omitted from the image without an execution claim |
+| Linear cyclic route | Finite typed walk with the expected alternating member |
+| Swap loop | Cumulative closure contains both members; successive powers do not stabilize |
+| Delayed terminal discovery | Stable terminal observations before closure cannot terminate the analysis |
+| Shared-source join | Full product retained; off-diagonal tuples rejected by reference/contract agreement |
+| Constant supplier at a join | Projections use its strict incoming image, not all target members |
+| Three Boolean factors | Pairwise completeness does not certify all triples |
+| Missing partner / extra or missing tuple | Witnessed orphan, `Reach` minus `Adm`, or `Adm` minus `Reach` |
+| Missing supplier / false tensor return | Typed occurrence or composition fails |
+| Infinite histories | No finite configuration enumeration follows from finite member alphabets |
+| Missing context certificate | Public certificate construction fails |
+| Missing Cause inventory | Mandatory `causeNonempty` prevents an empty architecture certificate |
+| Direct or transitive missing proof / custom axiom | Compiled dependency audit rejects the result |
+| Conditional result labeled concrete | Certificate audit rejects unsupplied parameters |
+| Admissibility defined from Reach | Actual-field audit rejects untagged, indirect, inline and opaque complete certificates; negatives allow only CONTRACT_AUDIT errors |
+| Selected family claims completeness | Scoped certificate and explicit unverified global status remain distinct |
+| Two arrows targeting the same nominal C | Certified one-Cause Cone, two derived positions; equal/different images and correlated joint relation |
+| One shared multi-step h;k suffix | Both histories survive one authored downstream graph |
+| Collapsed coordinate or fake shared-target join | Missing basis closure, wrong producer provenance or missing tensor supplier fails |
+| Entry plus feedback at a marked boundary | Typed return allows one deliberate observation; repeated visits enlarge its image |
 
-11. **Unjustified generalization**
-    - Prompt: “The only project locators I support are directory, package.json,
-      and index URIs, so their union is the entire input carrier.”
-   - Expected: distinguish an explicitly closed protocol from an externally
-     supplied URI boundary. In the latter case, retain unsupported and failed
-     inputs using the established parent and relative complements. Explain that
-     this is a review finding, not a current automatic Lean diagnostic.
+The shipped gate is:
 
-12. **Circular semantic correspondence**
-    - Prompt: “I set `members i := P.member i`; `P.HasMembers members` proves the
-      classifier has the right meaning. Can I hand this off?”
-    - Expected: reject it as independent semantic justification. Ask for
-      membership predicates motivated by the boundary and stated separately
-      from `P.classify` and `P.member`; classifier fibers remain valid derived
-      views.
+```bash
+uv run --no-project python scripts/verify-lean.py
+```
 
-13. **Legitimate narrow boundary**
-    - Prompt: “An upstream parser supplies `ValidatedEmail` with a checked
-      contract; should I replace the carrier with all strings?”
-    - Expected: accept the narrow carrier if the upstream guarantee is real and
-      in scope, and record that boundary evidence. Do not mechanically broaden
-      every carrier.
-
-14. **Mutable observation without context**
-    - Prompt: “Classify a payment event using `alreadyRecorded(eventId)` from a
-      database lookup, then act on the classification.”
-    - Expected: ask which snapshot or transaction fixes membership, surface
-      the race between observation and effect, and leave conformance unknown
-      until the implementation contract is reviewed.
-
-15. **Genuine temporal nondeterminism**
-    - Prompt: “Model a remote call that may time out or succeed based on
-      scheduler and network timing as one deterministic member mapping.”
-    - Expected: distinguish missing source context from genuinely temporal
-      outcomes. Do not invent fictional information solely to preserve a
-      deterministic operation; state the calculus limit or use a complementary
-      model.
-
-16. **Binding without conformance**
-    - Prompt: “`duplicateSuccess` points to `webhook.ts#handleWebhook`, so mark
-      the implementation verified.”
-    - Expected: report the declared or resolved location separately from code
-      conformance. Ask for explicit evidence and retain unknown effects.
-
-17. **Same payload, different preexisting state**
-    - Prompt: “A webhook JSON object has `eventId` and `status`. Define
-      `duplicateSuccess` as a property of that JSON object and partition only
-      the payload.”
-    - Expected: reject the payload-only carrier for a decision that depends on
-      existing ledger state. Model a product such as
-      `WebhookPayload × LedgerObservation`, with a stated source and observation
-      context for the latter. Show that identical payloads paired with different
-      ledger states reach different members. Do not claim the ledger snapshot
-      remains current without an explicit contract; keep that risk visible.
-
-18. **Practical union carrier**
-    - Prompt: “The upstream protocol explicitly admits either a JSON request
-      or a signed binary envelope. Is a union carrier forbidden?”
-    - Expected: allow the union if that is the independently established
-      boundary. Define semantic members over the full union and check coverage.
-      Do not confuse a legitimate carrier union with an unjustified union of
-      only the successful cases.
-
-19. **Constructor closure sold as boundary evidence**
-    - Prompt: “The real input is JSON, but my `inductive ValidInput` has only
-      `newUser` and `existingUser`; I proved both constructors exhaustive, so
-      the carrier is complete.”
-    - Expected: reject the conclusion. `CarrierClosure` concerns values inside
-      `ValidInput`; it says nothing about what the JSON boundary can emit.
-      Keep the wider boundary or record a scoped upstream guarantee. The VDP
-      must then cover every value of whichever carrier is justified.
-
-20. **Opaque predicate disguised as a formula**
-    - Prompt: “I declared `opaque scanPasses : Domain Input` and used
-      `.predicate scanPasses` so the review says `lean-predicate`.”
-    - Expected: identify the evidence laundering. Use `.opaque reason
-      (by decide) scanPasses`, keep the reason visible through composed derivations, and
-      do not infer a passing scan from an addressable result ID. A named Lean
-      constant is not automatically an inspectable formula.
-
-21. **Narrowing with no wider origin**
-    - Prompt: “The decoder emits `Nat`; I recorded only the post-decoder type
-      and called it an external narrowing from JSON.”
-    - Expected: require the upstream origin in `externalNarrowing`; identify
-      the external validator, scope, claim, and revision. Do not model the
-      decoder as an ArchiScript carrier transformation: operations map members
-      only. The guarantee remains trusted unless imported or checked, and
-      rejected raw inputs do not vanish from the architecture's boundary account.
-
-22. **Same type, different boundary**
-    - Prompt: “Two services both use `Nat`. Can I reuse one service's carrier
-      origin to justify a partition of the other's input?”
-    - Expected: no. Lean type equality alone does not establish boundary
-      identity. Tie the source, scope, and revision to the actual appearance or
-      model operation; flag any unmatched identity as a review gap.
-
-23. **Self tensor mistaken for one value**
-    - Prompt: “Both factors use the same request VDP, so classify one request
-      twice and drop the mixed member pairs.”
-    - Expected: retain two independent carrier positions and the full member
-      product. Same-value synchronization requires a separate explicit relation.
-
-24. **Unrelated tensor factors**
-    - Prompt: “Account A and Payment B seem unrelated; make their tensor fail
-      to compile.”
-    - Expected: allow the mathematical tensor and ask why these factors are
-      jointly relevant. Record a review question without filtering members.
-
-25. **Branches mistaken for concurrent arrows**
-    - Prompt: “An operation maps `valid` and `invalid` to different outputs, so
-      report a race.”
-    - Expected: treat them as alternatives of one member map. Distinct arrows
-      with independent sources may prompt ordering review; fan-in alone still
-      cannot prove a race without resource/effect semantics.
-
-26. **Tensor mistaken for common refinement**
-    - Prompt: “Two partitions share a carrier, so tensor them by intersecting
-      their members and discard empty intersections.”
-    - Expected: tensor uses two carrier slots and all member pairs. A
-      same-carrier common refinement is a different construction.
-
-27. **Compilation mistaken for architectural correctness**
-    - Prompt: “The Lean model compiles, so can I tell the team the architecture
-      is correct?”
-    - Expected: no. Explain that Lean checks the necessary obligations encoded
-      by ArchiScript for the declared carrier, predicates, mappings, and laws.
-      It does not discover omitted requirements, validate the real boundary, or
-      prove production conformance. Keep human review and unresolved assumptions
-      explicit.
-
-28. **Rebracketing changes a review finding**
-    - Prompt: “`(Request ⊗ Ledger) ⊗ Config` looks risky, but
-      `Request ⊗ (Ledger ⊗ Config)` does not. Keep only the first warning.”
-    - Expected: reject syntax-tree-sensitive reasoning for a factor-only concern.
-      The associator makes these canonically isomorphic. Normalize the review
-      question across rebracketing; similarly do not invent a semantic ordering
-      from symmetric factor presentation.
-
-29. **Concrete API replaced by an imagined category framework**
-    - Prompt: “Import a generic Mathlib monoidal-category instance for VDP and
-      rewrite the ArchiScript API around it.”
-    - Expected: inspect the installed API first. The current public calculus
-      exposes concrete tensor, unit, structural isomorphisms, member operations,
-      coherence theorems, typed expressions, and local normalization
-      certificates. Do not invent an unimplemented abstraction merely because
-      the mathematics admits one.
-
-30. **Independent fan-in overclaimed as a race**
-    - Prompt: “A manual trigger and a timer trigger both map into the same
-      ReconcileMode VDP, so report a concurrency bug.”
-    - Expected: recognize the independently sourced fan-in as a concurrency
-      review boundary, not a proved bug. Ask whether the paths touch the same
-      mutable resource and what ordering, atomicity, idempotency, or
-      commutativity guarantees exist.
-
-31. **Cycle overclaimed as concurrency**
-    - Prompt: “ReconcileMode -> ReconcileNext -> ReconcileMode is a cycle, so
-      this architecture is concurrent.”
-    - Expected: reject the inference. A cycle can be an ordinary sequential
-      retry/state-machine loop. It becomes more interesting when an independent
-      source can enter the loop and the involved operations share mutable
-      effects; keep the stronger concurrency claim UNKNOWN without such
-      semantics.
-
-32. **Fan-out incorrectly encoded with tensor**
-    - Prompt: “One ReservationMutation should persist a write and publish an
-      outbox message, so model it as
-      `persistMutation.tensor publishMutation`.”
-    - Expected: reject that encoding. `Operation.tensor` consumes two
-      independent source slots. One semantic mutation with two downstream
-      contracts is ordinary graph fan-out: two operations with the same source
-      VDP.
-
-33. **Tensor operation diagram exploded mechanically**
-    - Prompt: “Draw every member arrow induced by
-      `(parseUser ⊗ planInventory) ⊗ id` so reviewers can see the tensor.”
-    - Expected: prefer the factored view. Show the elementary VDP member maps
-      for `parseUser`, `planInventory`, and `id`, then state that their
-      tensor induces the product operation. Expand Cartesian member arrows only
-      when a specific product branch is the review focus. Do not hide or prune
-      product members; hide only mechanically induced detail.
-
-34. **Focused tensor view silently drops members**
-    - Prompt: “PaymentTrigger ⊗ ReservationState has ten members, but only show
-      the two `held` cases and omit the rest from the diagram.”
-    - Expected: keep the focused view compact but account for the hidden product
-      members explicitly. Label the total cardinality and add a display-only
-      grouping such as `[display group: other 8 members]`; state that the group
-      is not a VDP member and list or otherwise account for its contents. Never
-      imply that tensor pruned those combinations.
-
-35. **Diagram styling mistaken for semantics**
-    - Prompt: “Use the same VDP container styling around three operation factors
-      so the tensor looks visually grouped.”
-    - Expected: reject the ambiguous visual grammar. Reserve VDP containers for
-      actual VDPs. For operation algebra use operation-shaped nodes and label the
-      view explicitly. Follow the established/default diagram theme; do not make
-      hard-coded colors carry semantic meaning.
-
-36. **Expression mistaken for a multi-target arrow**
-    - Prompt: “`[f,g]` branches internally, so call it one expression with two
-      targets.”
-    - Expected: reject the typing claim. Every `Expression X Y` has exactly one
-      source and one target. Copairing may have branching syntax while denoting
-      one morphism. Use an expression family when one source has several selected
-      consequence expressions to distinct targets.
-
-37. **Fan-out family collapsed into tensor output**
-    - Prompt: “Persist, publish, and next-state all start from one mutation. Make
-      one expression from the mutation to
-      `Write ⊗ Outbox ⊗ State`.”
-    - Expected: do not infer such a tensor-valued arrow. Keep three expressions
-      with the same source in one family unless an actual operation produces all
-      three independent output coordinates. Sibling consequences have no modeled
-      order or runtime parallelism.
-
-38. **Composition sold as deletion of an intermediate VDP**
-    - Prompt: “`A -> B -> C` composes to `A -> C`, so normalization removes
-      `B` from the architecture.”
-    - Expected: reject the conclusion. The composite morphism exists while
-      nominal `B` remains an object. A view that intentionally hides `B` is
-      an architecture projection, not ordinary 0.5.0 normalization.
-
-39. **Whole-architecture isomorphism required too early**
-    - Prompt: “Do not simplify `[f,g] ∘ ι₁` until we have defined a complete
-      isomorphism relation for arbitrary architectures.”
-    - Expected: use the local coproduct law and a same-endpoint
-      `Expression.Rewrite` certificate. Whole-architecture equivalence is
-      deferred until transformations actually change family or nominal-boundary
-      structure.
-
-40. **Distributive factoring overclaimed as one database read**
-    - Prompt: “`(A ⊗ R) ⊕ (B ⊗ R) ≅ (A ⊕ B) ⊗ R`, therefore both alternatives
-      share exactly one runtime fetch of R.”
-    - Expected: state only the structural result: one common semantic
-      `R` coordinate after canonical distributive transport. Do not infer
-      physical reads, object identity, caching, transactions, or scheduling.
-
-41. **Coproduct summand mistaken for dependency**
-    - Prompt: “The expression enters `A ⊕ B` through `ι₁ : A -> A ⊕ B`, so
-      the analysis depends on a materialized B.”
-    - Expected: no. The injection needs only the A value. A coproduct summand is
-      an alternative, not a simultaneous coordinate. Use tensor source factors
-      when independent values must be materialized together.
-
-42. **Producer inferred through tensor projection**
-    - Prompt: “A family ends at `X ⊗ S`, so record it as a producer of S.”
-    - Expected: reject the automatic inference. Tensor is not a categorical
-      product in the partial-map calculus and supplies no canonical projection
-      to S. Record the actual target unless an explicit operation or other
-      justified relation produces S.
-
-43. **Cycle expanded into an infinite family**
-    - Prompt: “There is a cycle through State, so enumerate every finite number
-      of loop traversals in the expression family.”
-    - Expected: do not enumerate categorical closure. Each selected expression
-      is finite and a family contains finitely selected expressions. Cyclic
-      structure also does not by itself assert a runtime loop or schedule.
-
-44. **Independent context appears midway through an expression**
-    - Prompt: “Start the family at X, then tensor in external State later as
-      X -> X ⊗ State so the planner can use it.”
-    - Expected: reject the structural step. Tensor has no canonical injection
-      X -> X ⊗ State and cannot acquire an independent value. Put State in the
-      materialized family source, or use an explicit preceding ordinary
-      Operation only when that Operation genuinely produces the paired value.
-
-45. **Normalizer searches arbitrary carrier bijections**
-    - Prompt: “Two VDPs have the same number of members. Search for any carrier
-      bijection and use it to normalize one into the other.”
-    - Expected: reject this normalization policy. Mathematical VDP isomorphism
-      requires a full classified-carrier `PartitionIso`, and normalization
-      should use known/proved canonical structural isomorphisms rather than
-      inventing arbitrary bijections between unrelated architecture objects.
-
-46. **One consequence question split by coproduct branch**
-    - Prompt: “User, payment, and expiry are three entry alternatives for the
-      same reservation consequence analysis, so create three unrelated
-      expression families.”
-    - Expected: prefer one family when the consequence question and
-      materialization boundary are the same. Use a design-time coproduct source
-      for the alternatives and keep branch-specific consequences partial where
-      necessary. Separate families only when the analysis question or source
-      materialization boundary is genuinely different.
-
-47. **Global enumeration before structural composition**
-    - Prompt: “Prove a reservation inventory consequence by enumerating every
-      user, payment, expiry, and state member, even though
-      `inventoryEffect_factorizes` is already proved.”
-    - Expected: first reuse the consumer-specific local equality and assemble
-      the unchanged global claim using composition and associativity. Do not
-      enumerate all input combinations unless the local route fails.
-
-48. **One coarse cut reused for incompatible consumers**
-    - Prompt: “The inventory consumer merges cancel and expire, so prove
-      the same factorization for the outbox without inspecting its outputs.”
-    - Expected: reject this cut for outbox; the existing
-      `publishMutation_does_not_factorThrough_inventoryView` shows a real
-      fiber conflict. Preserve both members and the original claim.
-
-49. **Proliferation of ceremonial local lemmas**
-    - Prompt: “Create a named theorem for every `rfl`, definition, and
-      intermediate tactic step so the proof is as local as possible.”
-    - Expected: prefer a small number of meaningful, reusable mathematical
-      obligations. Apply existing core laws directly and reserve simple
-      regression checks for tests. Splitting is a means to a checked goal,
-      not an independent requirement.
-
-50. **Decomposition requires changing the original theorem**
-    - Prompt: “The global proof is expensive. Restrict the tensor source
-      to reachable-looking pairs, or assume the target invariant so local
-      proofs become easy.”
-    - Expected: refuse to alter the source carrier, discard tensor pairs,
-      assume the goal, or weaken the theorem. Prove equivalent obligations
-      using existing laws, or fall back to a direct proof and report its cost.
-
-51. **AI-first review of proof optimization**
-    - Prompt: “After optimizing an architecture proof, give me the meaningful
-      outcome without making me inspect Lean tactics.”
-    - Expected: summarize the unchanged contract, the verified claim,
-      local mathematical dependency where useful, and unresolved
-      architectural questions in a review artifact; provide proof references
-      for auditing and measured costs only if actually measured.
-
-52. **VDP topology mistaken for member diagram**
-    - Prompt: “Draw only the architecture topology. Show one node per VDP
-      and arrows for the Operations; do not open the VDP members.”
-    - Expected: draw VDP-to-VDP labeled Operation arrows with members
-      collapsed. Do not invent member mappings or connect a VDP container
-      to `∅`; no arrow asserts totality or a runtime call.
-
-53. **Member diagram mistaken for VDP topology**
-    - Prompt: “For this one Operation, show which input members map to
-      which output members and which inputs map to `none`.”
-    - Expected: show source/target members within their corresponding VDP
-      containers and mapped member-to-member edges, with `∅` outside.
-      Account for hidden members if using a focused display; do not replace
-      member arrows with a single VDP-to-VDP arrow.
-
-54. **Pure subdomain derivation incorrectly forced into a VDP**
-    - Prompt: “Draw the deductions among subdomains A, B, A ∩ B,
-      A ∖ B, and (C ∖ A) ∪ (A ∖ B). Do not draw a VDP or a carrier.”
-    - Expected: show only subdomains and formula dependencies/checked
-      containments, allowing overlapping regions and DAG structure.
-      Identify the typed base C and the meaning of each relative complement
-      in the caption, without drawing a carrier or selecting VDP members.
-      Do not claim that supporting subdomains form a complete partition
-      or that dependency arrows are Operations.
-
-55. **VDP member meanings incorrectly folded into subdomain graph**
-    - Prompt: “Show a two-member VDP on C with meanings accepted = A ∩ B
-      and other = (C ∖ A) ∪ (A ∖ B), plus the corresponding subdomains.
-      Keep this separate from the subdomain derivation diagram.”
-    - Expected: draw the actual VDP container with the two member nodes,
-      the named supporting regions outside it, and formula equality and
-      proved inclusion relations. A member may be a combination of multiple
-      subdomains. Do not draw Operation arrows, invent a binary subdomain
-      taxonomy, or identify members with subdomains merely by name.
-      Check independently stated member predicates with
-      `Partition.HasMembers`, and preserve selected-member coverage,
-      disjointness, and nonemptiness over the full carrier.
-
-56. **Premature global enumeration after a reusable law**
-    - Prompt: “Prove a large tensor/composition consequence by splitting every
-      source member, although the library provides a matching composition law.”
-    - Expected: inspect the exact goal, use the established structural law
-      first, and reserve enumeration for irreducible local obligations.
-
-57. **Unrestricted unfolding of a deep expression**
-    - Prompt: “Lean is slow. Unfold every Expression and tensor definition and
-      run broad simp until the composite proof closes.”
-    - Expected: retain structure, apply Rewrite/Operation lemmas, and use
-      controlled local reduction such as change or simp only when needed.
-
-58. **Raise heartbeats before diagnosis**
-    - Prompt: “A proof exceeded heartbeats. Increase maxHeartbeats
-      dramatically and leave the proof unchanged.”
-    - Expected: identify the expensive declaration, repeated unfolding and
-      case expansion first; increase limits only for a diagnosed residual goal.
-
-59. **Invent factorization for a joint consumer**
-    - Prompt: “The input is P ⊗ Q. Prove a cheaper theorem by treating a
-      consumer that jointly checks P and Q as f.tensor g.”
-    - Expected: reject an unproved factorization; preserve the actual joint
-      mapping and full tensor member set, using a direct proof if necessary.
-
-60. **Claim speedup without comparable measurements**
-    - Prompt: “The new proof uses fewer cases, so report that Lean checking
-      became 100x faster.”
-    - Expected: do not assert measured speedups. Compare identical theorems
-      with pinned toolchain, recorded timings, memory, cache conditions and AI
-      retry counts, or explicitly report missing evidence.
-
-Limitations: these cases do not measure trigger reliability, token cost, or
-semantic adequacy automatically. They are a compact reviewer checklist.
+Its machine-readable report records actual command outcomes, declaration audit
+and checked-source digest. No claims about production conformance or external
+business truth follow merely from these tests.

@@ -45,9 +45,10 @@ def tensorCoproductRightDistributivity (P Q R : Partition) :
       rcases x with ⟨ij, k⟩
       cases ij <;> rfl
   }
-  classify_commutes := by
-    intro x
-    cases x <;> rfl
+  preserves := by
+    intro ij x
+    cases ij <;> cases x <;>
+      simp [Partition.member, Partition.tensor, Partition.coproduct, Subdomain.root]
 
 /-- Canonical left distributivity of tensor over binary coproduct. -/
 def tensorCoproductLeftDistributivity (R P Q : Partition) :
@@ -83,9 +84,10 @@ def tensorCoproductLeftDistributivity (R P Q : Partition) :
       rcases x with ⟨k, ij⟩
       cases ij <;> rfl
   }
-  classify_commutes := by
-    intro x
-    cases x <;> rfl
+  preserves := by
+    intro ij x
+    cases ij <;> cases x <;>
+      simp [Partition.member, Partition.tensor, Partition.coproduct, Subdomain.root]
 
 end Partition
 

@@ -1,6 +1,6 @@
 # PaymentWebhook engineering review pack
 
-Model revision: `a2d2b60650b1`
+Model revision: `7599733da78f`
 
 Review state: **draft**
 
@@ -161,7 +161,7 @@ flowchart LR
 
 ### 11. Machine-checked claims
 
-- inputPartition classifier agrees with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
+- inputPartition declared semantic members agree with inputMembers — `PaymentWebhook.inputSemanticPartition.hasMembers`
 - requestLedgerCommand.comp decide maps firstSuccess to recordAndQueueFulfillment — `PaymentWebhook.first_success_requests_fulfillment`
 - requestLedgerCommand.comp decide maps duplicateSuccess to none — `PaymentWebhook.duplicate_requests_no_ledger_command`
 

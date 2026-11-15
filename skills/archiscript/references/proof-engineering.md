@@ -1,122 +1,130 @@
-# Proof engineering: Lean tactic discipline and diagnostics
+# Proof engineering and feedback
 
-Read this reference when constructing, repairing, or evaluating a nontrivial
-ArchiScript Lean proof. The main [skill](../SKILL.md) owns the mathematical
-authoring method; this file covers **how to prove its unchanged obligations
-efficiently**. It does not define a second calculus, revise the architecture,
-or authorize new axioms.
+The standard gate starts with `lake clean` and rebuilds the source graph.
+This prevents removed modules' stale `.olean` files from entering kernel replay.
 
-## Freeze the goal before choosing tactics
+Missing proof fields are real errors. Repair the declaration or prove the
+unchanged obligation; do not add an axiom, narrow a carrier or discard tuples.
 
-Record the full proposition (source and target VDPs, hypotheses, implicit
-parameters, and partiality), relevant definitions, and model revision.
-Optimizing a proof must not narrow carriers, delete tensor members, invent
-factorization, turn `none` into an impossible source, or strengthen assumptions.
-If the model needs revision, treat that as architecture design and review, not
-as proof optimization.
+For an inherited predicate, start with its parent containment or defining
+conjunction. For a split, prove coverage and sibling disjointness independently.
+For full tensor tuples, use the complete dependent coordinate type, not just
+pairwise projections. `Operation.single_output` exposes a missing source
+refinement when one source member is claimed to have incompatible outputs.
 
-## Goal triage: structure before unfolding
+Use `change` or controlled `dsimp` to expose a local goal before deciding a
+finite proposition. Simple `rfl` and constructor equality are legitimate for
+closed data. `Partition.classify` is classical; a runtime `#guard` cannot execute
+it. Prove correspondence with `self_member` or use a separately proved,
+computable lookup.
 
-For a nontrivial goal, use this order as a **default**, not a rigid tactic
-language:
+In dependent signatures, annotate an occurrence constructor with
+`(S := signature)` when Lean cannot infer its actual source graph from a
+semantic VDP. Transparent `abbrev` declarations can make a fixed signature's
+index types visible without changing the mathematics. Never replace a missing
+factor with an arbitrary value merely to make elaboration succeed.
 
-1. **Find an applicable theorem.** Inspect exact imported declarations and
-   theorem signatures first. Common candidates: `Operation.comp_assoc`,
-   `Operation.tensor_comp`, coproduct injection/copair laws,
-   `Expression.Rewrite` congruence, and proved `PartitionIso` transports.
-2. **Decompose only where mathematically justified.** State the local
-   premises and the law that will reconstruct the *original* global claim.
-   A joint consumer is not a tensor of separate consumers merely because its
-   input is a tensor.
-3. **Reuse or prove meaningful local lemmas.** Place them at existing semantic
-   interfaces. Avoid one named lemma per `rfl` or structural field.
-4. **Assemble before unfolding.** Prefer `exact`, `apply`, `rw`, and short
-   `calc` chains. Use `Operation.ext` for operation equality when an existing
-   structural theorem does not close the goal.
-5. **Reduce locally.** Use `change` or `simp only` with the needed definitions
-   on the remaining atomic obligation. Prefer targeted rewrites over repeated
-   wholesale unfolding of `Expression.denote`, `Partition.tensor`, or
-   `Operation.tensor`.
-6. **Enumerate last.** Use `cases`, `by_cases`, or `decide` for genuinely
-   small, irreducible finite goals. Keep product indices abstract as long as
-   the proof can use a structural law.
+For recursion through indexed provenance terms, formulate an invariant over
+arbitrary source structure, then specialize it. This preserves the full
+inductive hypothesis and avoids inventing a finite history bound. A typed
+`Term.CycleBoundary` records one entry hole and a nontrivial return; it is not
+a claim that the cycle halts.
 
-An existing compositional proof may be *both* shorter and easier for Lean to
-check, but never assert a performance gain without measurement. Some goals
-really do depend on cross-factor cases; a direct finite proof is legitimate.
+## Coherence, suppliers and explicit statuses
 
-## Tactic choices by goal
+Prove `Term.RootCoherent` for the whole supplier tree. Every Cause leaf must
+use its own `origin`, including leaves inside another Cone's producer. Several
+paths from one canonical root and joins from distinct Causes remain valid.
+Use `isInputContext_iff_coherent` to obtain the local ownership witness and
+`input_consequence_inCone` for its output; an owner-only `onlyLocalRoot` guard
+does not check external Causes. Raw evaluation of a mixed-root term is still
+possible and supplies no context proof. The
+[root regressions](../../../ArchiScriptTests/RootCoherence.lean) demonstrate
+both supported cases and the nested failure.
 
-| Shape | First useful technique |
-| --- | --- |
-| Exact category or tensor law | `exact` / `rw` using the library law |
-| Equality of two `Operation` values | `Operation.ext` and one abstract source member |
-| Composition of independent tensor maps | `Operation.tensor_comp` before splitting a product member |
-| Coproduct injection followed by copairing | Existing copair/injection equation |
-| Expression subtree rewrite | `Expression.Rewrite.comp`, `.tensor`, `.copair`, `.trans` |
-| Structural endpoint transport | Proven `PartitionIso` with `Expression.Transport` |
-| Consumer coarsening | `Operation.FactorsThrough` or conflict analysis, with correct theorem direction |
-| Small classifier predicate | Targeted cases and `simp only` on local definitions |
+Discharge the certificate's two input fields separately:
 
-Do not treat `FactorsThrough` and `ConstantOnFibers` as interchangeable
-without the required hypotheses and direction. A valid coarsening for inventory
-may fail for outbox. See [compositional-proofs.md](compositional-proofs.md) and
-the compiled `ArchiScriptTests/ProofEngineering.lean` regressions.
+1. For **every declared generator**, prove `inputSources` using
+   `InputSources.grounded` with coherent suppliers at every position, or
+   `InputSources.unreachable` with empty independent `supplierImage`s at every
+   position. These images range over coherent upstream producers before any
+   complete join input exists. `inputSources_of_catalog` can reuse a valid
+   cache and `SourcesPresent g`; a missing catalog factor is not itself proof
+   that all incoming images are empty.
+2. For **every full coherent input context**, prove `inputs` with
+   `InputStatus.verified` (P, E and a reachable tuple) or `.unreachable`.
+   The latter needs all three proofs: `noSupplier` for every actual `incoming t`
+   image, `noTuple`, and `noContract`. Grounding witnesses never limit this
+   universal quantification to favorable producer choices.
 
-## Investigate an expensive proof
+The [missing-source regression](../../../ArchiScriptTests/SourceCoverage.lean)
+proves that X present / Y absent cannot supply either `InputSources` alternative,
+even though no complete input can be built. On a completed certificate,
+`input_partner` constructs a supported full context and an Adm-and-Reach partner
+for each independently incoming member; do not weaken this to a single
+compatible tuple or define images from the join's accepted tuples.
 
-When the elaborator times out, heartbeats are exceeded, or a compile becomes
-slow:
+For each Cause, supply `ConeStatus.observable` with `ConeValid`, or
+`.unobservable` with `NoObservableEffect`. Observable validity needs a witness
+of `Nonempty (model.effect c).Position`, a reachable tuple, exactness and all
+projections. Nominal `effectNodes ≠ []` or the unit's inhabitant does not prove
+there is an actual observation position. Unobservable status needs every
+`effectIncoming` image empty and the entire Effect contract empty, even if
+there are structural positions. `BoundariesComplete` then takes the
+`NoObservableEffect` branch or supplies the required boundary path for each
+owned node. `hasCone` yields a checked status, not necessarily observability.
 
-1. Identify the *specific* theorem or command, not just the failing module.
-2. Inspect the relevant goal shape, repeated unfolding, and product/branch
-   case splits. Avoid guessing that the entire model is too large.
-3. Isolate and check meaningful local lemmas; reuse the checked results in
-   the original theorem.
-4. Where useful, inspect Lean's available profiling diagnostics (for example,
-   `set_option trace.profiler true in` around a particular command; verify the
-   option on the pinned toolchain before relying on it).
-5. Retry with targeted rewrites or theorem application. Only consider
-   increasing `maxHeartbeats`, recursion limits, or memory after diagnosing
-   a legitimately costly residual goal. Record the rationale and effect.
-6. Recheck the **same** proposition, imports, model and assumptions.
+The [unobservable fixture](../../../ArchiScriptTests/Unobservable.lean) has
+structural suppliers with no incoming values. The
+[ungrounded cycle](../../../ArchiScriptTests/UngroundedCycle.lean) proves that
+circular arrows alone produce no finite coherent supplier. Keep both distinct
+from a missing-partner fault with an inhabited incoming image.
 
-Do not turn a proof failure into `sorry`, `admit`, an invented axiom, a
-narrower source, or an unchecked `opaque` shortcut. A failing factorization
-may be important architectural evidence, not a performance defect.
+For a provenance cache, prove `∀ c, S.origin c ∈ analysis.roots` and its
+`Seeded`, `Closed`, `Realized` checks. Do not enumerate every raw `RootInstance`
+value: `rootHistories` filters to canonical origins. Finite VDP members still
+do not prove a finite closed normalized-history basis.
 
-## Verify incrementally
+## Release checks
 
-- Check local assertions before incorporating them into a deep controller proof.
-- Build the full project with `lake build`.
-- Check public API smoke with
-  `lake env lean skills/archiscript/examples/CurrentApi.lean` when the skill
-  or authoring workflow changes.
-- Preserve negative tests and the counterexample that rejects outbox
-  factorization through the inventory coarsening.
-- A successful compilation establishes the stated theorem in Lean, not
-  adequacy of the external carrier or production conformance.
+```bash
+uv run --no-project python scripts/verify-lean.py
+```
 
-## Benchmark proof cost, not a different model
+The runner builds first, checks the public smoke, audits compiled transitive
+axioms, runs intended-diagnostic negative fixtures, and invokes `leanchecker`
+with explicit module names. The explicit names matter: the tool's default
+capitalization of the package name does not spell `ArchiScript` correctly.
 
-Use [../../benchmarks/proof-authoring/README.md](../../../benchmarks/proof-authoring/README.md)
-for a reproducible same-goal evaluation. Record:
+`#audit_archiscript` emits declaration types and axiom dependencies. It rejects
+`sorryAx` transitively, custom axioms, extra trusted-computation axioms, tagged
+certificates with unsupplied parameters and standalone tagged contracts
+referencing Reach. It also exposes the actual installed admissibility fields of
+closed model/certificate declarations in the checked imports, including untagged,
+indirect, inline and opaque forms. It rejects uninspectable closed records.
+The certificate constructor does not run this check. Import the concrete model
+and certificate in the audited entry point; a conditional factory alone does not
+audit every possible instantiation, and declarations outside the import closure
+are not inspected. Negative audit fixtures construct
+complete certificates and permit only `CONTRACT_AUDIT` errors, so an unrelated
+missing proof cannot masquerade as enforcement. Source hashes reject a verification result if sources
+change during the check. A textual search for missing-proof tokens is not a
+substitute for the dependency audit.
 
-- Exact theorem statement, hypotheses, model revision, and Lean toolchain.
-- Import/compilation cache conditions; separate prerequisite build from proof
-  checking where feasible.
-- Wall time and peak memory, plus profiling hotspots.
-- Human/AI proof attempts and time to first successful accepted proof.
-- Meaningful helper-lemma count and source size.
-- Failed runs and negative results, without invented acceleration claims.
+The runner writes command logs, `verification.json` and `axioms.json` under
+`.lake/reports/`. The [PR Gate workflow](../../../.github/workflows/pr-gate.yml)
+runs the same script and uploads that directory as `lean-proof-reports`, including
+on failure. Use the report's checked commit, source digest and actual command
+results when reporting verification; a successful build alone omits these checks.
 
-Benchmark A (direct), B (unstructured AI), and C (local-first AI) are
-comparable only when they establish the *same* proposition. A controlled
-synthetic tensor case may measure scaling but must not replace the real
-`ReservationController` regression.
+Named external semantic predicates can remain conditional. A theorem with a
+hypothesis is a valid conditional theorem; it is not a closed concrete
+certificate until the hypothesis is supplied. Independent contract authorship
+and real-world adequacy remain external judgments even when an audit passes.
 
-## Do not broaden the calculus
-
-No BDD, SAT engine, tensor-network solver, probability semantics, resource
-ontology, whole-architecture equivalence, or new normalization rule is part
-of this proof-engineering workflow.
+For shared-target histories, keep one graph and derive candidate data with
+`derive_provenance`; never clone nodes to make a proof succeed. Prove `Valid`
+for that candidate, rather than accepting a fuel bound or unchanged image as
+closure. `Term.history_injective` and `Expression.supply_preserves_provenance`
+provide structural proofs independently of member equality. The helper produces
+no theorem; every certificate still supplies kernel-checked evidence.

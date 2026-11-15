@@ -1,5 +1,6 @@
 name = "archiscript"
-version = "0.6.0"
+version = "0.7.0"
+moreLeanArgs = ["-DwarningAsError=true"]
 defaultTargets = ["ArchiScript", "ArchiScriptExamples", "ArchiScriptTests"]
 
 [[lean_lib]]

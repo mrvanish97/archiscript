@@ -2,6 +2,7 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+from unittest.mock import patch
 
 
 MODULE_PATH = Path(__file__).with_name("build-webhook-network-showcase.py")
@@ -48,6 +49,36 @@ class NetworkShowcaseTests(unittest.TestCase):
         altered["architecturalPartitions"].pop()
         with self.assertRaisesRegex(ValueError, "carrier provenance"):
             showcase.validate(altered, self.review)
+
+
+class NamedDefinitionTests(unittest.TestCase):
+    def test_named_opaque_boundary_keeps_its_reason(self):
+        named = {"status": "named", "name": "external region", "parts": [
+            {"status": "opaque", "reason": "supplied external semantics"}]}
+        showcase.validate_definition(named, "region")
+        self.assertEqual(showcase.opaque_reasons(named), ["supplied external semantics"])
+        named["parts"][0]["reason"] = ""
+        with self.assertRaises(ValueError):
+            showcase.validate_definition(named, "region")
+
+    def test_named_definition_cannot_hide_missing_evidence(self):
+        with self.assertRaises(ValueError):
+            showcase.validate_definition({"status": "named", "parts": []}, "region")
+
+
+class RevisionBindingTests(unittest.TestCase):
+    def test_approval_does_not_change_the_revision_it_approves(self):
+        before = showcase.revision({}, {"scope": "model", "state": "draft"}, "sources")
+        self.assertEqual(before, showcase.revision({}, {
+            "scope": "model", "state": "approved", "approval": {"revision": before}}, "sources"))
+        self.assertNotEqual(before, showcase.revision({}, {"scope": "changed"}, "sources"))
+        self.assertNotEqual(before, showcase.revision({}, {"scope": "model"}, "changed sources"))
+
+    def test_changed_sources_during_export_reject_the_pack(self):
+        with patch.object(showcase, "source_fingerprint", side_effect=["before", "after"]), \
+                patch.object(showcase, "export_projection", return_value={}):
+            with self.assertRaisesRegex(RuntimeError, "sources changed"):
+                showcase.main()
 
 
 if __name__ == "__main__":

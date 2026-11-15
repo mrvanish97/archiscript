@@ -94,6 +94,27 @@ theorem comp_assoc {W X Y Z : Partition} (h : Operation Y Z) (g : Operation X Y)
   ext m
   cases hf : f m <;> simp [comp, hf]
 
+/-- Contextual image over defined inputs. Undefinedness is mathematical
+partiality, not a runtime non-execution claim. -/
+def image {X Y : Partition} (f : Operation X Y) (inputs : X.MemberIndex → Prop)
+    (target : Y.MemberIndex) : Prop :=
+  ∃ source, inputs source ∧ f source = some target
+
+theorem single_output {X Y : Partition} (f : Operation X Y) {i j k}
+    (left : f i = some j) (right : f i = some k) : j = k :=
+  Option.some.inj (left.symm.trans right)
+
+theorem image_comp {X Y Z : Partition} (g : Operation Y Z) (f : Operation X Y)
+    (inputs : X.MemberIndex → Prop) (k : Z.MemberIndex) :
+    (g.comp f).image inputs k ↔ g.image (f.image inputs) k := by
+  constructor
+  · rintro ⟨i, hi, h⟩
+    cases hf : f i with
+    | none => simp [comp, hf, Option.bind] at h
+    | some j => exact ⟨j, ⟨i, hi, hf⟩, by simpa [comp, hf, Option.bind] using h⟩
+  · rintro ⟨j, ⟨i, hi, hf⟩, hg⟩
+    exact ⟨i, hi, by simpa [comp, hf, Option.bind] using hg⟩
+
 /-- A typed witness that a source/target pair belongs to a partial map. -/
 structure Branch {X Y : Partition} (op : Operation X Y) where
   source : X.MemberIndex

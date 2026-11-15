@@ -54,12 +54,9 @@ def PartitionIso.tensor {P P' Q Q' : Partition}
       simp only
       rw [e.memberIndex.right_inv, f.memberIndex.right_inv]
   }
-  classify_commutes := by
-    intro ⟨x, y⟩
-    change
-      (P'.classify (e.carrier.toFun x), Q'.classify (f.carrier.toFun y)) =
-        (e.memberIndex.toFun (P.classify x), f.memberIndex.toFun (Q.classify y))
-    rw [e.classify_commutes, f.classify_commutes]
+  preserves := by
+    intro ⟨i, j⟩ ⟨x, y⟩
+    exact and_congr (e.preserves i x) (f.preserves j y)
 
 /-- Rebracket both carrier positions and member indices. -/
 def tensorAssociator (P Q R : Partition) :
@@ -76,7 +73,9 @@ def tensorAssociator (P Q R : Partition) :
     left_inv := by intro ⟨⟨p, q⟩, r⟩; rfl
     right_inv := by intro ⟨p, ⟨q, r⟩⟩; rfl
   }
-  classify_commutes := by intro ⟨⟨p, q⟩, r⟩; rfl
+  preserves := by
+    intro ⟨⟨i, j⟩, k⟩ ⟨⟨x, y⟩, z⟩
+    exact and_assoc
 
 /-- Delete the unique left Unit coordinate. -/
 def tensorLeftUnitor (P : Partition) : PartitionIso (unit.tensor P) P where
@@ -92,7 +91,9 @@ def tensorLeftUnitor (P : Partition) : PartitionIso (unit.tensor P) P where
     left_inv := by intro ⟨u, i⟩; cases u; rfl
     right_inv := by intro i; rfl
   }
-  classify_commutes := by intro ⟨u, x⟩; cases u; rfl
+  preserves := by
+    intro ⟨u, i⟩ ⟨v, x⟩
+    exact ⟨fun h => h.2, fun h => ⟨trivial, h⟩⟩
 
 /-- Delete the unique right Unit coordinate. -/
 def tensorRightUnitor (P : Partition) : PartitionIso (P.tensor unit) P where
@@ -108,7 +109,9 @@ def tensorRightUnitor (P : Partition) : PartitionIso (P.tensor unit) P where
     left_inv := by intro ⟨i, u⟩; cases u; rfl
     right_inv := by intro i; rfl
   }
-  classify_commutes := by intro ⟨x, u⟩; cases u; rfl
+  preserves := by
+    intro ⟨i, u⟩ ⟨x, v⟩
+    exact ⟨fun h => h.1, fun h => ⟨h, trivial⟩⟩
 
 /-- Swap two independent coordinates; this does not identify their values. -/
 def tensorSymmetry (P Q : Partition) : PartitionIso (P.tensor Q) (Q.tensor P) where
@@ -124,7 +127,9 @@ def tensorSymmetry (P Q : Partition) : PartitionIso (P.tensor Q) (Q.tensor P) wh
     left_inv := by intro ⟨p, q⟩; rfl
     right_inv := by intro ⟨q, p⟩; rfl
   }
-  classify_commutes := by intro ⟨p, q⟩; rfl
+  preserves := by
+    intro ⟨i, j⟩ ⟨x, y⟩
+    exact and_comm
 
 /-- The two pentagon paths also agree on carrier values, beyond their induced
 member operations. -/

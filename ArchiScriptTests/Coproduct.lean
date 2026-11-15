@@ -4,8 +4,12 @@ namespace ArchiScriptTests.Coproduct
 open ArchiScript ArchiScriptExamples.Coproduct
 
 #guard entryPartition.memberIndices.length == 4
-#guard entryPartition.classify (.inl ⟨"/"⟩) == Sum.inl BrowserMember.root
-#guard entryPartition.classify (.inr ⟨["status"]⟩) == Sum.inr CliMember.nonempty
+example : entryPartition.classify (.inl ⟨"/"⟩) = Sum.inl BrowserMember.root :=
+  (entryPartition.self_member _ _).mp rfl
+example : entryPartition.classify (.inr ⟨["status"]⟩) = Sum.inr CliMember.nonempty := by
+  apply (entryPartition.self_member _ _).mp
+  change (["status"] : List String) ≠ []
+  decide
 
 def identityEntryIso :
     Partition.PartitionIso entryPartition entryPartition :=

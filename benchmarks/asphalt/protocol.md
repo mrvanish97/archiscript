@@ -8,7 +8,7 @@ seed catalog. A passing Lean build earns no credit by itself.
 
 Give each arm the same deployment-control-plane requirements, seeded repository
 state, time budget, fake provider contract, and engineering reviewers. Keep the
-31-case oracle separate from the prompt. Randomize case order and rotate the
+34-case oracle separate from the prompt. Randomize case order and rotate the
 strong coding agent or run multiple replicates to reduce operator effects.
 
 | Arm | Allowed workflow |

@@ -1,3 +1,5 @@
+import ArchiScript.Boundary
+import ArchiScript.Operation.Declaration
 import ArchiScript
 
 /-!
@@ -23,14 +25,9 @@ instance : MemberEnumeration ManualTrigger where
   indices := [.reconcile, .force]
   complete := by intro i; cases i <;> simp
 
-abbrev manualTriggerPartition : Partition where
-  Carrier := ManualTrigger
-  MemberIndex := ManualTrigger
-  carrierNonempty := ⟨.reconcile⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.reconcile, .force], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev manualTriggerPartition : Partition :=
+  Partition.closed ManualTrigger "ManualTrigger"
+    (⟨[.reconcile, .force], by intro i; cases i <;> simp⟩) (⟨.reconcile⟩)
 
 abbrev manualTriggerSemantic : SemanticPartition where
   partition := manualTriggerPartition
@@ -45,14 +42,9 @@ instance : MemberEnumeration TimerTrigger where
   indices := [.due]
   complete := by intro i; cases i; simp
 
-abbrev timerTriggerPartition : Partition where
-  Carrier := TimerTrigger
-  MemberIndex := TimerTrigger
-  carrierNonempty := ⟨.due⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.due], by intro i; cases i; simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev timerTriggerPartition : Partition :=
+  Partition.closed TimerTrigger "TimerTrigger"
+    (⟨[.due], by intro i; cases i; simp⟩) (⟨.due⟩)
 
 abbrev timerTriggerSemantic : SemanticPartition where
   partition := timerTriggerPartition
@@ -73,14 +65,9 @@ instance : MemberEnumeration ReconcileMode where
   indices := [.normal, .forced]
   complete := by intro i; cases i <;> simp
 
-abbrev reconcileModePartition : Partition where
-  Carrier := ReconcileMode
-  MemberIndex := ReconcileMode
-  carrierNonempty := ⟨.normal⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.normal, .forced], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev reconcileModePartition : Partition :=
+  Partition.closed ReconcileMode "ReconcileMode"
+    (⟨[.normal, .forced], by intro i; cases i <;> simp⟩) (⟨.normal⟩)
 
 abbrev reconcileModeSemantic : SemanticPartition where
   partition := reconcileModePartition
@@ -122,14 +109,9 @@ instance : MemberEnumeration ReconcileNext where
   indices := [.stable, .retry]
   complete := by intro i; cases i <;> simp
 
-abbrev reconcileNextPartition : Partition where
-  Carrier := ReconcileNext
-  MemberIndex := ReconcileNext
-  carrierNonempty := ⟨.stable⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.stable, .retry], by intro i; cases i <;> simp⟩
-  classify := id
-  member_inhabited := by intro i; exact ⟨i, rfl⟩
+abbrev reconcileNextPartition : Partition :=
+  Partition.closed ReconcileNext "ReconcileNext"
+    (⟨[.stable, .retry], by intro i; cases i <;> simp⟩) (⟨.stable⟩)
 
 abbrev reconcileNextSemantic : SemanticPartition where
   partition := reconcileNextPartition

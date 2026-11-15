@@ -1,5 +1,5 @@
 {
-  "modelRevision": "b144a22d5c97",
+  "modelRevision": "e95b5114a0a1",
   "projection": {
     "architecturalPartitions": [
       {
@@ -273,7 +273,7 @@
     ],
     "checkedClaims": [
       {
-        "claim": "inputPartition classifier agrees with inputMembers",
+        "claim": "inputPartition declared semantic members agree with inputMembers",
         "proof": "PaymentWebhook.inputSemanticPartition.hasMembers"
       },
       {

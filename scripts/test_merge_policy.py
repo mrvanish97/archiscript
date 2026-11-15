@@ -39,9 +39,8 @@ class MergePolicyTests(unittest.TestCase):
 
     def test_workflow_runs_required_commands(self):
         for command in (
-            "lake build",
-            "bash scripts/check-negative.sh",
-            "lake env lean skills/archiscript/examples/CurrentApi.lean",
+            "uv run --no-project python scripts/verify-lean.py",
+            "name: lean-proof-reports",
             'python -m unittest discover -s scripts -p "test_*.py"',
             "node --test examples/payment-webhook.test.mjs",
         ):

@@ -59,8 +59,9 @@ assert(boundary.admissionCarrierOrigin === 'trusted-external-root',
   'Asphalt admission origin must remain explicitly trusted');
 assert(boundary.naturalCountCarrierOrigin === 'trusted-external-narrowing',
   'Asphalt count narrowing must remain an explicit external guarantee');
-assert(boundary.opaqueSupportingSubdomains.includes('externalScanPasses'),
-  'opaque scan semantics must remain visible');
+assert(boundary.unregisteredSemanticPredicates.some(item =>
+  item.name === 'externalScanPasses' && item.status === 'unproved-nonemptiness'),
+  'unproved external scan semantics must remain visible without Subdomain registration');
 const leanMs = Math.round(performance.now() - started);
 run('node', ['--test', resolve(directory, 'control-plane.test.mjs')], root);
 const totalMs = Math.round(performance.now() - started);
@@ -77,6 +78,7 @@ process.stdout.write(`${JSON.stringify({
     naturalCount: boundary.naturalCountCarrierOrigin,
   },
   opaqueSubdomainWarnings: boundary.opaqueSupportingSubdomains,
+  unregisteredSemanticPredicates: boundary.unregisteredSemanticPredicates,
   naiveCartesianCombinations,
   comparisonArmsRun: 0,
   productionSafetyClaims: 0,

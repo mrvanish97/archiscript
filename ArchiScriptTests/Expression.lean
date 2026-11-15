@@ -1,104 +1,104 @@
-import ArchiScript.Expression
+import ArchiScript.Presentation
 
-namespace ArchiScriptTests.Expression
+namespace ArchiScriptTests.Presentation
 open ArchiScript
 
-def unitId : Expression Partition.unit Partition.unit :=
+def unitId : Presentation Partition.unit Partition.unit :=
   .atom (Operation.id Partition.unit)
 
-def unitFamily : Expression.Family :=
-  Expression.Family.singleton unitId
+def unitFamily : Presentation.Family :=
+  Presentation.Family.singleton unitId
 
-#guard unitFamily.expressions.length == 1
+#guard unitFamily.presentations.length == 1
 #guard unitFamily.targets.length == 1
 
 example :
-    Expression.denote
-      (Expression.comp (Expression.identity Partition.unit) unitId) =
-      Expression.denote unitId :=
-  (Expression.Rewrite.id_left unitId).sound
+    Presentation.denote
+      (Presentation.comp (Presentation.identity Partition.unit) unitId) =
+      Presentation.denote unitId :=
+  (Presentation.Rewrite.id_left unitId).sound
 
 example :
-    Expression.denote
-      (Expression.comp unitId (Expression.identity Partition.unit)) =
-      Expression.denote unitId :=
-  (Expression.Rewrite.id_right unitId).sound
+    Presentation.denote
+      (Presentation.comp unitId (Presentation.identity Partition.unit)) =
+      Presentation.denote unitId :=
+  (Presentation.Rewrite.id_right unitId).sound
 
 example :
-    Expression.Rewrite
-      (Expression.comp
-        (Expression.copair unitId unitId)
-        (Expression.coproductInl Partition.unit Partition.unit))
+    Presentation.Rewrite
+      (Presentation.comp
+        (Presentation.copair unitId unitId)
+        (Presentation.coproductInl Partition.unit Partition.unit))
       unitId :=
-  Expression.Rewrite.copair_inl unitId unitId
+  Presentation.Rewrite.copair_inl unitId unitId
 
 example :
-    Expression.Rewrite
-      (Expression.comp
-        (Expression.copair unitId unitId)
-        (Expression.coproductInr Partition.unit Partition.unit))
+    Presentation.Rewrite
+      (Presentation.comp
+        (Presentation.copair unitId unitId)
+        (Presentation.coproductInr Partition.unit Partition.unit))
       unitId :=
-  Expression.Rewrite.copair_inr unitId unitId
+  Presentation.Rewrite.copair_inr unitId unitId
 
 example :
-    Expression.Rewrite
-      (Expression.comp
-        (Expression.comp unitId unitId)
+    Presentation.Rewrite
+      (Presentation.comp
+        (Presentation.comp unitId unitId)
         unitId)
-      (Expression.comp
+      (Presentation.comp
         unitId
-        (Expression.comp unitId unitId)) :=
-  Expression.Rewrite.comp_assoc unitId unitId unitId
+        (Presentation.comp unitId unitId)) :=
+  Presentation.Rewrite.comp_assoc unitId unitId unitId
 
 example :
-    Expression.Rewrite
-      (Expression.tensor
-        (Expression.identity Partition.unit)
-        (Expression.identity Partition.unit))
-      (Expression.identity (Partition.unit.tensor Partition.unit)) :=
-  Expression.Rewrite.tensor_identity _ _
+    Presentation.Rewrite
+      (Presentation.tensor
+        (Presentation.identity Partition.unit)
+        (Presentation.identity Partition.unit))
+      (Presentation.identity (Partition.unit.tensor Partition.unit)) :=
+  Presentation.Rewrite.tensor_identity _ _
 
 example :
-    Expression.Rewrite
-      (Expression.comp
+    Presentation.Rewrite
+      (Presentation.comp
         unitId
-        (Expression.comp (Expression.identity Partition.unit) unitId))
-      (Expression.comp unitId unitId) :=
-  Expression.Rewrite.comp
-    (Expression.Rewrite.refl unitId)
-    (Expression.Rewrite.id_left unitId)
+        (Presentation.comp (Presentation.identity Partition.unit) unitId))
+      (Presentation.comp unitId unitId) :=
+  Presentation.Rewrite.comp
+    (Presentation.Rewrite.refl unitId)
+    (Presentation.Rewrite.id_left unitId)
 
 example :
-    Expression.Rewrite
-      (Expression.tensor
-        (Expression.comp (Expression.identity Partition.unit) unitId)
+    Presentation.Rewrite
+      (Presentation.tensor
+        (Presentation.comp (Presentation.identity Partition.unit) unitId)
         unitId)
-      (Expression.tensor unitId unitId) :=
-  Expression.Rewrite.tensor
-    (Expression.Rewrite.id_left unitId)
-    (Expression.Rewrite.refl unitId)
+      (Presentation.tensor unitId unitId) :=
+  Presentation.Rewrite.tensor
+    (Presentation.Rewrite.id_left unitId)
+    (Presentation.Rewrite.refl unitId)
 
 example :
-    Expression.Rewrite
-      (Expression.copair
-        (Expression.comp (Expression.identity Partition.unit) unitId)
+    Presentation.Rewrite
+      (Presentation.copair
+        (Presentation.comp (Presentation.identity Partition.unit) unitId)
         unitId)
-      (Expression.copair unitId unitId) :=
-  Expression.Rewrite.copair
-    (Expression.Rewrite.id_left unitId)
-    (Expression.Rewrite.refl unitId)
+      (Presentation.copair unitId unitId) :=
+  Presentation.Rewrite.copair
+    (Presentation.Rewrite.id_left unitId)
+    (Presentation.Rewrite.refl unitId)
 
 def unitTargetTransport :
-    Expression.Transport unitId
-      (Expression.comp
-        (Expression.iso (Partition.PartitionIso.refl Partition.unit))
+    Presentation.Transport unitId
+      (Presentation.comp
+        (Presentation.iso (Partition.PartitionIso.refl Partition.unit))
         unitId) :=
-  Expression.Transport.target unitId
+  Presentation.Transport.target unitId
     (Partition.PartitionIso.refl Partition.unit)
 
 example :
-    Expression.Rewrite unitId
-      (Expression.comp (Expression.identity Partition.unit) unitId) :=
-  (Expression.Rewrite.id_left unitId).symm
+    Presentation.Rewrite unitId
+      (Presentation.comp (Presentation.identity Partition.unit) unitId) :=
+  (Presentation.Rewrite.id_left unitId).symm
 
-end ArchiScriptTests.Expression
+end ArchiScriptTests.Presentation

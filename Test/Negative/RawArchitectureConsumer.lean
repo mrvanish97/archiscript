@@ -1,0 +1,4 @@
+-- EXPECT: CertifiedDeclaredArchitecture
+import ArchiScriptExamples.SimpleCone
+open ArchiScript ArchiScriptExamples.SimpleCone
+#check CertifiedDeclaredArchitecture.coverageStatus model

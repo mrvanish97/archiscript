@@ -1,232 +1,182 @@
 import ArchiScript
+import ArchiScript.ProofAudit
 
-namespace SkillSmoke
-
+namespace ArchiScriptSmoke
 open ArchiScript
 
-inductive RequestIndex where
-  | zero
-  | positive
-  deriving DecidableEq
+def booleanCarrier : Subdomain Bool :=
+  .root "Bool" (fun _ => True) ⟨false, trivial⟩ (.predicate _)
 
-def positive : Domain Nat := fun n => 0 < n
+def trueMember : Subdomain Bool :=
+  .child "True" booleanCarrier (fun b => b = true) ⟨true, trivial, rfl⟩
 
-instance : MemberEnumeration RequestIndex where
-  indices := [.zero, .positive]
-  complete := by intro i; cases i <;> simp
+def booleanSplit : SemanticSplit booleanCarrier :=
+  .complement booleanCarrier trueMember trueMember.contained "False"
+    ⟨false, trivial, by rintro ⟨_, h⟩; cases h⟩
 
-abbrev requestPartition : Partition where
-  Carrier := Nat
-  MemberIndex := RequestIndex
-  carrierNonempty := ⟨0⟩
-  memberIndexDecidableEq := inferInstance
-  memberIndexFinite := ⟨[.zero, .positive], by intro i; cases i <;> simp⟩
-  classify n := if n = 0 then .zero else .positive
-  member_inhabited
-    | .zero => ⟨0, rfl⟩
-    | .positive => ⟨1, rfl⟩
+abbrev bit : VDP := Partition.ofSplit booleanSplit (fun _ => trivial)
 
-def requestMembers : RequestIndex → Domain Nat
-  | .zero => Domain.complement positive
-  | .positive => positive
+inductive Port where | input | output deriving DecidableEq
 
-example : requestPartition.HasMembers requestMembers := by
-  intro i n
-  cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
-    Domain.complement, positive]
+abbrev signature : ArchitectureSignature where
+  Node := Port
+  nodeDecidableEq := inferInstance
+  nodes := [.input, .output]
+  nodes_complete := by intro n; cases n <;> simp
+  nodes_nodup := by decide
+  object := fun _ => bit
+  domains := [⟨Bool, bit.members false⟩, ⟨Bool, bit.members true⟩]
+  memberDeclared := by intro n i; cases n <;> cases i <;> simp
+  splits := []
+  Cause := Unit
+  causeDecidableEq := inferInstance
+  causes := [()]
+  causes_complete := by intro c; cases c; simp
+  causes_nodup := by simp
+  RootInstance := Unit
+  rootDecidableEq := inferInstance
+  origin := fun _ => ()
+  start := fun _ => .input
+  owner := fun _ => ()
+  start_owner := fun _ => rfl
+  Generator := Unit
+  generatorDecidableEq := inferInstance
+  generators := [()]
+  generators_complete := by intro g; cases g; simp
+  input := fun _ => .node .input
+  output := fun _ => .output
+  operation := fun _ => Operation.id bit
+  localFactor := fun _ => ⟨.input, by simp [Inputs.nodes], rfl⟩
 
-abbrev requestSemanticPartition : SemanticPartition where
-  partition := requestPartition
-  members := requestMembers
-  hasMembers := by
-    intro i n
-    cases i <;> cases n <;> simp [Partition.member, requestPartition, requestMembers,
-      Domain.complement, positive]
+@[archiscript_contract] def inputAdmissible (_ : signature.Generator)
+    (_ : signature.Occurrence (.node .input)) (_ : Bool) : Prop := True
 
-abbrev requestArchitecture : ArchitecturalPartition where
-  partition := requestPartition
-  carrierOrigin := .externalRoot {
-    source := "request protocol"
-    scope := "count field after decoding"
-    claim := "the decoder emits Nat values at this boundary"
-    revision := "smoke-protocol-1"
-    identified := by decide
-  }
-  selectedMembers := fun i => {
-    meaning := requestMembers i
-    definition := .predicate (requestMembers i)
-  }
-  hasMembers := requestSemanticPartition.hasMembers
+abbrev effectBasis : signature.ProvenanceAnalysis (fun _ => none) :=
+  derive_provenance([()], 1)
 
-def accept : Operation requestPartition requestPartition where
-  run
-    | .zero => none
-    | .positive => some .positive
+@[archiscript_contract] def effectAdmissible (_ : Unit) (_ : Bool × Unit) : Prop := True
 
-#check Partition.coproduct
-#check SemanticPartition.coproduct
-#check Operation.coproductInl
-#check Operation.coproductInr
-#check Operation.copair
-#check Operation.copair_unique
-#check Partition.RefinesVia
-#check Partition.coarseningOperation
-#check Operation.analyzeFactorization
-#check Partition.tensorCoproductRightDistributivity
-#check Partition.tensorCoproductLeftDistributivity
-#check Operation.distributeRight
-#check Operation.distributeLeft
-#check Operation.distributeRight_natural
-#check Operation.distributeLeft_natural
-#check Expression
-#check Expression.denote
-#check Expression.Family
-#check Expression.Rewrite
-#check Expression.Transport
-#check Expression.Transport.source
-#check Expression.Transport.target
-#check Partition.PartitionIso.refl
-#check Partition.PartitionIso.symm
-#check Partition.PartitionIso.trans
-#check Partition.PartitionIso.tensor
-#check Partition.PartitionIso.coproduct
+abbrev model : DeclaredArchitecture where
+  signature := signature
+  boundary := fun _ => True
+  boundaryNonempty := ⟨fun _ _ => false, trivial⟩
+  context := fun _ _ _ => True
+  admissibleInput := inputAdmissible
+  cyclicBoundary := fun _ => none
+  effectAnalysis := effectBasis
+  effectContext := fun _ _ _ => True
+  admissibleEffect := effectAdmissible
 
-def acceptExpression : Expression requestPartition requestPartition :=
-  .atom accept
+def world (value : Bool) : signature.World := fun _ _ => value
 
-def acceptExpressionFamily : Expression.Family :=
-  Expression.Family.singleton acceptExpression
+theorem evaluation (w : signature.World) {s} (t : signature.Occurrence s) :
+    model.evaluate w t = some (s.assign (fun _ => w () ())) := by
+  apply model.evaluate_of_assignment
+  · intro c root
+    cases c; cases root; rfl
+  · intro g; rfl
+  · intro g input; trivial
 
-#guard acceptExpressionFamily.expressions.length == 1
-#guard acceptExpressionFamily.targets.length == 1
+theorem inputReach (t : signature.Occurrence (.node .input)) (value : Bool) :
+    model.reachInput () t value :=
+  ⟨world value, trivial, evaluation _ t, trivial⟩
 
-example :
-    Expression.Rewrite
-      (Expression.comp (Expression.identity requestPartition) acceptExpression)
-      acceptExpression :=
-  Expression.Rewrite.id_left acceptExpression
+theorem incoming (t : signature.Occurrence (.node .input)) (value : Bool) :
+    model.incoming t () value :=
+  ⟨world value, trivial, evaluation _ (t.supplier ())⟩
 
-abbrev requestSelfTensorCoproduct : Partition :=
-  (requestPartition.tensor requestPartition).coproduct
-    (requestPartition.tensor requestPartition)
+def terminal : signature.Occurrence (model.effect ()) :=
+  .tensor (.operation () (.cause () ())) .unit
 
-abbrev requestFactoredCoproductTensor : Partition :=
-  (requestPartition.coproduct requestPartition).tensor requestPartition
+theorem terminalOrigin (i : (model.effect ()).Position) :
+    model.InCone () (terminal.supplier i) := by
+  cases i with
+  | inl i =>
+    cases i
+    exact ⟨⟨rfl, rfl⟩, rfl⟩
+  | inr impossible => exact Empty.elim impossible
 
-def requestDistributivityIso :
-    Partition.PartitionIso requestSelfTensorCoproduct
-      requestFactoredCoproductTensor :=
-  Partition.tensorCoproductRightDistributivity
-    requestPartition requestPartition requestPartition
+theorem terminalProvenance : model.EffectProvenance () terminal := by
+  intro i
+  cases i with
+  | inl i => cases i; rfl
+  | inr impossible => exact Empty.elim impossible
 
-abbrev pairedRequests : SemanticPartition :=
-  requestSemanticPartition.tensor requestSemanticPartition
+theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEffect () tuple := by
+  rcases tuple with ⟨value, u⟩
+  cases u
+  exact ⟨terminal, terminalOrigin, terminalProvenance, world value, trivial, evaluation _ terminal, trivial, ⟨.inl ()⟩⟩
 
-example : pairedRequests.partition = requestPartition.tensor requestPartition := rfl
+theorem effectIncoming (i : (model.effect ()).Position)
+    (value : (signature.object ((model.effect ()).nodeAt i)).MemberIndex) :
+    model.effectIncoming () i value := by
+  cases i with
+  | inl i =>
+    cases i
+    exact ⟨terminal.supplier (.inl ()), terminalOrigin _, rfl,
+      world value, trivial, evaluation _ _⟩
+  | inr impossible => exact Empty.elim impossible
 
-example (i j : RequestIndex) (x y : Nat) :
-    pairedRequests.members (i, j) (x, y) ↔
-      requestMembers i x ∧ requestMembers j y := Iff.rfl
+theorem basis_valid : model.effectAnalysis.Valid :=
+  ⟨by intro c; cases c; simp, by decide⟩
 
-def pairedAccept : Operation (requestPartition.tensor requestPartition)
-    (requestPartition.tensor requestPartition) := accept.tensor accept
+@[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
+  model := model
+  causeNonempty := ⟨()⟩
+  effectCoverage := basis_valid
+  inputSources := by
+    intro g
+    exact model.inputSources_of_catalog basis_valid g (by cases g; exact of_decide_eq_true rfl)
+  inputs := by
+    intro g t _
+    cases g
+    refine .verified ⟨?_, ?_⟩ ⟨false, inputReach t false⟩
+    · intro value
+      exact ⟨fun _ => trivial, fun _ => inputReach t value⟩
+    · intro i value
+      cases i
+      exact ⟨fun _ => ⟨value, trivial, rfl⟩, fun _ => incoming t value⟩
+  cones := by
+    intro c
+    cases c
+    apply DeclaredArchitecture.ConeStatus.observable
+    refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach _⟩, ?_, ?_⟩
+    · intro tuple
+      exact ⟨fun _ => trivial, fun _ => effectReach tuple⟩
+    · intro i value
+      cases i with
+      | inl i =>
+        cases i
+        exact ⟨fun _ => ⟨(value, ()), trivial, rfl⟩, fun _ => effectIncoming _ _⟩
+      | inr impossible => exact Empty.elim impossible
+  boundariesComplete := by
+    intro c n _
+    apply Or.inr
+    cases c
+    refine ⟨Port.output, ?_, ?_⟩
+    · change Port.output ∈ [Port.output]
+      simp
+    · cases n with
+      | input =>
+        exact ArchitectureSignature.Depends.step (S := signature) () Port.input
+          (by change Port.input ∈ [Port.input]; exact List.mem_cons_self)
+      | output => exact .refl _
 
-example : pairedAccept (.zero, .positive) = none := rfl
-example : pairedAccept (.positive, .positive) = some (.positive, .positive) := rfl
+#guard certified.coverageStatus == "Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED"
 
-example : (Operation.associatorInv requestPartition requestPartition requestPartition).comp
-    (Operation.associator requestPartition requestPartition requestPartition) =
-      Operation.id ((requestPartition.tensor requestPartition).tensor requestPartition) :=
-  Operation.associator_left_inv _ _ _
+def linearRoute : Expression signature.generatorsInventory (Inputs.node Port.input) (Inputs.node Port.output) :=
+  Expression.step (G := signature.generatorsInventory) ()
+    (Expression.identity (G := signature.generatorsInventory) (Inputs.node Port.input))
 
-inductive OperationName where | accept deriving DecidableEq
-inductive BranchName where | positive deriving DecidableEq
+example : linearRoute.denote = Operation.id bit := by
+  simp [linearRoute, Expression.denote]
 
-abbrev acceptDeclaration : Operation.Declaration where
-  source := requestPartition
-  target := requestPartition
-  operation := accept
-  BranchName := BranchName
-  branchNameDecidableEq := inferInstance
-  branchNames := [.positive]
-  branchNames_complete := by intro name; cases name; simp
-  branchNames_nodup := by decide
-  branch
-    | .positive => ⟨.positive, .positive, rfl⟩
-  responsibilityOwners := ["request-api"]
-  branchResponsibilityOwners := fun _ => some ["request-processing"]
-  implementation := some (.planned { primary := { repository := "request-service", path := "src/requests.ts", symbol := some "accept" } })
+def constantTrue : Operation bit bit := ⟨fun _ => some true⟩
+example : constantTrue.image (fun _ => True) true := ⟨false, trivial, rfl⟩
+example : ¬ constantTrue.image (fun _ => True) false := by
+  rintro ⟨_, _, impossible⟩
+  cases impossible
 
-def registry : Operation.Registry where
-  OperationName := OperationName
-  operationNameDecidableEq := inferInstance
-  operationNames := [.accept]
-  operationNames_complete := by intro name; cases name; simp
-  operationNames_nodup := by decide
-  resolve
-    | .accept => acceptDeclaration
+end ArchiScriptSmoke
 
-def acceptedBranch : Operation.BranchAddress registry :=
-  ⟨.accept, .positive⟩
-
-def acceptedBranchWitness := registry.resolveBranch acceptedBranch
-
-#guard registry.resolveBranchResponsibility acceptedBranch == ["request-processing"]
-#guard registry.branchesWithoutImplementation.length == 0
-
--- The smoke file also covers the structural monoidal API, not only tensor construction.
-#guard Partition.unit.memberIndices.length == 1
-
-example :
-    (Operation.symmetry requestPartition requestPartition).comp
-        (Operation.symmetry requestPartition requestPartition) =
-      Operation.id (requestPartition.tensor requestPartition) :=
-  Operation.symmetry_involutive requestPartition requestPartition
-
-example :
-    ((Operation.id requestPartition).tensor (Operation.leftUnitor requestPartition)).comp
-        (Operation.associator requestPartition Partition.unit requestPartition) =
-      (Operation.rightUnitor requestPartition).tensor (Operation.id requestPartition) :=
-  Operation.triangle requestPartition requestPartition
-
-/-- Architectural handoff remains separate from the low-level member map. -/
-def requestArchitecturalOperation : ArchitecturalOperation where
-  source := requestArchitecture
-  target := requestArchitecture
-  operation := accept
-
-def architecture : Architecture where
-  operations := [requestArchitecturalOperation]
-
-#guard architecture.operations.length == 1
-
-/-- A minimal routed family exercises the public parameterized-routing surface. -/
-def routedRequests : ParameterizedPartition.Routed requestPartition where
-  specialize := fun _ => requestPartition
-  registry := registry
-  Route := fun _ => Unit
-  routes := fun _ => [()]
-  routes_complete := by
-    intro _ route
-    cases route
-    simp
-  routeOperation := fun _ _ => .accept
-  routeSource := by
-    intro _ route
-    cases route
-    rfl
-
-def routedPositive := routedRequests.resolveOutbound .positive ()
-
-example : routedPositive.target = requestPartition := rfl
-example : ParameterizedPartition.HasOperation routedRequests .positive .accept := by
-  exact ⟨(), rfl⟩
-
-/-- Review approval is an explicit workflow predicate, not a consequence of compilation. -/
-private def smokeReview : ReviewRecord where
-  modelRevision := "smoke-v1"
-  decision := .approved "skill-reviewer" "smoke-v1"
-
-#guard smokeReview.implementationAllowed
-
-end SkillSmoke
+#audit_archiscript

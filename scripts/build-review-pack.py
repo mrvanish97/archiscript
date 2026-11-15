@@ -11,11 +11,14 @@ import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
 MODEL_SOURCES = (
-    "ArchiScript/Partition.lean",
-    "ArchiScript/Boundary.lean",
-    "ArchiScript/Operation.lean",
-    "ArchiScript/Operation/Declaration.lean",
-    "ArchiScriptExamples/PaymentWebhook.lean",
+    *sorted(str(path.relative_to(ROOT)) for path in (ROOT / "ArchiScript").rglob("*.lean")),
+    'ArchiScript.lean',
+    'lean-toolchain',
+    'lakefile.toml',
+    'ArchiScriptExamples/ProofSupport.lean',
+    'ArchiScriptExamples/PaymentWebhook.lean',
+    'scripts/export-payment-review.lean',
+    'scripts/build-review-pack.py',
 )
 REVIEW_SOURCE = ROOT / "review/payment-webhook.review.json"
 OUTPUT = ROOT / "review/generated"
@@ -79,6 +82,11 @@ def validate_definition(definition, member_id):
             raise ValueError(f"opaque subdomain needs a reason: {member_id}")
     elif status == "lean-predicate":
         return
+    elif status == "named":
+        parts = definition.get("parts", [])
+        if len(parts) != 1:
+            raise ValueError("named semantic definition requires one underlying definition")
+        validate_definition(parts[0], member_id)
     elif status in {"intersection", "union", "relative-complement"}:
         parts = definition.get("parts", [])
         if len(parts) != 2:

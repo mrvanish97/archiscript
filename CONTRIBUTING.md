@@ -47,3 +47,11 @@ bash scripts/apply-default-ruleset.sh OWNER/REPOSITORY
 The script requires GitHub CLI access with permission to manage repository
 rulesets. The JSON file is the version-controlled policy; GitHub's active
 ruleset is the enforcement mechanism.
+
+
+The 0.7 proof gate is `uv run --no-project python scripts/verify-lean.py`.
+It builds the pinned Lean targets with warnings as errors, compiles the public
+skill smoke, audits transitive axioms, checks negative diagnostics and invokes
+kernel replay with explicit module names. CI preserves its JSON/log reports.
+Global Cone/Expression coverage remains NOT AUTOMATICALLY VERIFIED; see the
+next-version backlog. A review approval does not supply a missing Lean proof.

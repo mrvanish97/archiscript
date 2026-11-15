@@ -1,75 +1,30 @@
-# Engineering review packs
+# Optional review tooling
 
-The review pack is the human approval interface for an ArchiScript model. It
-must make architectural criticism possible without opening Lean source. The
-generated PDF is a stable snapshot; the model and structured review record hold
-the canonical identities, current state, and findings.
+Review approval, responsibility, source bindings and findings are workflow
+metadata. They are not the mathematical acceptance boundary of 0.7.
+The public calculus imports neither `Review` nor `Operation.Declaration`.
+Existing prototype exporters import those companion modules explicitly.
 
-## Review state and gate
+Report three independent facts: the model's declared scope and assumptions;
+its actual theorem/audit status; and any human review decision. Use **draft**
+for missing declarations or proofs, **conditional** for unsupplied assumptions,
+and **certified declared contexts** for a completed audited concrete certificate.
+A human approval flag cannot supply a missing Lean proof.
 
-Use `draft`, `ready-for-review`, `changes-requested`, `approved`, or
-`superseded`. A passing Lean build only establishes internal checks. Approval
-must name a reviewer and the exact model revision. Implementation may proceed
-through the architecture workflow only when that revision matches the current
-model and no open change request remains. Do not infer approval from a PDF,
-test pass, or resolved code binding. Approval metadata is a workflow record,
-not authenticated identity or proof of code conformance.
+The PaymentWebhook prototypes still generate readable review snapshots. Their
+member maps and branch bindings are useful, but those snapshots are not new
+Cone certificates. A partial operation's undefined mapping makes no runtime
+claim about an absent write or event.
 
-Attach findings to canonical IDs. Record the concern, reviewer, requested
-change, and disposition (`open`, `addressed`, or `accepted`). If a reviewer
-rejects a boundary, owner, or assumption, revise the model and regenerate the
-pack; preserve the finding so its resolution can be checked. A new model
-revision requires a new approval.
+When using a prototype exporter, build its imported Lean target first. Bind
+the revision to checked sources, the exported projection and substantive review
+metadata; exclude approval fields. Reject sources changing during export.
+Canonical IDs and source identity govern diffs; list order without semantics
+must not create findings. Regenerated draft artifacts remain draft until an
+engineer records approval.
 
-## Two reading passes
-
-Fast pass: scope; changes since the prior revision; boundary and carrier;
-Level 0 or 1 topology; major assumptions; owners; and open questions. An
-engineer should be able to judge whether the direction is plausible in a few
-minutes.
-
-Deep pass: selected member meanings and coarsenings; complete relevant branch
-maps including `none`; effects and environmental state; responsibility and
-implementation bindings; checked claims with proof references; conditional
-claims; unknowns; findings; and source anchors. Present detail to invite
-disagreement, not to make approval effortless. The reviewer should be able to
-challenge a missing input, unsafe merge, unstable observation, misplaced owner,
-wrong code site, absent effect contract, or unsupported claim.
-
-When revising, show semantic changes in terms of added/removed members and
-branches, changed mappings, responsibilities, bindings, assumptions, and
-unknowns. A Lean source diff can accompany this, but should not replace it.
-Display groupings are only visual. Preserve canonical IDs in tables and
-findings even when the diagram uses shorter labels.
-
-For 0.5.0 expression presentations, keep normalization evidence visible in the
-deep pass. If a displayed expression is replaced by a same-endpoint normalized
-form, cite the semantic equality or `Expression.Rewrite` that justifies it. If
-a structural endpoint representation changes, cite the `PartitionIso` /
-`Expression.Transport` commuting certificate. An expression family should
-show its one common source and its separately typed targets; do not render it as
-one tensor-valued multi-target arrow.
-
-If a review view intentionally omits a nominal intermediate VDP, label the view
-as an **architecture projection** and list the hidden nominal boundary. Do not
-present composition alone as evidence that the intermediate VDP was removed
-from the architecture, and do not require a speculative whole-architecture
-isomorphism merely to justify an already proved local expression rewrite.
-
-## Current prototype
-
-The repository's `PaymentWebhook` example has a generated Markdown review pack
-and PDF snapshot produced by `scripts/build-review-pack.py`. The exporter reads
-members, branch mappings, responsibility, bindings, and theorem-backed claims
-from Lean. Review notes and findings live in
-`review/payment-webhook.review.json`; the generator validates their subject IDs.
-The model revision hashes the checked Lean sources, exported projection, and
-substantive review metadata (including boundary, assumptions, effects, and
-findings). Approval fields are excluded from this hash. Pass `--previous` with an older generated
-snapshot JSON to include a semantic and review-metadata change summary. This is a focused prototype, not a
-general ArchiScript compiler or authenticated review service.
-
-Each exported operation must have a mapping coverage row. Review generation
-rejects defined member mappings omitted from the named branch handoff. The
-snapshot diff compares named records by canonical identity, so row order does
-not create false semantic changes.
+A 0.7 review identifies the concrete certificate, supported analysis relation,
+full tuple contracts, cyclic boundaries, external assumptions and the actual
+transitive axiom report. **Global Cone/Expression coverage: NOT AUTOMATICALLY
+VERIFIED.** Universal coverage automation is a next-version backlog item;
+neither review approval nor a chosen presentation family replaces it.

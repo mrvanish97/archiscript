@@ -1,3 +1,17 @@
+import ArchiScriptTests.UngroundedCycle
+import ArchiScriptTests.ContractCoverage
+import ArchiScriptTests.SourceCoverage
+import ArchiScriptTests.Unobservable
+import ArchiScriptTests.RootCoherence
+import ArchiScriptTests.LinearExpression
+import ArchiScriptTests.Reachability
+import ArchiScriptTests.TensorVerification
+import ArchiScriptTests.Provenance
+import ArchiScriptTests.TerminalOccurrences
+import ArchiScriptTests.ContractAudit
+import ArchiScriptTests.SharedTargetCycles
+import ArchiScriptTests.SemanticFoundation
+import ArchiScript.Review
 import ArchiScript
 import ArchiScriptExamples.UserRegistration
 import ArchiScriptExamples.PaymentWebhook

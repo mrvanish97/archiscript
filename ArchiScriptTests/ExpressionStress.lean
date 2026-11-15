@@ -1,44 +1,44 @@
 import ArchiScriptExamples.ReservationController
 
-namespace ArchiScriptTests.ExpressionStress
+namespace ArchiScriptTests.PresentationStress
 
 open ArchiScript
 open ArchiScriptExamples.ReservationController
 
-#guard controllerExpressionFamily.expressions.length == 5
-#guard controllerExpressionFamily.targets.length == 5
+#guard controllerPresentationFamily.presentations.length == 5
+#guard controllerPresentationFamily.targets.length == 5
 
 example :
-    Expression.denote controllerPlanExpression =
+    Presentation.denote controllerPlanPresentation =
       planControllerMutation := rfl
 
 example :
-    Expression.denote controllerWriteExpression =
+    Presentation.denote controllerWritePresentation =
       persistMutation.comp planControllerMutation := rfl
 
 example :
-    Expression.Rewrite
+    Presentation.Rewrite
       (.comp
         (.atom nextReservationState)
         (.comp
           (.copair
-            planUserMutationExpression
-            planPaymentMutationExpression)
+            planUserMutationPresentation
+            planPaymentMutationPresentation)
           (.coproductInl userContextPartition paymentContextPartition)))
-      (.comp (.atom nextReservationState) planUserMutationExpression) :=
+      (.comp (.atom nextReservationState) planUserMutationPresentation) :=
   userSelectedStateNormalization
 
 example :
     userPaymentFactoringCertificate.targetIso.toOperation.comp
-        (Expression.denote userPaymentPlanExpression) =
-      (Expression.denote userPaymentFactoredPlanExpression).comp
+        (Presentation.denote userPaymentPlanPresentation) =
+      (Presentation.denote userPaymentFactoredPlanPresentation).comp
         userPaymentFactoringCertificate.sourceIso.toOperation :=
   userPaymentFactoringCertificate.commutes
 
 example :
     controllerFactoringCertificate.targetIso.toOperation.comp
-        (Expression.denote controllerPlanExpression) =
-      (Expression.denote controllerFactoredPlanExpression).comp
+        (Presentation.denote controllerPlanPresentation) =
+      (Presentation.denote controllerFactoredPlanPresentation).comp
         controllerFactoringCertificate.sourceIso.toOperation :=
   controllerFactoringCertificate.commutes
 
@@ -58,4 +58,4 @@ example :
     projectedControllerStateOperation =
       nextReservationState.comp planControllerMutation := rfl
 
-end ArchiScriptTests.ExpressionStress
+end ArchiScriptTests.PresentationStress

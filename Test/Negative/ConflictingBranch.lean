@@ -1,3 +1,4 @@
+-- EXPECT: existingUserBranchWitness.target = RegistrationMemberIndex.created
 import ArchiScriptExamples.UserRegistration
 
 open ArchiScript

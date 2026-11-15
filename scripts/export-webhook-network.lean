@@ -110,7 +110,7 @@ private def checkedClaims : List Json := Id.run do
       .firstSuccess = some .enqueue := first_success_requests_fulfillment
   return [
     Json.mkObj [("proof", toJson "PaymentWebhook.inputSemanticPartition.hasMembers"),
-                ("claim", toJson "inputPartition classifier agrees with inputMembers")],
+                ("claim", toJson "inputPartition declared semantic members agree with inputMembers")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_acknowledged"),
                 ("claim", toJson "duplicateSuccess has an acknowledge response plan")],
     Json.mkObj [("proof", toJson "PaymentWebhookNetwork.duplicate_has_no_notification_intent"),
@@ -142,6 +142,9 @@ private def provenanceJson {α : Type} : CarrierOrigin α → Json
 private def definitionJson {α : Type} {meaning : Domain α} :
     DomainDerivation α meaning → Json
   | .predicate _ => Json.mkObj [("status", toJson "lean-predicate")]
+  | .named name definition => Json.mkObj [
+      ("status", toJson "named"), ("name", toJson name),
+      ("parts", toJson [definitionJson definition])]
   | .opaque reason _ _ => Json.mkObj [
       ("status", toJson "opaque"), ("reason", toJson reason)]
   | .intersection left right => Json.mkObj [

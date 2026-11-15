@@ -288,5 +288,20 @@ class ReviewPackTests(unittest.TestCase):
                          ["No semantic changes detected in the exported projection or review contract."])
 
 
+class NamedDefinitionTests(unittest.TestCase):
+    def test_named_opaque_boundary_keeps_its_reason(self):
+        named = {"status": "named", "name": "external region", "parts": [
+            {"status": "opaque", "reason": "supplied external semantics"}]}
+        review_pack.validate_definition(named, "region")
+        self.assertEqual(review_pack.opaque_reasons(named), ["supplied external semantics"])
+        named["parts"][0]["reason"] = ""
+        with self.assertRaises(ValueError):
+            review_pack.validate_definition(named, "region")
+
+    def test_named_definition_cannot_hide_missing_evidence(self):
+        with self.assertRaises(ValueError):
+            review_pack.validate_definition({"status": "named", "parts": []}, "region")
+
+
 if __name__ == "__main__":
     unittest.main()

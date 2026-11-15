@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.7.0 — semantic core rewrite (pending architect review)
+
+- Made named nonempty semantic Subdomains, typed ancestry and proved splits
+  primary; reconstructed VDPs from those declarations instead of classifiers.
+- Preserved/reproved the partial-map, monoidal, coproduct, distributivity,
+  isomorphism, coarsening and consumer-factorization laws.
+- Restricted Expression to registered linear nominal routes; renamed nonlinear
+  syntax and selected families to Presentation.
+- Added closed inventories, finite provenance derivations, typed cyclic
+  entry/Effect boundaries, contextual supplier images, exact full-tuple contracts
+  and mandatory scoped architecture certificates.
+- Corrected shared-target semantics per handoff §7.3.1: automatically derived
+  producer histories preserve two positions of one VDP through a single shared
+  downstream chain. Removed generator-output uniqueness; added checked finite
+  provenance coverage and explicit supplier-to-coordinate evidence.
+- Made the release audit inspect actual installed contracts of all closed models
+  and certificates, including untagged, inline, indirect and opaque forms. Added
+  complete-certificate bypass regressions and collapsed/fake-join negatives.
+- Added proof-backed finite saturation, exact-abstraction obligations, tuple and
+  orphan diagnostics, transitive axiom auditing, negative proof-bypass fixtures,
+  kernel replay and a checked-source verification report.
+- Added Stage 2 project-reference, cycle, correlation and cross-Cone regressions;
+  migrated the legacy examples and rewrote the entire authoring skill.
+- **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Universal
+  coverage automation is explicitly deferred to the next version. Certificates
+  concern declared contexts and do not certify real-world completeness or
+  production implementation behavior.
+
+The implementation PR description is the canonical exhaustive release report;
+`docs/0.7.0-release.md` retains its source evidence and migration ledger.
+
 ## 0.6.0
 
 - Removed ordered `memberIndices : List MemberIndex` and its completeness

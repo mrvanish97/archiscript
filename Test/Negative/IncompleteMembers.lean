@@ -1,3 +1,4 @@
+-- EXPECT: Tactic `rfl` failed
 import ArchiScript
 import ArchiScriptExamples.FormInput
 
