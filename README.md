@@ -78,12 +78,11 @@ separates inventory-wide diagnostics from all-generated-Expression coverage.
 
 ## Reviewer FAQ: recurring semantic and scope questions
 
-The following questions have repeatedly appeared in independent architecture reviews.
-**Before filing a defect**, identify which claim is at issue: a mandatory 0.7.0
-mathematical invariant, a deliberate modeling boundary, a limitation of the
-current certification scope, or an external/business assumption. Challenge an
-actual claim with a counterexample; do not silently replace ArchiScript's
-intended semantics with a general runtime or nondeterministic transition system.
+These questions reflect themes from independent architecture reviews.
+The answers explain the intended semantics, the guarantees actually proved
+by ArchiScript 0.7.0, and the limitations that remain open. They are intended
+as context for critical discussion, not as rules limiting which concerns
+a reviewer may raise.
 
 ### Why is there no arrow from one source member to two different outputs?
 
@@ -308,22 +307,6 @@ engineering handoff metadata; they are not runtime conformance proofs.
 Versioned implementation evidence or separate temporal/concurrency analysis
 can be valuable *additional* checks, but must not be misreported as already
 proved or made prerequisites for defining a mathematical architecture.
-
-### What counts as an actionable review finding?
-
-Point to **one concrete violated claim**, its required scope, the source
-definition/proof and a counterexample or failing regression. Keep different
-types of conclusion separate:
-
-- **Blocking semantic defect:** an actual mandatory 0.7.0 obligation can
-  be bypassed or incorrectly proved for a declared context.
-- **Known scope limit / UNKNOWN:** global generated-Expression coverage,
-  whole-inventory grounding, real-world interpretation or runtime liveness
-  is not claimed by the current certificate.
-- **Non-blocking engineering concern:** documentation ergonomics, proof-authoring
-  cost, unmeasured performance scaling, possible future code-conformance
-  tooling, or optional automation. Prioritize measured evidence and avoid
-  changing the mathematical contract merely to imitate a different tool.
 
 ## Semantic foundation
 
