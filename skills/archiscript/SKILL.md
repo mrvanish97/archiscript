@@ -5,8 +5,9 @@ description: Author and verify ArchiScript 0.7 Lean architectural models, semant
 
 # ArchiScript 0.7 authoring
 
-Model possible semantic values and member consequences explicitly. Lean checks
-the obligations in that model. External boundary truth, omitted requirements,
+Model the **a priori space of semantic possibilities** and their member-level
+architectural consequences, not concrete runtime executions. Lean checks the
+obligations in that model. External boundary truth, omitted requirements,
 implementation conformance and runtime liveness remain outside those proofs.
 
 **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
@@ -22,6 +23,40 @@ guarantee in model handoffs alongside the actual certificate scope. Omitted
 real-world Operations and requirements remain an author responsibility.
 
 ## A priori semantic modeling / anti-hidden-branching
+
+### Subdomains, selected members and logical refinement
+
+Before evaluating an Operation or proposing a new semantic construct, keep
+three distinct levels visible: (1) the complete declared carrier type,
+(2) its named, inhabited and justified `Subdomain` regions (including
+intermediate/supporting regions), and (3) the finite family of **selected**
+Subdomains that form one `VDP` / `Partition`.
+
+A selected VDP member is itself a `Subdomain`, indexed by `MemberIndex`;
+it is not a new kind of entity assembled separately from regions. An
+intermediate Subdomain need not itself be selected. Prove each declared
+`SemanticSplit` locally; use `SemanticSplit.refine` to flatten justified
+child splits and `Partition.ofSplit` when the root covers the full carrier.
+
+Canonical interpretation: carrier `String`; `AllStrings` splits into
+`Invalid` and `Valid`; `Valid` splits into `ValidAndPermitted` and
+`ValidAndDenied`. Select the three leaves as VDP members, **not** `Valid`
+alongside its children. The carrier stays `String`, including invalid and
+empty strings. The three selected predicates must cover every string, be
+pairwise disjoint and each be inhabited. A permission distinction needs a
+justified predicate over the carrier or an explicitly sourced dependency;
+do not invent facts unavailable to a string-only input.
+
+This derivation is logical funneling, **not** a runtime validation pipeline.
+Neither a global taxonomy nor a tree-shaped VDP is mandatory: flat
+selections, independent trees, overlapping supporting Subdomains and
+coarsening remain valid. See the [worked String example](../../README.md#from-subdomains-to-selected-vdp-members-a-string-carrier)
+and [ProjectReference](../../ArchiScriptExamples/ProjectReference.lean).
+
+When criticizing or editing a model, first inspect whether an apparent
+ambiguous outcome reflects a missing **a priori semantic distinction**,
+not a need for runtime simulation, value-level execution or a nondeterministic
+arrow from one member of one Operation.
 
 For each nontrivial model, complete this checklist before claiming its
 downstream consequences. The [README explanation](../../README.md#a-priori-possibility-space)
@@ -113,8 +148,10 @@ the possibility-space example alone is not an architecture certificate.
    parent and be disjoint, with finite nonempty indices. Different trees may
    share a root and overlap across trees. Flat declarations and coarsening
    remain legitimate. `SemanticSplit.refine` proves flattened leaf coverage.
-4. Construct `VDP` (the algebra also spells it `Partition`) from declared
-   Subdomains with coverage and disjointness proofs. `Partition.ofSplit` reuses
+4. Construct `VDP` (the algebra also spells it `Partition`) from **selected**
+   Subdomains with coverage and disjointness proofs over the unchanged carrier.
+   Identify selected members separately from intermediate/supporting Subdomains;
+   each selected member is a declared `Subdomain`. `Partition.ofSplit` reuses
    a split of the entire carrier. `Partition.closed` supports an independently
    justified finite closed carrier. `classify` is a derived classical lookup,
    not a construction field. A candidate lookup can help prove correspondence
