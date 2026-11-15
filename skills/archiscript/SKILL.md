@@ -16,8 +16,7 @@ code against it.
 AI agents sometimes revert to familiar step-by-step,
 implementation-oriented reasoning when discussing a
 mathematical a priori architecture. This is a
-**review failure mode to test**, not a verified
-universal claim about model training. Before
+**review failure mode to correct**. Before
 criticizing ArchiScript for "uncontrolled
 nondeterminism" (network outage, zone failure,
 timeout, race, meteor strike), apply this rule:
