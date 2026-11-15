@@ -9,6 +9,7 @@ truth. Independent contract authorship remains a modeling responsibility.
 
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -22,9 +23,15 @@ REPORTS = ROOT / ".lake" / "reports"
 
 def source_digest() -> str:
     digest = hashlib.sha256()
-    paths = [p for p in ROOT.rglob("*") if p.is_file()
-             and not any(part in {".git", ".lake", "__pycache__"} for part in p.relative_to(ROOT).parts)
-             and (p.suffix in {".lean", ".py", ".sh", ".toml", ".yml"} or p.name == "lean-toolchain")]
+    paths = []
+    for directory, directories, filenames in os.walk(ROOT, topdown=True, followlinks=False):
+        directories[:] = [name for name in directories
+                          if name not in {".git", ".lake", "__pycache__"}]
+        for name in filenames:
+            path = Path(directory) / name
+            if path.is_file() and (path.suffix in {".lean", ".py", ".sh", ".toml", ".yml"}
+                                   or path.name == "lean-toolchain"):
+                paths.append(path)
     for path in sorted(paths):
         digest.update(str(path.relative_to(ROOT)).encode())
         digest.update(b"\0")
@@ -35,12 +42,21 @@ def source_digest() -> str:
 
 def warning_overrides() -> list[str]:
     bad = []
-    for path in ROOT.rglob("*.lean"):
-        relative = path.relative_to(ROOT)
-        if relative.parts[0] in {".lake", ".git"} or relative.parts[:2] == ("Test", "Negative"):
-            continue
-        if re.search(r"(?m)^\s*set_option\s+warningAsError\s+false\b", path.read_text()):
-            bad.append(str(relative))
+    parents = [ROOT]
+    for directory, directories, _ in os.walk(ROOT, topdown=True, followlinks=False):
+        parent = Path(directory)
+        # Unlike the digest, warnings exclude only these root-relative subtrees.
+        if parent == ROOT:
+            directories[:] = [name for name in directories if name not in {".lake", ".git"}]
+        elif parent == ROOT / "Test":
+            directories[:] = [name for name in directories if name != "Negative"]
+        # Preserve Python 3.12 rglob's order: root, then each walk entry's children.
+        parents.extend(parent / name for name in directories if not (parent / name).is_symlink())
+    for parent in parents:
+        # glob also matches directory names; retain their read errors.
+        for path in parent.glob("*.lean"):
+            if re.search(r"(?m)^\s*set_option\s+warningAsError\s+false\b", path.read_text()):
+                bad.append(str(path.relative_to(ROOT)))
     return bad
 
 
