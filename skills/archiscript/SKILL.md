@@ -46,8 +46,9 @@ Canonical interpretation: carrier `String`; `AllStrings` splits into
 Subdomains. A selected member need not be a leaf of the finest split, but
 one VDP must not select overlapping ancestors and descendants. The carrier
 stays `String` through either refinement, including invalid and empty strings;
-other VDPs, such as an `Operation` target, may have different carriers. The three selected predicates must cover every string, be
-pairwise disjoint and each be inhabited. A permission distinction needs a
+other VDPs, such as an `Operation` target, may have different carriers.
+For the fine-grained choice, the three selected predicates must cover every
+string, be pairwise disjoint and each be inhabited. A permission distinction needs a
 justified predicate over the carrier or an explicitly sourced dependency;
 do not invent facts unavailable to a string-only input.
 
