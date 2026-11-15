@@ -15,10 +15,8 @@ a hidden member branch, an invented waiting loop or an unexplained tensor join.
 VDP members were concrete runtime messages, or as if one Operation
 must choose an unpredictable future outcome from information known
 at the beginning of execution.** This is the wrong level of analysis.
-It is a plausible *reviewer habit*, not an established fact about
-every AI model or its training data. If this objection feels natural,
-check the semantic model and actual Lean obligations **before**
-presenting it as a defect.
+When this objection arises, check the semantic model and actual
+Lean obligations **before** presenting it as a defect.
 
 **"But what about an uncontrollable network outage, an availability-zone
 failure, a timeout, concurrent interference, or even a meteorite?"
