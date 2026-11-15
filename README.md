@@ -273,16 +273,32 @@ meaning, parent/definition evidence and containment proof. Subdomains are the
 building blocks; **a selected VDP member is itself a Subdomain**, not a separate
 kind of object. A Subdomain does not have to be selected by any particular VDP.
 
-The architect can derive regions by proved `SemanticSplit` declarations:
+Keep the **carrier type**, **Subdomain derivation**, and **VDP member
+selection** separate. `String` is a type, **not a node or parent in the
+Subdomain hierarchy**. Every region below is a `Subdomain String`, with a
+meaning predicate on the same `String` carrier.
+
+The architect can derive those regions by proved `SemanticSplit`
+declarations:
 
 ```text
-String                           <- unchanged carrier (type)
-└── AllStrings                   <- root Subdomain, meaning True
-    ├── Invalid                  <- selected VDP member
-    └── Valid                    <- intermediate Subdomain
-        ├── ValidAndPermitted    <- selected VDP member
-        └── ValidAndDenied       <- selected VDP member
+Carrier type (not part of the tree): String
+
+Subdomain String derivation:
+AllStrings                   <- root Subdomain; meaning(s) := True
+├── Invalid                  <- Subdomain
+└── Valid                    <- Subdomain
+    ├── ValidAndPermitted    <- Subdomain
+    └── ValidAndDenied       <- Subdomain
+
+Fine-grained VDP selection (not a tree edge):
+  Carrier: String
+  Selected members: Invalid | ValidAndPermitted | ValidAndDenied
 ```
+
+The tree relates **Subdomains to other Subdomains** by semantic refinement.
+The VDP separately selects regions from that derivation; it does not place
+the carrier above them or add new kinds of semantic region.
 
 First, split `AllStrings` into `Invalid` and `Valid`; then split
 `Valid` into `ValidAndPermitted` and `ValidAndDenied`. The predicate for
