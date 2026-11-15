@@ -22,6 +22,50 @@ selected path family or a passing verification gate. State this missing global
 guarantee in model handoffs alongside the actual certificate scope. Omitted
 real-world Operations and requirements remain an author responsibility.
 
+## Reviewer FAQ / defect triage
+
+Before describing an ArchiScript limitation as a bug, consult the
+[Reviewer FAQ in the repository README](../../README.md#reviewer-faq-recurring-semantic-and-scope-questions).
+When this skill is installed independently of the repository, that relative
+path may not exist. In that case, use the
+[canonical README FAQ on GitHub](https://github.com/mrvanish97/archiscript/blob/main/README.md#reviewer-faq-recurring-semantic-and-scope-questions)
+if network access is available. If neither source is accessible, apply the
+self-contained rules below and do **not** claim to have read the FAQ.
+Do not duplicate the complete FAQ inside this skill.
+
+**Coproduct review restriction (manual; NOT AUTOMATICALLY VERIFIED):**
+Use `Partition.coproduct` only for **a priori justified, tagged
+alternatives** of a semantic carrier/VDP (e.g. a request carrying
+`Sum Nat String`, or a response carrying
+`Sum SuccessPayload ErrorPayload`), or to manipulate such **already
+tagged** alternatives through legitimate injections, `copair`
+or algebraic rewrites. At **every** coproduct occurrence, ask whether
+the sum expresses predeclared possible *values*, or instead hides
+a code-level logical OR between independently supplied Operations
+or producer paths. **Never** turn two independent success/error
+suppliers into one exclusive selected result merely by summing them;
+coproduct does not construct a supplier join, mutual exclusion or
+runtime choice. Identify the meaningful tags, the true boundary,
+the source of the tag or the justified partial mapping, and any
+external completeness assumption. The Lean 0.7.0 core proves
+coproduct algebra and contains no supplier-sum constructor in
+`Architecture.Inputs`, but **does not certify the architectural
+intent of every coproduct use**. Check this manually; see the
+[full FAQ with supported and invalid diagrams](../../README.md#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
+
+**Do not conflate** (1) two target members for one source member of **one**
+Operation, which is forbidden by `Operation.single_output`, (2) multiple
+declared outgoing Operations, which are legal and non-exclusive, and
+(3) derived joint Cone Effect tensors, which preserve simultaneous *semantic
+tuple possibility* subject to `Reach` but assert **no physical simultaneous
+execution or eventual launch**. A common boundary world is not a timestamp.
+If a new review claims missing nondeterministic arrows, use the FAQ's explicit
+`Waiting → Success / Timeout` counterexample and
+[`HiddenWaitingBranch`](../../Test/Negative/HiddenWaitingBranch.lean).
+Report mandatory invariant violations separately from optional global
+coverage, manual inventory assumptions, real-world adequacy, and runtime
+liveness. Cite the violated Lean contract before proposing a semantic change.
+
 ## A priori semantic modeling / anti-hidden-branching
 
 ### Subdomains, selected members and logical refinement
@@ -51,6 +95,13 @@ For the fine-grained choice, the three selected predicates must cover every
 string, be pairwise disjoint and each be inhabited. A permission distinction needs a
 justified predicate over the carrier or an explicitly sourced dependency;
 do not invent facts unavailable to a string-only input.
+
+For a worked comparison of an a priori request classification, a separate
+`Available/Unavailable` service-status supplier, and the resulting tensor
+Operation, see the
+[authorization-service FAQ](../../README.md#why-can-an-authorization-service-be-a-tensor-factor-if-the-requests-outcome-is-already-semantically-distinguished).
+The service factor does not invent permissions; it must have its own
+justifiable Cause/supplier and does not establish physical invocation.
 
 This derivation is logical funneling, **not** a runtime validation pipeline.
 Neither a global taxonomy nor a tree-shaped VDP is mandatory: flat
@@ -99,7 +150,9 @@ it in apparent implementation behavior.
    $\operatorname{Reach}_t=\operatorname{Adm}_t$, or report the failed/unsupported
    obligations. P is necessary coverage, not sufficient joint behavior. Apply
    both to internal and cross-Cone joins, supported cyclic contexts and terminal
-   Effects. A missing factor must surface even when no complete input term can
+   Effects. **P/E is a statement about the complete supplier-input relation, not
+   totality of the consuming Operation**: `g.run` may return `none` even for a
+   reachable admitted tensor tuple. A missing factor must surface even when no complete input term can
    be built; never erase the declared use or define its images from accepted
    tuples. Do not set `Adm := Reach` or assume its proof through an unchecked axiom.
 5. Diagnose in order: incoming members with no admissible full partner;
@@ -214,7 +267,10 @@ E means every reachable tuple must be admitted **and every admitted tuple must
 be reachable**, including any impossible tuple mistakenly admitted by the author.
 Check full n-ary relations; pairwise compatibility and P alone are insufficient.
 The full tensor stays unchanged when Reach and Adm are proper subsets. Neither
-an Expression nor a factor must reach all target members.
+an Expression nor a factor must reach all target members. In particular,
+`InputValid` does not require `g.run` to be defined on every admitted tuple,
+or every member of the full tensor; see the
+[reviewer FAQ](../../README.md#does-a-verified-tensor-input-make-the-outgoing-operation-a-total-function).
 
 The certificate's universal `inputs` still checks every full coherent context;
 the grounding witnesses do not select or restrict those contexts.

@@ -27,6 +27,10 @@ is complete, remain separate responsibilities. Formal coverage of the
 **declared** scope must likewise not be confused with the currently deferred
 global Cone/Expression guarantee.
 
+For recurring review objections, especially the distinction between
+**functional Operations**, **multiple outgoing Operations**, and **joint
+Cone Effects without timing claims**, see the [Reviewer FAQ](#reviewer-faq-recurring-semantic-and-scope-questions).
+
 **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Certificates
 cover the declared semantic objects and derived contexts described below.
 The checker does not establish that the union of declared Cones covers every
@@ -72,6 +76,642 @@ P/E checks. A reachable X with unsourced Y at a declared join remains a present
 certification failure, not this deferred audit. The [0.8.0 plan](plans/0.8.0.md)
 separates inventory-wide diagnostics from all-generated-Expression coverage.
 
+## Reviewer FAQ: recurring semantic and scope questions
+
+These questions reflect themes from independent architecture reviews.
+The answers explain the intended semantics, the guarantees actually proved
+by ArchiScript 0.7.0, and the limitations that remain open. They are intended
+as context for critical discussion, not as rules limiting which concerns
+a reviewer may raise.
+
+### Why is there no arrow from one source member to two different outputs?
+
+**Because one `Operation` is deliberately a partial function on semantic
+members**, `run : X.MemberIndex → Option Y.MemberIndex`. A *single* Operation
+maps a given source member to at most one target member; `none` means that
+mapping is undefined. [`Operation.single_output`](ArchiScript/Operation.lean)
+proves this, and [`HiddenWaitingBranch`](Test/Negative/HiddenWaitingBranch.lean)
+is a controlled negative example.
+
+This **invalid** sketch is *not Lean syntax*:
+
+```text
+one operation: decide
+  Waiting --> Success
+  Waiting --> Timeout    (Success and Timeout are distinct target members)
+```
+
+A branching or set-valued arrow does not fix the missing explanation. If the
+*same* Operation really distinguishes success from timeout, the source
+architecture must identify an **a priori semantic distinction** that determines
+the outcome, or a justified additional Cause/supplier/context that supplies the
+relevant information. That information need not be observed or predicted
+beforehand. For example, [`PossibilitySpace`](ArchiScriptExamples/PossibilitySpace.lean)
+uses a scenario carrier covering short wait, long wait and timeout possibilities
+without claiming knowledge of a future execution. An honestly coarser result
+VDP may be appropriate if the distinction is **not** claimed; merely merging
+different outcomes into an opaque member must not masquerade as having proved
+their separate behavior.
+
+### Does that ban branching architectures or multiple outgoing Operations?
+
+**No.** These are **different** declared Operations, not two results of one
+Operation:
+
+```text
+          f : X → Y
+source X <
+          g : X → Z
+```
+
+Their possible consequences are not required to be mutually exclusive. One
+Cause can have multiple distinct downstream producer paths, including paths
+sharing a target or suffix. There is no restriction to a single outgoing
+Operation per VDP. See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean)
+and [`SharedTargets`](ArchiScriptExamples/SharedTargets.lean). A named
+[`Operation.Branch`](ArchiScript/Operation.lean) witnesses an entry in **one
+functional map**; it is not an extra nondeterministic arrow.
+
+### But does the Cone Effect tensor mean both branches exist together?
+
+**It analyzes their consequences jointly, not their launch times.** The
+derived Cone Effect has an explicit tensor of terminal **provenance
+coordinates**. That is the full *candidate* product. Actual joint
+`reachEffect` tuples must be justified by derived suppliers, a **common
+declared boundary world**, the Effect provenance condition and applicable
+context; correlations can exclude Cartesian tuples. The analytical tensor
+does not construct a new architectural join Operation.
+
+Neither tensor formation nor joint mathematical reachability supplies a
+timestamp, a runtime scheduler, or a theorem that two Operations **will
+start**, start independently, start simultaneously, or eventually run.
+"Both will start at some finite time (perhaps years later)" is still a
+*liveness* assertion not proved by 0.7.0. Relative order, synchronization,
+`happens-before`, physical co-presence and delivery need separately declared
+temporal semantics if they are important. The model's *same world* is not
+automatically a *same instant*. See
+[`DeclaredArchitecture.reachEffect`](ArchiScript/Consequence.lean).
+
+### Is a tensor automatically a join, copy, or synchronization?
+
+**No.** A VDP tensor is the full mathematical Cartesian product. An *actual
+architectural join* needs one explicitly declared Operation with a tensor
+source and independently derived suppliers for each factor. The certified
+**input** context must prove exact full-tuple `Reach = Adm` and projection
+coverage using independently derived upstream images. These obligations
+concern which input tuples can be supplied together; they do **not** demand
+that the consuming Operation be defined on every such tuple. Simply seeing
+two branches, the same nominal target,
+or an analytical Effect tensor cannot create that Operation or make an
+inadmissible tuple reachable. See
+[`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean),
+[`SharedTargetJoin`](ArchiScriptExamples/SharedTargetJoin.lean) and
+[`ContractCoverage`](ArchiScriptTests/ContractCoverage.lean).
+
+### Can a coproduct combine two independent supplier branches into one alternative response?
+
+**No: a coproduct is a tagged alternative of semantic values, not an
+architectural join or a runtime branch selector.** This is precisely
+where tensor and coproduct play different roles:
+
+```text
+SUPPORTED: independent supplier factors + ONE response value
+
+  Request VDP              ServiceStatus VDP
+       |                           |
+       +---------- tensor ---------+
+                     |
+                     v
+          ONE declared Operation
+                     |
+                     v
+                Response VDP
+       Carrier = Sum SuccessPayload ErrorPayload
+                /                         \
+       Success member(s)             Error member(s)
+
+  A response is tagged Success OR Error, not both.
+
+NOT SUPPORTED AS AN IMPLICIT "SUM JOIN":
+
+  independently produced Success VDP  ---> ?
+                                             +---> "choose one"
+  independently produced Error VDP    ---> ?
+
+  No automatic supplier coproduct, mutual exclusion, ordering,
+  scheduler, or selected-result Operation exists in that sketch.
+```
+
+The distinction is visible in the API.
+[`Partition.coproduct`](ArchiScript/Coproduct.lean) has carrier
+`Sum P.Carrier Q.Carrier` and member indices
+`Sum P.MemberIndex Q.MemberIndex`, preserving the tag.
+[`Architecture.Inputs`](ArchiScript/Architecture.lean) admits
+`unit`, `node` and `tensor` supplier structures, **not** a
+`coproduct` constructor for independent producers.
+A `Response` VDP may use `SuccessVDP.coproduct ErrorVDP` as its
+single target VDP; its error summand can itself have distinct
+`ValidationError`, `PermissionDenied` and `ServiceUnavailable`
+members. Each selected member still requires the ordinary Subdomain
+inhabitedness, disjointness and coverage evidence. The result type
+being a sum does **not** prove that all real API outcomes are modeled.
+
+For example, one `process : Operation (Request.tensor ServiceStatus) Response`
+can map each fully distinguished input member to `some (.inl successIndex)`
+or `some (.inr errorIndex)`, or to `none`. The particular choice
+must be determined by that Operation's declared member-level input
+semantics; it is not an implicit nondeterministic fork. The full
+supplier provenance and input P/E obligations still apply.
+
+**Do not interpret two independently declared Operations** producing
+success-shaped and error-shaped values as a single exclusive
+`Success OR Error` just because their target carrier can be
+written as a coproduct. They remain distinct structural routes;
+both could have consequences under a common boundary world.
+If the intended architecture has exactly one response, specify
+and justify that single response-producing route and its semantics.
+Forcing a coproduct onto two independent suppliers supplies neither
+exclusivity nor a hidden dispatch Operation.
+
+This is **not a ban on legitimate coproduct algebra**.
+[`Operation.coproductInl`, `coproductInr`, `copair` and
+`coproductMap`](ArchiScript/Coproduct.lean) operate on tagged
+semantic alternatives. In particular, `copair` consumes an
+**already coproduct-typed input**, selecting the appropriate
+member map from its existing tag; it does not merge two simultaneous
+independent arrivals or invent a scheduling decision. Coproducts
+can model alternative *request* types too, not only responses.
+
+#### What uses of coproduct are allowed today, and is that enforced by Lean?
+
+**Architectural review rule for 0.7.0: restrict coproduct to
+a priori, justified tagged alternatives of one semantic value or VDP,
+and algebraic handling of alternatives that are already tagged.**
+Every time a coproduct is introduced or used, ask:
+
+> Does this describe alternatives that belong to the declared
+> architecture's possible *values or carrier types*, or am I
+> secretly writing a logical OR between independent Operations,
+> producers, or runtime paths?
+
+Examples of legitimate carrier-level alternatives:
+
+```text
+One request value:
+  Carrier = Sum Nat String
+  --> either a number OR a string, as declared at the input boundary
+
+One response value:
+  Carrier = Sum SuccessPayload ErrorPayload
+  --> either a successful payload OR an error payload
+
+NOT a coproduct of independently supplied execution paths:
+  operationA -> Success ---+
+                           +---> implicit "OR"/branch selector  (INVALID)
+  operationB -> Error -----+
+```
+
+In the first two cases the **sum tag is part of the declared semantic
+possibility**. At a typed input boundary it is supplied as part of the
+input; at an Operation's output it must be determined by the
+Operation's explicitly declared member map and its justified input
+distinctions. In neither case does the sum invent a nondeterministic
+branch. `Operation.copair` and injections remain legitimate tools
+for manipulating **existing** tagged alternatives, not for
+manufacturing exclusivity out of concurrent or independent suppliers.
+
+Before accepting any use, explain **what the tags mean**, **why
+those alternatives belong to the actual declared boundary**,
+**what justifies the tag/provenance or the defined mapping**, and
+**whether the claimed sum covers the relevant real-world cases**.
+The coproduct constructor proves coverage **relative to its chosen
+`Sum` carrier**; it does not prove that a deliberately narrow
+carrier captures all external possibilities.
+
+**Enforcement status: NOT AUTOMATICALLY VERIFIED.** Lean already checks
+the algebraic `Partition.coproduct` construction, tag-preserving
+member semantics and relevant coproduct Operation laws. Also,
+`Architecture.Inputs` provides no coproduct combinator for
+joining independent supplier factors. But the **0.7.0 certificate
+does not include a global theorem or guard** validating that
+*every use* of `coproduct` was intended as an a priori semantic
+alternative, rather than a disguised code-level branch or an
+unjustified assumption about the boundary. This restriction
+therefore requires **explicit author/reviewer judgment**, not a
+claim that the Lean checks already enforce it.
+
+
+The [authorization-service example](#why-can-an-authorization-service-be-a-tensor-factor-if-the-requests-outcome-is-already-semantically-distinguished)
+shows why a request/status **tensor input** can lead to a
+success/error **coproduct carrier** without any hidden runtime
+branching.
+
+### Does a verified tensor input make the outgoing Operation a total function?
+
+**No.** The P/E obligations verify the **supplier input relation**, not the
+definedness of the Operation that consumes it. At a supported tensor input
+context `t`, P checks that every independently incoming factor member has
+a partner in a full admissible tuple, without inventing any incoming
+projections. E checks equality of the **full n-ary** reachable and admissible
+tuple relations: `Reach_t = Adm_t`. Pairwise projections alone are not E;
+neither P nor E says that the entire Cartesian product is reachable.
+
+The consuming `g : Operation (X.tensor Y) Z` remains an ordinary **partial
+member map**, `g.run : (X.tensor Y).MemberIndex → Option Z.MemberIndex`.
+Even an input tuple in both `Reach_t` and `Adm_t` may map to `none`.
+For example, with independently justified incoming images and correlated
+supplier semantics, the following is consistent at the level of one
+verified input context (illustrative notation, not Lean syntax):
+
+```text
+Full tensor members:  (x0,y0), (x0,y1), (x1,y0), (x1,y1)
+Reach_t = Adm_t:     {(x0,y0), (x1,y1)}
+
+g(x0,y0) = some z0
+g(x1,y1) = none       # valid partiality on a reachable, admitted input
+```
+
+The images of both input factors are fully accounted for in admissible
+partners; the cross-pairs are not declared reachable. No rule demands
+`g(x1,y1) = some ...` or totality on the full tensor. An **asserted
+downstream consequence** requires an actually defined mapping along its
+producer route, which is a separate question. `none` is mathematical
+undefinedness, **not** evidence that a runtime invocation did not happen.
+See [`InputValid` and `defined_consequence`](ArchiScript/Consequence.lean),
+[`Operation.run`](ArchiScript/Operation.lean), and
+[`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean).
+
+### What is the difference between a carrier, a Subdomain, and a selected VDP member?
+
+These are **different roles**, not three levels of one hierarchy:
+
+- **Carrier** (`Partition.Carrier`) is the underlying *type* of possible
+  values, such as `String`. It is not itself a `Subdomain` or a parent
+  node in a semantic derivation tree. It must retain invalid and unsuccessful
+  cases when those values belong to the declared boundary.
+- **Subdomain** (`Subdomain α`) is a named, inhabited *semantic region over*
+  a carrier type `α`: its `meaning : α → Prop` specifies the subset, and
+  it retains parent/definition evidence. Subdomains may be intermediate or
+  supporting regions; merely declaring one does not select it for a VDP.
+  For instance, `AllStrings : Subdomain String` can have meaning `True`,
+  so its extension covers every string, but it is **still a Subdomain**, not
+  the `String` carrier type.
+- **Selected VDP member** is not an additional kind of semantic region:
+  it is a `Subdomain` chosen by a particular
+  `Partition.members : MemberIndex → Subdomain Carrier`. The selected
+  family must be finite, nonempty, pairwise disjoint and cover the **entire
+  carrier**; each selected region is inhabited. Other declared Subdomains
+  can overlap, remain unselected, or refine a selected region.
+
+For the **same** carrier `String`, a coarse VDP might select
+`Invalid | Valid`, whereas a more detailed VDP selects
+`Invalid | ValidAndPermitted | ValidAndDenied`. The `Valid` Subdomain is
+selected in the first VDP but only intermediate/supporting in the second.
+Neither VDP selects `Valid` *together with* either of its overlapping
+children. Semantic refinement relates **Subdomains to Subdomains**, while
+VDP membership is a **separate choice**; different VDPs may also use
+different carriers.
+
+See [the separate carrier/derivation/selection diagram](#from-subdomains-to-selected-vdp-members-a-string-carrier),
+[`Subdomain`](ArchiScript/Subdomain.lean) and
+[`Partition`](ArchiScript/Partition.lean).
+
+### Is a VDP an enum of observed outcomes or a runtime validation pipeline?
+
+**Neither.** First declare the complete meaningful carrier and justified,
+inhabited `Subdomain` meanings. A VDP selects a finite, nonempty, covering,
+pairwise disjoint family of **those Subdomains**. Supporting regions may be
+finer than the selected members; a selected member need not be the leaf of
+the finest available split. The carrier stays fixed *for that VDP's semantic
+refinement*, not necessarily across different Operation endpoints. See
+[the worked String example](#from-subdomains-to-selected-vdp-members-a-string-carrier)
+and [`ProjectReference`](ArchiScriptExamples/ProjectReference.lean).
+Observing a runtime value can identify a previously declared region; it
+does not create the region after the fact.
+
+### Why can an authorization service be a tensor factor if the request's outcome is already semantically distinguished?
+
+**The a priori classification of possibilities is not an account of when a
+running program learned the answer.** ArchiScript distinguishes (1) what
+semantic cases exist, (2) which declared suppliers and architectural
+dependencies participate in an outcome, and (3) what partial Operations
+say about consequences. An Operation cannot invent an undisclosed
+`Success`/`Error` choice for one unchanged source member; conversely,
+the model does not assert that a real service has already executed.
+
+Consider a **particular, justified permission policy** in which `V(s)`
+means that a string is valid and `P(s)` means that the string is permitted.
+A source `Request` VDP over the *full* carrier `String` may select:
+
+```text
+Request VDP (carrier: String; every member is Subdomain String)
+  Invalid                 := not V(s)
+  ValidAndPermitted       := V(s) and P(s)
+  ValidAndDenied          := V(s) and not P(s)
+```
+
+All three selected regions must be inhabited, disjoint and cover the
+carrier. This says **which case a value belongs to under the stated
+semantics**, not whether the implementation has checked it yet. If the
+same string can be permitted for one user, resource or policy version and
+denied for another, then `P : String → Prop` is **not a justified complete
+classification**: include the relevant information in an appropriate
+carrier or justified input/supplier. The missing policy information must
+not be concealed as a nondeterministic Operation arrow.
+
+#### Does this produce a "Frankenstein" Request carrier containing errors and successes?
+
+**Not literally in this sketch.** Its carrier is still `String`.
+`Invalid`, `ValidAndPermitted` and `ValidAndDenied` are **predicates
+classifying strings**, not success/error values stored inside the
+request. `Success`, `InvalidInput` and the other response regions
+belong to a **different Response VDP**, on a separately justified
+response carrier. A response representation that includes both
+successful and unsuccessful results is not itself problematic.
+
+**But it can become a Frankenstein *semantic model*.** If permission
+actually depends on a user, resource, policy version or service-held
+fact, a naked `String` cannot truthfully distinguish
+`ValidAndPermitted` from `ValidAndDenied` without a justified,
+fixed predicate on strings. Merely tagging the input `WillSucceed`
+or `WillFail` to make an Operation functional would **smuggle the
+decision into the source** instead of explaining it. An a priori
+classification does not license inventing an oracle.
+
+Use a richer request/context carrier **when those facts are genuinely
+part of that input**, or supply the needed information from separately
+declared Causes and Operations with explicit provenance and relevant
+tensor-context proofs. If the real architecture determines permission
+from the string alone under a fixed policy, the simpler three-region
+`String` example remains valid. The right question is **where the
+distinguishing information actually comes from**, not how to force
+all future outcomes into the request.
+
+#### A service that can be available or unavailable
+
+Now suppose a separate declared external Cause supplies a `ServiceStatus`
+VDP. Its carrier describes the relevant service-condition evidence, with
+two justified, inhabited regions `Available` and `Unavailable`.
+For instance, an external *service-status report* may be the Cause, with
+an appropriate declared boundary/context for the intended decision.
+A developer/DevOps deployment can explain why a service exists, but
+**completion of deployment is not proof of its later availability**.
+If the Cause is merely a completed-deployment event, a single `Deployed`
+member can express that much, not both live service states.
+
+One **possible architecture sketch**, not a compiled Lean fixture.
+The service-status supplier is an explicitly modeled architectural input,
+**not** a claim that the unavailable service has itself returned a message.
+In this example the status can be supplied by an external monitor/report:
+
+```text
+  CONE A: request                          CONE B: service status
+  Cause: requestArrived                    Cause: serviceStatusReported
+           |                                        |
+           v                                        v
+  +----------------------+              +----------------------+
+  | Request VDP          |              | ServiceStatus VDP    |
+  | Carrier: String      |              | (status evidence)    |
+  |                      |              |                      |
+  | Invalid              |              | Available            |
+  | ValidAndPermitted    |              | Unavailable          |
+  | ValidAndDenied       |              +----------------------+
+  +----------------------+                         |
+           |                                       |
+           +-----------------+---------------------+
+                             |
+                             v
+           INPUT: Request (x) ServiceStatus
+           Full VDP tensor has 3 x 2 = 6 member pairs
+                             |
+          PROOF OBLIGATIONS (not runtime steps):
+          P: incoming members have full admitted partners
+          E: Reach = Adm on COMPLETE input tuples
+                             |
+                             v
+          process : Request (x) ServiceStatus -> Response
+          (ONE partial Operation; six defined cases shown)
+
+          MEMBER-LEVEL MAP -- not a runtime execution order:
+
+          (Invalid, Available) -----------+
+                                           +---> some InvalidInput
+          (Invalid, Unavailable) ---------+
+                         ^                         ^
+                         |                         |
+              DIFFERENT STATUS            SAME RESPONSE
+
+          (ValidAndPermitted, Available) -----> some Success
+          (ValidAndPermitted, Unavailable) ---> some ServiceUnavailable
+          (ValidAndDenied, Available) --------> some PermissionDenied
+          (ValidAndDenied, Unavailable) ------> some ServiceUnavailable
+
+                             |
+                             v
+                Response VDP (selected members)
+                Success | InvalidInput
+                PermissionDenied | ServiceUnavailable
+
+  The two Invalid rows differ in the service-status FACTOR,
+  but not in the mapped response. They are still TWO tensor inputs.
+```
+
+There are **six nominal tensor members** (three times two), not an
+implicit instruction to run six cases. For example, an architect might
+declare this **single** partial member map, shown here as fully defined
+for illustration:
+
+| Request member | Service Available | Service Unavailable |
+| --- | --- | --- |
+| `Invalid` | `some InvalidInput` | `some InvalidInput` |
+| `ValidAndPermitted` | `some Success` | `some ServiceUnavailable` |
+| `ValidAndDenied` | `some PermissionDenied` | `some ServiceUnavailable` |
+
+This is one **design choice**, not an ArchiScript rule about error
+precedence. The two `Invalid` rows show **output invariance under the
+service-status member**, not the absence of an architectural supplier
+dependency. In this sketch, even an `Invalid` request is an input to
+`process : Request ⊗ ServiceStatus → Response` only as part of a **complete
+tuple** whose status factor has a justified supplier. The fact
+`Unavailable` is a *defined status member*, not `none` or a missing
+supplier. If no status supplier exists, the tensor-sourced path cannot
+silently treat that missing factor as `Unavailable`.
+
+For the shown mapping, the member-level invariant is:
+
+```text
+forall status in {Available, Unavailable}:
+    process(Invalid, status) = some InvalidInput
+```
+
+This proves the mapped answer does not vary *with the supplied status
+value*. It does **not** prove that the status need not be supplied, that
+the service was or was not invoked, that validation happens first, or
+that a response is physically delivered. To **remove** the status
+dependency for invalid input, the architect would need a separately
+declared and verified path/Operation consuming the request without that
+factor; two equal tensor-output rows do not create such a path.
+
+One could instead choose to prioritize `PermissionDenied` when the
+service is unavailable or leave selected mappings at `none`. The
+Operation is **still partial by type**; a certified tensor input does
+not require `some` for every reachable pair. `none` is mathematical
+undefinedness, not a runtime event or an `Absent` VDP member. Response
+members must themselves be justified regions of an appropriate response
+carrier; they do not bypass Subdomain proofs.
+For why this one response may have a **coproduct** carrier but cannot
+be reconstructed by summing independent success/error suppliers, see
+[the coproduct-versus-supplier-join FAQ](#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
+
+The entry `(ValidAndPermitted, Unavailable) → ServiceUnavailable` is the
+instructive case: the request belongs to a permitted semantic region,
+yet the architectural consequence is an error because a **separate
+required dependency is unavailable**. Permission, availability and
+the actual response are different assertions. One can know the
+semantically appropriate outcome *in the model* without claiming a
+running implementation already knows or produces it.
+
+#### What does tensor verification require here?
+
+For an actual joined generator input, derive the incoming member images
+from both **specific supplier histories**. The contract verifies the
+projections of the complete admissibility relation against those
+independently obtained images (P) and the **entire** reachable relation
+against the declared admissible relation (E):
+
+```text
+P:  projection_i(Adm_t) = independentlyIncomingImage_i
+E:  Reach_t = Adm_t           on complete tuples, not just pairs
+```
+
+If both Causes genuinely supply all their stated members in independent
+admissible worlds, and the join's context imposes no correlation,
+`Reach_t = Adm_t` **can** contain all six pairs. For example
+`(Invalid, Unavailable)` and `(ValidAndPermitted, Unavailable)`
+are perfectly meaningful pairs. Their presence does **not** establish
+that an unavailable service was called or that a validator ran first.
+If the sources are correlated or context restricts their co-availability,
+only the supported subset belongs in `Reach_t`, and `Adm_t` must agree.
+Drawing the tensor alone proves none of these claims.
+
+P does **not** demand every Cartesian pair. It demands that each
+*actually incoming* member at every factor has at least one admissible
+complete partner, without inventing impossible partners. E checks
+full-tuple equality and can expose a claimed pairing that the declared
+supplier/world semantics cannot realize. Neither contract makes the
+outgoing Operation total, guarantees service execution, or introduces
+clock/scheduling/happens-before semantics. See
+[`InputValid`, `InputSources` and `defined_consequence`](ArchiScript/Consequence.lean)
+and [`CrossCone`](ArchiScriptExamples/CrossCone.lean).
+
+#### Why not model separate Validation and Permission VDPs?
+
+That is also legitimate **if the two factors and their actual suppliers
+are meaningful**. But `{Valid, Invalid} ⊗ {Permitted, Denied}`
+has four nominal pairs, including `(Invalid, Denied)` and
+`(Invalid, Permitted)`. The input contract must explain which pairs
+are actually reachable and admitted; it does not delete unwanted
+tensor members. In an architecture audit, `(Invalid, Denied)` may
+raise the question: *was invalid input incorrectly passed to an
+authorization check after validation, or does `Denied` simply mean a
+general refusal?* In new design it may suggest a needless stage,
+but it is **not automatically a bug**. A tensor or common Effect
+does not, by itself, prove that validation preceded authorization.
+A sequential forwarding claim needs the corresponding declared
+producer/Operation path and its semantics.
+
+Likewise, declaring `SuccessMessage` and `ErrorMessage` as **two
+separate terminal Effect coordinates** is different from making them
+**alternative members of one Response VDP**. If each coordinate has an
+individually possible result but they cannot coexist in any admissible
+world, the observable Cone's full-Effect projection/inhabitedness
+obligations can expose that mismatch. `none` from a partial Operation
+does not supply an implicit "no message" member. The correct
+representation depends on whether the intended observation is one
+alternative result or two independently meaningful consequences.
+
+#### When is a one-member service VDP enough?
+
+If the intended fact is only "a deployment has completed" or "this
+dependency is declared present", a one-member VDP such as `Deployed`
+may be perfectly meaningful. Tensoring it with the three-member
+request VDP gives **three member pairs**: a typed dependency with
+explicit provenance but no extra decision alternatives. It does not
+represent `Unavailable` or explain outages. A **two-member**
+`Available/Unavailable` VDP is needed when the architecture really
+distinguishes those states, together with a justifiable supplier that
+can account for them. Neither an arbitrary invented Cause nor the
+mere presence of a service box gives the model independent evidence.
+
+**Design lesson.** A single refined request VDP, separate semantic
+Validation/Permission factors, and a request VDP tensor a service-status
+VDP are *different architectural decompositions*. No one form is
+universally preferable. The calculus can check their declared partitions,
+partial maps, supplier provenance, tensor-context P/E obligations and
+observable Effect claims; it cannot choose the right service boundary,
+verify real deployment health, discover omitted real-world conditions
+or prove runtime implementation conformance. Its a priori purpose is
+to make the architect's assumptions and resulting consequences
+explicit enough to challenge **before** or **during** implementation
+review.
+
+### Can repeated Causes, cycles, or timeouts be simulated by adding arrows?
+
+**Not without modeling the added assumptions.** One Cause in the current
+Cone API denotes one concrete external event and its canonical origin.
+Fan-out of that event is valid; invented repeated invocations are not.
+A typed cyclic observation boundary describes finite producer derivations,
+not a polling scheduler, a termination guarantee, or a physical clock.
+Finite VDP members alone do not make the provenance history finite.
+See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean),
+[`CyclicCone`](ArchiScriptExamples/CyclicCone.lean) and
+[`Provenance`](ArchiScript/Provenance.lean).
+
+### Can a scoped certificate accept a disconnected node or rootless cycle?
+
+**Yes, without proving that component has an executable producer.**
+The [`UngroundedCycle`](ArchiScriptTests/UngroundedCycle.lean) regression is
+intentionally an accepted **scoped** certificate with an ungrounded component;
+it proves absent images rather than invented consequences.
+[`SourceCoverage`](ArchiScriptTests/SourceCoverage.lean) distinguishes this
+case from a *declared tensor use with a genuinely incoming factor and a
+missing partner*: the latter must fail the mandatory `inputSources` obligation.
+Complete inventory grounding and rootless SCC diagnostics remain a
+[manual review obligation](#manual-inventory-audit) and a
+[0.8.0 backlog item](plans/0.8.0.md); they are not quietly proved by
+`CertifiedDeclaredArchitecture`.
+
+### Does a passed certificate prove global Cone/Expression coverage?
+
+**No. Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
+The certified declaration enforces its stated local source, context,
+provenance, input and Cone Effect obligations. It does **not** establish
+that every generated finite Expression belongs to a declared Cone. Report
+that stronger claim as **UNKNOWN**, even when CI is green.
+Do not convert an optional 0.8.0 global theorem into a blocking 0.7.0
+requirement, or present the restricted certificate as universal assurance.
+See [the 0.8.0 plan](plans/0.8.0.md).
+
+### Can Lean verify that the stated admissibility contract is a true business requirement?
+
+**No.** `admissibleInput` and `admissibleEffect` are authored mathematical
+contracts. Lean verifies proofs *relative* to them; the trust audit can
+reject improper dependencies on reference Reach, but cannot discover omitted
+real-world conditions or prove the author's judgment independent of the
+architecture. Distinguish **Level A** formal validity of the declared model
+from **Level B** external adequacy and evidence. Missing real-world
+requirements are an architecture-review risk, not something to fix by
+weakening the mathematics.
+
+### Does ArchiScript prove a deployed implementation follows the architecture?
+
+**No.** The 0.7.0 Lean core can specify a proposed architecture **before
+code exists**. Review records and optional source-code bindings are
+engineering handoff metadata; they are not runtime conformance proofs.
+Versioned implementation evidence or separate temporal/concurrency analysis
+can be valuable *additional* checks, but must not be misreported as already
+proved or made prerequisites for defining a mathematical architecture.
+
 ## Semantic foundation
 
 Declare a complete meaningful carrier, including failed, invalid and absent
@@ -93,16 +733,32 @@ meaning, parent/definition evidence and containment proof. Subdomains are the
 building blocks; **a selected VDP member is itself a Subdomain**, not a separate
 kind of object. A Subdomain does not have to be selected by any particular VDP.
 
-The architect can derive regions by proved `SemanticSplit` declarations:
+Keep the **carrier type**, **Subdomain derivation**, and **VDP member
+selection** separate. `String` is a type, **not a node or parent in the
+Subdomain hierarchy**. Every region below is a `Subdomain String`, with a
+meaning predicate on the same `String` carrier.
+
+The architect can derive those regions by proved `SemanticSplit`
+declarations:
 
 ```text
-String                           <- unchanged carrier (type)
-└── AllStrings                   <- root Subdomain, meaning True
-    ├── Invalid                  <- selected VDP member
-    └── Valid                    <- intermediate Subdomain
-        ├── ValidAndPermitted    <- selected VDP member
-        └── ValidAndDenied       <- selected VDP member
+Carrier type (not part of the tree): String
+
+Subdomain String derivation:
+AllStrings                   <- root Subdomain; meaning(s) := True
+├── Invalid                  <- Subdomain
+└── Valid                    <- Subdomain
+    ├── ValidAndPermitted    <- Subdomain
+    └── ValidAndDenied       <- Subdomain
+
+Fine-grained VDP selection (not a tree edge):
+  Carrier: String
+  Selected members: Invalid | ValidAndPermitted | ValidAndDenied
 ```
+
+The tree relates **Subdomains to other Subdomains** by semantic refinement.
+The VDP separately selects regions from that derivation; it does not place
+the carrier above them or add new kinds of semantic region.
 
 First, split `AllStrings` into `Invalid` and `Valid`; then split
 `Valid` into `ValidAndPermitted` and `ValidAndDenied`. The predicate for
@@ -317,6 +973,10 @@ assumptions remain part of the evidence.
 
 Neither an Operation nor a supplier must reach every member of its target VDP.
 `Adm` and `Reach` may be proper subsets of the unchanged full product.
+Crucially, these input-relation obligations **do not require the consuming
+Operation to be total**, even on admitted and reachable full tuples:
+`g.run tuple = none` remains permitted. P/E checks the complete tensor
+input relation, not the definedness or surjectivity of `g.run`.
 
 ### Correlation, partners and complete tuples
 
