@@ -15,8 +15,16 @@ whole system of semantic possibilities and their joint consequences**, not a
 tool for producing a final C4 diagram or simulating an implementation.
 
 Model the full meaningful possibility space **a priori**, before an individual
-execution selects an outcome. VDP members denote semantic regions, not observed
-runtime values. Operations state partial maps between those regions; Causes,
+execution selects an outcome.
+
+**VDP means Value Domain Partition (not Verified Domain Partition).**
+A VDP partitions a declared value carrier into a finite, nonempty family of
+inhabited, pairwise disjoint semantic Subdomains covering that carrier.
+Lean verifies the declared partition obligations; it does not establish
+that the chosen carrier or its semantic assumptions exhaust all real-world
+possibilities.
+
+VDP members denote semantic regions, not observed runtime values. Operations state partial maps between those regions; Causes,
 supplier provenance, contexts and Cones constrain which joint consequences
 are possible. Lean verifies obligations about that declared interpretation,
 without choosing concrete runtime outcomes or executing values.
