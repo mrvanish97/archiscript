@@ -27,6 +27,10 @@ is complete, remain separate responsibilities. Formal coverage of the
 **declared** scope must likewise not be confused with the currently deferred
 global Cone/Expression guarantee.
 
+For recurring review objections, especially the distinction between
+**functional Operations**, **multiple outgoing Operations**, and **joint
+Cone Effects without timing claims**, see the [Reviewer FAQ](#reviewer-faq-recurring-semantic-and-scope-questions).
+
 **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Certificates
 cover the declared semantic objects and derived contexts described below.
 The checker does not establish that the union of declared Cones covers every
@@ -71,6 +75,182 @@ not a Lean guarantee. Adding a connection requires fresh supplier and contextual
 P/E checks. A reachable X with unsourced Y at a declared join remains a present
 certification failure, not this deferred audit. The [0.8.0 plan](plans/0.8.0.md)
 separates inventory-wide diagnostics from all-generated-Expression coverage.
+
+## Reviewer FAQ: recurring semantic and scope questions
+
+The following questions have repeatedly appeared in independent architecture reviews.
+**Before filing a defect**, identify which claim is at issue: a mandatory 0.7.0
+mathematical invariant, a deliberate modeling boundary, a limitation of the
+current certification scope, or an external/business assumption. Challenge an
+actual claim with a counterexample; do not silently replace ArchiScript's
+intended semantics with a general runtime or nondeterministic transition system.
+
+### Why is there no arrow from one source member to two different outputs?
+
+**Because one `Operation` is deliberately a partial function on semantic
+members**, `run : X.MemberIndex → Option Y.MemberIndex`. A *single* Operation
+maps a given source member to at most one target member; `none` means that
+mapping is undefined. [`Operation.single_output`](ArchiScript/Operation.lean)
+proves this, and [`HiddenWaitingBranch`](Test/Negative/HiddenWaitingBranch.lean)
+is a controlled negative example.
+
+This **invalid** sketch is *not Lean syntax*:
+
+```text
+one operation: decide
+  Waiting --> Success
+  Waiting --> Timeout    (Success and Timeout are distinct target members)
+```
+
+A branching or set-valued arrow does not fix the missing explanation. If the
+*same* Operation really distinguishes success from timeout, the source
+architecture must identify an **a priori semantic distinction** that determines
+the outcome, or a justified additional Cause/supplier/context that supplies the
+relevant information. That information need not be observed or predicted
+beforehand. For example, [`PossibilitySpace`](ArchiScriptExamples/PossibilitySpace.lean)
+uses a scenario carrier covering short wait, long wait and timeout possibilities
+without claiming knowledge of a future execution. An honestly coarser result
+VDP may be appropriate if the distinction is **not** claimed; merely merging
+different outcomes into an opaque member must not masquerade as having proved
+their separate behavior.
+
+### Does that ban branching architectures or multiple outgoing Operations?
+
+**No.** These are **different** declared Operations, not two results of one
+Operation:
+
+```text
+          f : X → Y
+source X <
+          g : X → Z
+```
+
+Their possible consequences are not required to be mutually exclusive. One
+Cause can have multiple distinct downstream producer paths, including paths
+sharing a target or suffix. There is no restriction to a single outgoing
+Operation per VDP. See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean)
+and [`SharedTargets`](ArchiScriptExamples/SharedTargets.lean). A named
+[`Operation.Branch`](ArchiScript/Operation.lean) witnesses an entry in **one
+functional map**; it is not an extra nondeterministic arrow.
+
+### But does the Cone Effect tensor mean both branches exist together?
+
+**It analyzes their consequences jointly, not their launch times.** The
+derived Cone Effect has an explicit tensor of terminal **provenance
+coordinates**. That is the full *candidate* product. Actual joint
+`reachEffect` tuples must be justified by derived suppliers, a **common
+declared boundary world**, the Effect provenance condition and applicable
+context; correlations can exclude Cartesian tuples. The analytical tensor
+does not construct a new architectural join Operation.
+
+Neither tensor formation nor joint mathematical reachability supplies a
+timestamp, a runtime scheduler, or a theorem that two Operations **will
+start**, start independently, start simultaneously, or eventually run.
+"Both will start at some finite time (perhaps years later)" is still a
+*liveness* assertion not proved by 0.7.0. Relative order, synchronization,
+`happens-before`, physical co-presence and delivery need separately declared
+temporal semantics if they are important. The model's *same world* is not
+automatically a *same instant*. See
+[`DeclaredArchitecture.reachEffect`](ArchiScript/Consequence.lean).
+
+### Is a tensor automatically a join, copy, or synchronization?
+
+**No.** A VDP tensor is the full mathematical Cartesian product. An *actual
+architectural join* needs one explicitly declared Operation with a tensor
+source and independently derived suppliers for each factor. The certified
+context must prove exact full-tuple `Reach = Adm` and projection coverage
+using upstream images. Simply seeing two branches, the same nominal target,
+or an analytical Effect tensor cannot create that Operation or make an
+inadmissible tuple reachable. See
+[`CorrelatedJoin`](ArchiScriptExamples/CorrelatedJoin.lean),
+[`SharedTargetJoin`](ArchiScriptExamples/SharedTargetJoin.lean) and
+[`ContractCoverage`](ArchiScriptTests/ContractCoverage.lean).
+
+### Is a VDP an enum of observed outcomes or a runtime validation pipeline?
+
+**Neither.** First declare the complete meaningful carrier and justified,
+inhabited `Subdomain` meanings. A VDP selects a finite, nonempty, covering,
+pairwise disjoint family of **those Subdomains**. Supporting regions may be
+finer than the selected members; a selected member need not be the leaf of
+the finest available split. The carrier stays fixed *for that VDP's semantic
+refinement*, not necessarily across different Operation endpoints. See
+[the worked String example](#from-subdomains-to-selected-vdp-members-a-string-carrier)
+and [`ProjectReference`](ArchiScriptExamples/ProjectReference.lean).
+Observing a runtime value can identify a previously declared region; it
+does not create the region after the fact.
+
+### Can repeated Causes, cycles, or timeouts be simulated by adding arrows?
+
+**Not without modeling the added assumptions.** One Cause in the current
+Cone API denotes one concrete external event and its canonical origin.
+Fan-out of that event is valid; invented repeated invocations are not.
+A typed cyclic observation boundary describes finite producer derivations,
+not a polling scheduler, a termination guarantee, or a physical clock.
+Finite VDP members alone do not make the provenance history finite.
+See [`RootCoherence`](ArchiScriptTests/RootCoherence.lean),
+[`CyclicCone`](ArchiScriptExamples/CyclicCone.lean) and
+[`Provenance`](ArchiScript/Provenance.lean).
+
+### Can a scoped certificate accept a disconnected node or rootless cycle?
+
+**Yes, without proving that component has an executable producer.**
+The [`UngroundedCycle`](ArchiScriptTests/UngroundedCycle.lean) regression is
+intentionally an accepted **scoped** certificate with an ungrounded component;
+it proves absent images rather than invented consequences.
+[`SourceCoverage`](ArchiScriptTests/SourceCoverage.lean) distinguishes this
+case from a *declared tensor use with a genuinely incoming factor and a
+missing partner*: the latter must fail the mandatory `inputSources` obligation.
+Complete inventory grounding and rootless SCC diagnostics remain a
+[manual review obligation](#manual-inventory-audit) and a
+[0.8.0 backlog item](plans/0.8.0.md); they are not quietly proved by
+`CertifiedDeclaredArchitecture`.
+
+### Does a passed certificate prove global Cone/Expression coverage?
+
+**No. Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
+The certified declaration enforces its stated local source, context,
+provenance, input and Cone Effect obligations. It does **not** establish
+that every generated finite Expression belongs to a declared Cone. Report
+that stronger claim as **UNKNOWN**, even when CI is green.
+Do not convert an optional 0.8.0 global theorem into a blocking 0.7.0
+requirement, or present the restricted certificate as universal assurance.
+See [the 0.8.0 plan](plans/0.8.0.md).
+
+### Can Lean verify that the stated admissibility contract is a true business requirement?
+
+**No.** `admissibleInput` and `admissibleEffect` are authored mathematical
+contracts. Lean verifies proofs *relative* to them; the trust audit can
+reject improper dependencies on reference Reach, but cannot discover omitted
+real-world conditions or prove the author's judgment independent of the
+architecture. Distinguish **Level A** formal validity of the declared model
+from **Level B** external adequacy and evidence. Missing real-world
+requirements are an architecture-review risk, not something to fix by
+weakening the mathematics.
+
+### Does ArchiScript prove a deployed implementation follows the architecture?
+
+**No.** The 0.7.0 Lean core can specify a proposed architecture **before
+code exists**. Review records and optional source-code bindings are
+engineering handoff metadata; they are not runtime conformance proofs.
+Versioned implementation evidence or separate temporal/concurrency analysis
+can be valuable *additional* checks, but must not be misreported as already
+proved or made prerequisites for defining a mathematical architecture.
+
+### What counts as an actionable review finding?
+
+Point to **one concrete violated claim**, its required scope, the source
+definition/proof and a counterexample or failing regression. Keep different
+types of conclusion separate:
+
+- **Blocking semantic defect:** an actual mandatory 0.7.0 obligation can
+  be bypassed or incorrectly proved for a declared context.
+- **Known scope limit / UNKNOWN:** global generated-Expression coverage,
+  whole-inventory grounding, real-world interpretation or runtime liveness
+  is not claimed by the current certificate.
+- **Non-blocking engineering concern:** documentation ergonomics, proof-authoring
+  cost, unmeasured performance scaling, possible future code-conformance
+  tooling, or optional automation. Prioritize measured evidence and avoid
+  changing the mathematical contract merely to imitate a different tool.
 
 ## Semantic foundation
 

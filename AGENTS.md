@@ -8,6 +8,19 @@ nonlinear Expression terminology and earlier universal-surjectivity proposals.
 Use current Lean declarations for API names. Report unavailable design sources
 or proposed departures explicitly.
 
+## Review questions and scope discipline
+
+Read the [Reviewer FAQ](README.md#reviewer-faq-recurring-semantic-and-scope-questions)
+before classifying an alleged missing feature as a semantic defect. In
+particular, an Operation has at most one mapped output **per input member**,
+while multiple outgoing Operations are legal and non-exclusive. Derived
+Cone Effect tensors analyze joint semantic consequences under a common world,
+not actual or eventual launches, timing, synchronization or `happens-before`.
+Do not recommend a nondeterministic member arrow without first checking
+`Operation.single_output`, the negative branch regression and the a priori
+possibility-space explanation. Separate mandatory 0.7.0 proof obligations,
+documented scope limits, external assumptions and optional improvements.
+
 ## Semantic boundary
 
 - Treat ArchiScript as **a priori semantic architecture review**, between

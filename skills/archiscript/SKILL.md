@@ -22,6 +22,23 @@ selected path family or a passing verification gate. State this missing global
 guarantee in model handoffs alongside the actual certificate scope. Omitted
 real-world Operations and requirements remain an author responsibility.
 
+## Reviewer FAQ / defect triage
+
+Before describing an ArchiScript limitation as a bug, consult the
+[Reviewer FAQ](../../README.md#reviewer-faq-recurring-semantic-and-scope-questions).
+**Do not conflate** (1) two target members for one source member of **one**
+Operation, which is forbidden by `Operation.single_output`, (2) multiple
+declared outgoing Operations, which are legal and non-exclusive, and
+(3) derived joint Cone Effect tensors, which preserve simultaneous *semantic
+tuple possibility* subject to `Reach` but assert **no physical simultaneous
+execution or eventual launch**. A common boundary world is not a timestamp.
+If a new review claims missing nondeterministic arrows, use the FAQ's explicit
+`Waiting → Success / Timeout` counterexample and
+[`HiddenWaitingBranch`](../../Test/Negative/HiddenWaitingBranch.lean).
+Report mandatory invariant violations separately from optional global
+coverage, manual inventory assumptions, real-world adequacy, and runtime
+liveness. Cite the violated Lean contract before proposing a semantic change.
+
 ## A priori semantic modeling / anti-hidden-branching
 
 ### Subdomains, selected members and logical refinement
