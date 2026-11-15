@@ -58,13 +58,44 @@ are then mistaken for runtime values that a component must
 already observe, and a semantic Operation is wrongly expected
 to predict which future scenario will occur.
 
-That changes the question. A network failure, resource
-contention or even a meteorite disabling a server can
-be modeled through the architecturally relevant semantic
-distinctions, **provided the declared boundary and source
-assumptions really justify them**. The possibility of such
-events does not, by itself, demand a nondeterministic
-member-level Operation or a simulation of physical time.
+This shift produces a recognizable series of objections:
+
+> **"But what if the network suddenly fails?"**
+>
+> **"What if an availability zone goes down?"**
+>
+> **"What if a meteorite destroys the server?"**
+>
+> **"What if a request times out, or another worker intervenes?"**
+>
+> **"How can one deterministic Operation describe such unpredictable,
+> complex or apparently nondeterministic consequences?"**
+
+**These are precisely the kinds of semantic possibilities that
+ArchiScript is designed to distinguish.** Such questions do not,
+by themselves, reveal a need for a nondeterministic primitive.
+An architect can describe an appropriate scenario partition,
+or declare a separate Network/Zone/Resource Cause and VDP
+whose justified supplier feeds the consuming Cone through a
+tensor. Even a meteorite can matter simply as a
+`ServerAvailable / ServerUnavailable` distinction when that
+is sufficient for the particular architectural question.
+The cause may be unpredictable to a runtime observer;
+the declared **full semantic cases** can still have
+well-defined member-level consequences.
+
+For example, `Request ⊗ NetworkStatus` distinguishes
+`(ValidRequest, Up)` from `(ValidRequest, Down)`.
+They are distinct **tensor input members**, not two
+conflicting outputs of one source member. One
+`Operation.run` may map them respectively to
+`Success` and `NetworkError`, without claiming that
+a deployed handler knows future network conditions.
+The model must still prove supplier provenance,
+actual contextual P/E, and appropriate assumptions.
+If the cases are not yet distinguished, that is a
+concrete task for architecture modeling, not a
+reason to demand an unrestricted branch or clock.
 
 This is not a simulator, a guarantee that every real-world
 failure was enumerated, or a proof of implementation
