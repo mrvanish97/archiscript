@@ -21,8 +21,12 @@ or proposed departures explicitly.
   each declared SemanticSplit as well as coverage, disjointness and inhabitation
   of the final selected family. In the String example, AllStrings splits into
   Invalid/Valid and Valid into ValidAndPermitted/ValidAndDenied; the three
-  selected leaves cover String, while Valid remains intermediate. This is
-  logical refinement, not runtime validation. Keep flat selections and
+  selected leaves cover String, while Valid remains intermediate. A coarser
+  VDP may instead select Invalid/Valid and leave the permission children
+  unselected: VDP members need not be the finest leaves, but overlapping
+  ancestors and descendants cannot be selected together. Carrier stability
+  applies within one VDP refinement, not between different Operation endpoints.
+  This is logical refinement, not runtime validation. Keep flat selections and
   independent supporting trees legal; see the README String example.
 - Interpret a request for two distinct outputs from one input member of one
   Operation as a missing semantic distinction or justified supplier/context

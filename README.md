@@ -81,9 +81,11 @@ split. Select a finite nonempty family of those regions as the VDP's members.
 ### From Subdomains to selected VDP members: a `String` carrier
 
 Take `String` as the carrier: **all strings**, including empty, malformed,
-invalid, valid-but-denied and valid-and-permitted values. The carrier remains
-`String` through every refinement; it is never replaced by an enum of
-outcomes or narrowed to successful cases.
+invalid, valid-but-denied and valid-and-permitted values. For this source VDP,
+the carrier remains `String` through every semantic refinement; it is never
+replaced by an enum of outcomes or narrowed to successful cases. This is a
+local statement about refining one VDP: other VDPs, including the target of
+an `Operation`, may use different carriers.
 
 A `Domain String` is a predicate, which may describe an empty region.
 A `Subdomain String` is a **named, inhabited** semantic region carrying its
@@ -141,8 +143,20 @@ and `ValidAndDenied` as members; `Valid` and `AllStrings` remain part of
 the derivation, but are **not** also selected as members. `MemberIndex`
 identifies these three chosen regions.
 
+**A VDP member need not be a leaf of the finest available split.** The same
+`String` carrier also admits a coarser VDP selecting just `Invalid` and
+`Valid` as its two members. There, `Valid` is a selected member while
+`ValidAndPermitted` and `ValidAndDenied` remain meaningful, unselected
+supporting Subdomains. Do not select `Valid` together with either overlapping
+child in the same VDP. Both resolutions require nonempty selected members,
+full-carrier coverage and pairwise disjointness; choose the resolution whose
+member distinctions are justified by downstream architectural needs.
+
 A subsequent single `Operation` may map those source members to
-`Rejected`, `Accepted` and `Rejected`, respectively, in a result VDP.
+`Rejected`, `Accepted` and `Rejected`, respectively, in a result VDP. That
+result VDP can have a different carrier (for example, a `Decision` type):
+`Operation` maps source member indices to target member indices, not concrete
+strings to concrete decisions.
 Trying to map one coarse `Valid` member to both distinct results in the
 same Operation is a signal of a missing source distinction, not a reason to
 introduce an unexplained nondeterministic member arrow.

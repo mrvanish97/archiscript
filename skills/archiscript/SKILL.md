@@ -40,9 +40,13 @@ child splits and `Partition.ofSplit` when the root covers the full carrier.
 
 Canonical interpretation: carrier `String`; `AllStrings` splits into
 `Invalid` and `Valid`; `Valid` splits into `ValidAndPermitted` and
-`ValidAndDenied`. Select the three leaves as VDP members, **not** `Valid`
-alongside its children. The carrier stays `String`, including invalid and
-empty strings. The three selected predicates must cover every string, be
+`ValidAndDenied`. One fine-grained VDP selects the three leaves as members,
+**not** `Valid` alongside its children. A coarser VDP may instead select
+`Invalid` and `Valid`, retaining the finer permission regions as supporting
+Subdomains. A selected member need not be a leaf of the finest split, but
+one VDP must not select overlapping ancestors and descendants. The carrier
+stays `String` through either refinement, including invalid and empty strings;
+other VDPs, such as an `Operation` target, may have different carriers. The three selected predicates must cover every string, be
 pairwise disjoint and each be inhabited. A permission distinction needs a
 justified predicate over the carrier or an explicitly sourced dependency;
 do not invent facts unavailable to a string-only input.
