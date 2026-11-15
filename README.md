@@ -318,26 +318,28 @@ In this example the status can be supplied by an external monitor/report:
            INPUT: Request (x) ServiceStatus
            Full VDP tensor has 3 x 2 = 6 member pairs
                              |
-               Verify supplied input relations:
-               P: each incoming member has a full partner
-               E: Reach = Adm for complete tuples
+          PROOF OBLIGATIONS (not runtime steps):
+          P: incoming members have full admitted partners
+          E: Reach = Adm on COMPLETE input tuples
                              |
                              v
-               process : Request (x) ServiceStatus
-                         -> Response
-               (one ordinary PARTIAL Operation)
-                             |
-           +-----------------+---------------------------+
-           | INPUT PAIR                  DEFINED OUTPUT   |
-           |                                              |
-           | (Invalid, Available)       -> InvalidInput  | <--+
-           | (Invalid, Unavailable)     -> InvalidInput  | <--+ SAME
-           |                                              |     result
-           | (ValidAndPermitted, Available)   -> Success  |
-           | (ValidAndPermitted, Unavailable) -> ServiceUnavailable
-           | (ValidAndDenied, Available)      -> PermissionDenied
-           | (ValidAndDenied, Unavailable)    -> ServiceUnavailable
-           +----------------------------------------------+
+          process : Request (x) ServiceStatus -> Response
+          (ONE partial Operation; six defined cases shown)
+
+          MEMBER-LEVEL MAP -- not a runtime execution order:
+
+          (Invalid, Available) -----------+
+                                           +---> some InvalidInput
+          (Invalid, Unavailable) ---------+
+                         ^                         ^
+                         |                         |
+              DIFFERENT STATUS            SAME RESPONSE
+
+          (ValidAndPermitted, Available) -----> some Success
+          (ValidAndPermitted, Unavailable) ---> some ServiceUnavailable
+          (ValidAndDenied, Available) --------> some PermissionDenied
+          (ValidAndDenied, Unavailable) ------> some ServiceUnavailable
+
                              |
                              v
                 Response VDP (selected members)
