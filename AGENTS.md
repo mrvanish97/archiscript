@@ -10,6 +10,28 @@ or proposed departures explicitly.
 
 ## Semantic boundary
 
+- Treat ArchiScript as **a priori semantic architecture review**, between
+  high-level diagrams and existing or proposed code. Analyze complete declared
+  possibility spaces and their joint member-level consequences, not observed
+  runtime values, execution traces or an implementation simulator. Modeling
+  does not itself prove code conformance or real-world boundary completeness.
+- Distinguish the complete carrier, semantic Subdomains (including intermediate
+  and supporting regions), and **selected VDP members**. A member is itself a
+  chosen Subdomain of the unchanged carrier. Audit the ancestry and proof of
+  each declared SemanticSplit as well as coverage, disjointness and inhabitation
+  of the final selected family. In the String example, AllStrings splits into
+  Invalid/Valid and Valid into ValidAndPermitted/ValidAndDenied; the three
+  selected leaves cover String, while Valid remains intermediate. A coarser
+  VDP may instead select Invalid/Valid and leave the permission children
+  unselected: VDP members need not be the finest leaves, but overlapping
+  ancestors and descendants cannot be selected together. Carrier stability
+  applies within one VDP refinement, not between different Operation endpoints.
+  This is logical refinement, not runtime validation. Keep flat selections and
+  independent supporting trees legal; see the README String example.
+- Interpret a request for two distinct outputs from one input member of one
+  Operation as a missing semantic distinction or justified supplier/context
+  question before proposing a nondeterministic member map. Never conceal
+  necessary information behind invented outcome labels or simulated execution.
 - Keep the public `ArchiScript` root focused on the calculus. Companion models
   belong in `ArchiScriptExamples`. Workflow bindings and approval metadata are
   optional imports, not mathematical acceptance criteria. The installed skill's
