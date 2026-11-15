@@ -12,19 +12,20 @@ try to discharge its mandatory Lean obligations, correct unsupported
 assumptions, and either implement against the model or audit existing
 code against it.
 
-**Procedural slippage — mandatory reviewer reset.**
-Both human reviewers and AI agents can shift
-from a priori semantic reasoning into mentally
-executing a program. This **procedural slippage**
-makes them mistake VDP members for concrete
-runtime event classes, or demand that one
-Operation predict which possible scenario will
-occur. It is a category error to correct,
-not evidence of a failed architectural proof.
-Before criticizing ArchiScript for "uncontrolled
-nondeterminism" (network outage, zone failure,
-timeout, race, meteor strike), apply this rule:
-
+**Core modeling discipline — avoid procedural slippage.**
+ArchiScript works with **a priori semantic possibilities**,
+not an execution trace. Human authors, AI agents and reviewers
+can slip from semantic reasoning into mentally executing
+software and demand that one `Operation` predict an
+unobservable future event. A `VDP` partitions a declared
+carrier of possibilities; its members are **not** the
+runtime classes or messages a component must already
+possess. For each architecture, apply this discipline
+when constructing the model *and* when criticizing it.
+External failures (network outage, AZ failure, timeout,
+race, meteor strike) are candidate semantic distinctions
+or justified neighboring-Cone factors, not automatically
+unmodeled nondeterministic arrows. Follow these steps:
 1. Ask whether the factor is **already present**
    as a semantic distinction in the declared
    scenario carrier/VDP. An `Up | Down`
@@ -76,7 +77,7 @@ timeout, race, meteor strike), apply this rule:
                    Up | Down
 ```
 
-**Expected reviewer response** to "What if
+**Expected modeling/review response** to "What if
 the network drops or a meteorite makes
 the server unavailable?": "These are
 potential semantic cases, not evidence
@@ -88,7 +89,7 @@ models them; check P/E and provenance.
 Only a concrete omitted distinction
 or unjustified guarantee is a valid
 defect." For additional worked
-context see [the reviewer warning](../../README.md#procedural-slippage-do-not-confuse-semantic-possibilities-with-execution)
+context see [the reviewer warning](../../README.md#core-principle-semantic-possibilities-before-execution)
 and [network FAQ](../../README.md#can-network-outages-or-availability-zone-failures-be-analyzed-without-a-network-simulator).
 This instruction is **self-contained**;
 the agent must be able to apply it
