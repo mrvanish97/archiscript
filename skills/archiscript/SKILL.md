@@ -34,6 +34,35 @@ These are prompts to identify
 semantically distinct full scenarios or justified
 neighboring-Cone suppliers, **not** automatic evidence
 for nondeterministic member-level Operations.
+**How the language itself pushes back:** the response to
+procedural slippage is not merely better prose.
+`Operation.single_output` prevents one
+`Operation.run` from mapping the same member to
+two distinct target members. `InputSources`,
+provenance and contextual `InputValid`
+demand sourced tensor factors, full
+`ReachInput = AdmInput` (E) and exact
+incoming-factor projections (P). For an
+**observable** Cone, `ConeValid` requires a
+nonempty reachable full Effect tuple,
+`ReachEffect = AdmEffect` and exact
+Effect-coordinate projections, with
+supplier provenance. Thus an arbitrary
+Effect tensor does **not** prove all its
+Cartesian tuples reachable: only justified
+joint tuples count. Unobservable Cones
+use an explicitly checked alternative.
+Missing obligations block the respective
+certification claim; a successful scoped
+proof never guarantees a complete or
+truthful real-world model, and global
+Expression/Cone coverage is still not
+automatic. In actual authoring, use the
+Lean error or counterexample to locate
+the missing distinction/source/relation,
+rather than falling back to procedural
+simulation or disguising a branch.
+
 Follow these steps:
 1. Ask whether the factor is **already present**
    as a semantic distinction in the declared
