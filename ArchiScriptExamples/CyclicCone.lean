@@ -95,7 +95,7 @@ theorem origin_invariant {s} (t : signature.Occurrence s) :
   | unit => intro n same; cases same
   | cause c root =>
     intro n same; cases same; cases c; cases root
-    exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
+    exact ⟨⟨rfl, rfl⟩, rfl⟩
   | hole n impossible => exact Empty.elim impossible
   | operation g input ih => intro n same; cases same; cases g; exact ih () rfl
   | tensor left right ihl ihr => intro n same; cases same
@@ -151,7 +151,7 @@ theorem terminalProvenance (b : Bool) : model.EffectProvenance () (terminal b) :
 
 theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEffect () tuple := by
   rcases tuple with ⟨b, u⟩; cases u
-  refine ⟨terminal b, ?_, terminalProvenance b, initial, rfl, ?_, trivial⟩
+  refine ⟨terminal b, ?_, terminalProvenance b, initial, rfl, ?_, trivial, ⟨.inl ()⟩⟩
   · intro i
     cases i with
     | inl i =>
@@ -165,10 +165,16 @@ theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEff
     change model.evaluate initial (observed b) = some b at h
     rw [h]
 
+theorem basis_valid : model.effectAnalysis.Valid :=
+  ⟨by intro c; cases c <;> simp, by decide⟩
+
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨()⟩
-  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
+  effectCoverage := basis_valid
+  inputSources := by
+    intro g
+    exact model.inputSources_of_catalog basis_valid g (by cases g <;> exact of_decide_eq_true rfl)
   inputs := by
     intro g t _; cases g
     refine .verified ⟨input_exact t, ?_⟩ ?_
@@ -178,7 +184,8 @@ theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEff
     · exact ⟨alternating t.operations, (input_exact t _).mpr rfl⟩
   cones := by
     intro c; cases c
-    refine ⟨by decide, ⟨(false, ()), effectReach _⟩, ?_, ?_⟩
+    apply DeclaredArchitecture.ConeStatus.observable
+    refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach _⟩, ?_, ?_⟩
     · intro tuple
       exact ⟨fun _ => trivial, fun _ => effectReach tuple⟩
     · intro i b
@@ -190,6 +197,7 @@ theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEff
       | inr impossible => exact Empty.elim impossible
   boundariesComplete := by
     intro c n _; cases c; cases n
+    apply Or.inr
     refine ⟨(), ?_, .refl _⟩
     change () ∈ [()]
     simp

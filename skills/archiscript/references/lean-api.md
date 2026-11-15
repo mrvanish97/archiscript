@@ -68,20 +68,65 @@ producer derivations preserve provenance. `Term.supplier` selects a factor.
 `Term.CycleBoundary` uses a typed hole family solely to witness a genuine cyclic
 entry/observation route; `oneEntry` and `nontrivial` are mandatory.
 
+### Canonical origins and supported contexts
+
+`ArchitectureSignature.Term.RootCoherent` recursively requires `root = S.origin c`
+at every `cause c root` leaf, including nested external suppliers. One Cause has
+one designated event occurrence; multiple producer paths from that occurrence
+remain legitimate. Distinct Causes may have equal VDPs and equal root labels
+without becoming the same source. A noncanonical root of **any** Cause makes a
+derivation unsupported, even if the output-owning Cause has only canonical roots.
+
 `DeclaredArchitecture` supplies `boundary`, `boundaryNonempty`, `context`,
 `admissibleInput`, `cyclicBoundary`, `effectAnalysis`, `effectContext`, `admissibleEffect`.
 `evaluate` is a noncomputable reference denotation of finite derivations;
 `Evaluates` is its relational form. `Evaluates.deterministic`,
-`Evaluates.supplier` and `defined_consequence` are proved. `InCone` requires the
-specified originating root and preserves its identity.
-`effect_image_of_assignment` and `effect_projection_of_assignment` reuse a
-proved stationary interpretation for full Effect relations/projections; their
-premises do not hold for arbitrary cyclic or occurrence-sensitive models.
+`Evaluates.supplier` and `defined_consequence` are proved. Raw `Term` and
+`evaluate` still admit noncanonical roots; evaluating such a term does not prove
+it is a supported context or Cone consequence. `evaluate_inputContract` proves
+that changing `admissibleInput` does not change reference evaluation.
 
-`isInputContext` derives ownership from real supplier provenance. `incoming`
-is independent of current join acceptance. `reachInput` includes the stated
-availability context. `InputValid` requires exact agreement and projections;
-`InputStatus` distinguishes inhabited verification from proved unreachability.
+`InCone c t` is `t.hasRoot c (S.origin c) ∧ t.RootCoherent`.
+`isInputContext g t` requires whole-input coherence and a supplier in the
+output owner's Cone. The signature's `localFactor` proof lets
+`isInputContext_iff_coherent` derive that ownership witness for every coherent
+full input. `input_consequence_inCone g t context` puts the corresponding
+Operation result in its owner's Cone. These are provenance/scope facts, not
+proofs of reachable values or independent tuple-contract validity.
+
+### Generator sources and tuple contracts
+
+| API | Required evidence / meaning |
+| --- | --- |
+| `supplierImage n member` | Some coherent upstream producer of `n` evaluates to `member` in an allowed boundary world; no complete join input is needed |
+| `InputSources.grounded` | A coherent typed supplier exists at **every** factor position of the declared generator |
+| `InputSources.unreachable` | Every independent `supplierImage` at every input position is empty |
+| `inputSources_of_catalog` | A valid provenance cache plus `SourcesPresent g` supplies the `grounded` evidence |
+| `incoming t i member` | Image of the actual supplier `t.supplier i`, independent of the current join's admissibility |
+| `reachInput g t tuple` | Complete input evaluates in a boundary world satisfying the stated availability `context` |
+| `InputValid g t` | Exact full-tuple Reach/Adm agreement and all coordinate projection equalities |
+| `InputStatus.verified` | `InputValid` plus a reachable full tuple |
+| `InputStatus.unreachable` | `noSupplier`: every actual `incoming t` image empty; `noTuple`: no reachable full tuple; `noContract`: no admissible full tuple |
+
+Exactness quantifies over **every** full tuple: each reachable tuple is admitted
+and each admitted tuple is reachable. An impossible tuple admitted by mistake
+lies in Adm minus Reach and fails E; it is not excluded from the comparison.
+
+The per-generator source obligation is separate from universal checks over full
+coherent contexts. `grounded` is structural evidence, not a joint-reachability
+proof or a selected list of contexts. A supplied X with unsourced Y cannot pass
+either source alternative: Y prevents grounding, while X refutes global image
+emptiness. `localFactor` alone establishes neither alternative.
+
+`CertifiedDeclaredArchitecture.input_partner g i member supplied` takes an
+independent `supplierImage` witness and produces a supported **full** input
+context, an admissible and reachable full tuple, and its matching coordinate.
+The supplied member is thus accounted for even before a complete input was
+chosen. The theorem does not assert that all Cartesian combinations are
+reachable or require surjectivity onto every nominal VDP member. Its concrete
+statement is in [Consequence.lean](../../../ArchiScript/Consequence.lean).
+
+### Effect provenance and status
 
 `effectNodes` derives boundary nodes. `Term.history` is injective on typed
 occurrences (`history_injective`). `Term.provenance` normalizes only matched
@@ -90,22 +135,62 @@ marked typed returns; it preserves other producer histories.
 unmarked shared suffix, with one declaration of every downstream Operation.
 
 `ProvenanceAnalysis` contains roots and a finite cache of (Cause, Node, History).
-`Valid` requires root completeness plus `Seeded`, `Closed`, `Realized`; `complete`
-and `sound` connect the cache to all finite local-root supplier derivations.
+`Valid` requires `∀ c, S.origin c ∈ analysis.roots`, plus `Seeded`, `Closed`,
+`Realized`. The cache need not enumerate all values of `RootInstance` or prove
+that type finite. `rootHistories` seeds only designated origins even if the
+list contains other roots. `complete` and `sound` connect the cache to coherent
+finite supplier derivations, including cross-Cone dependencies.
+The [infinite-root regression](../../../ArchiScriptTests/SourceCoverage.lean)
+proves `infiniteRootBasis_valid` for `RootInstance := Nat` with cache roots `[0]`.
 `effectCoordinates` derives (Node, History) positions, and `effectInputs` their
 full tensor. `EffectProvenance` binds each actual supplier to its position;
 `effectIncoming` and `reachEffect` require it. `terminal_positions` proves that
 every supported boundary derivation has a coordinate. `effect_realized` gives
 actual typed suppliers, without claiming reachable values or runtime execution.
-`ConeValid` and `BoundariesComplete` retain the full semantic obligations.
-Empty effects cannot receive a successful certificate through the tensor unit.
 
-`CertifiedDeclaredArchitecture` requires `model`, `causeNonempty`, universal `inputs`, `cones`
-and `boundariesComplete`, plus `effectCoverage : model.effectAnalysis.Valid`. Its scope is declared contexts. **Global
-Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
+`reachEffect c tuple` also requires `Nonempty (model.effect c).Position`.
+These are actual derived positions, not merely nominal boundary names or an
+inhabited tensor-unit value. `effect_image_of_assignment` requires this explicit
+`observed` premise along with a complete terminal supplier, origin/provenance
+proofs, a proved stationary interpretation and availability.
+`effect_projection_of_assignment` reuses full Effect exactness and that
+interpretation; neither helper applies to arbitrary occurrence-sensitive cycles.
 
-`CertifiedDeclaredArchitecture.hasCone` proves the existence of an actual valid
-Cone; an absent Cause inventory cannot acquire a vacuous complete certificate.
+| Status API | Required evidence |
+| --- | --- |
+| `ConeValid c` | Nonempty **actual** Effect positions, a reachable full tuple, exact independent contract agreement, and every upstream coordinate projection |
+| `NoObservableEffect c` | All `effectIncoming` images empty and every `admissibleEffect` tuple false |
+| `ConeStatus.observable` | A `ConeValid` proof |
+| `ConeStatus.unobservable` | A `NoObservableEffect` proof; no reached unit Effect is claimed |
+| `BoundariesComplete` | For every owned node, either `NoObservableEffect` for its Cause or a structural `Depends` path to a derived boundary |
+
+`NoObservableEffect.not_reachable` rules out full Effect reachability;
+`NoObservableEffect.exact` proves the two empty relations agree without proving
+inhabitation. Unobservable status can apply even when actual positions exist
+but all their incoming images are empty. A missing full tuple alone is not
+enough. `ConeStatus.valid_of_reachable` recovers `ConeValid` from a checked
+status and an actual reachable tuple.
+
+### Complete declared certificate
+
+`CertifiedDeclaredArchitecture` has these mandatory fields:
+
+| Field | Obligation |
+| --- | --- |
+| `model` | The declared interpretation and independent contracts |
+| `causeNonempty` | At least one declared Cause |
+| `effectCoverage` | `model.effectAnalysis.Valid` |
+| `inputSources` | `∀ g, model.InputSources g`, before any complete-input quantification |
+| `inputs` | `∀ g t, model.isInputContext g t → model.InputStatus g t` |
+| `cones` | `∀ c, model.ConeStatus c` |
+| `boundariesComplete` | The structural-path or proved-unobservable alternative above |
+
+`CertifiedDeclaredArchitecture.hasCone` proves `∃ c, model.ConeStatus c`, not
+the existence of an observable `ConeValid`. A source-only event can receive
+explicit unobservable status while an empty Cause inventory remains forbidden.
+Neither that status nor an empty Effect basis bypasses `inputSources` or `inputs`.
+The scope is the declared supported contexts. **Global Cone/Expression coverage:
+NOT AUTOMATICALLY VERIFIED.**
 
 ## Computation and trust
 

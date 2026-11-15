@@ -31,7 +31,7 @@ theorem effectReach (input : InputContract) (effect : EffectContract) (tuple : B
     (model input effect).reachEffect () tuple := by
   rcases tuple with ⟨b, u⟩; cases u
   exact ⟨SimpleCone.terminal, SimpleCone.terminalOrigin, SimpleCone.terminalProvenance,
-    SimpleCone.world b, trivial, evaluation input effect _ _, trivial⟩
+    SimpleCone.world b, trivial, evaluation input effect _ _, trivial, ⟨.inl ()⟩⟩
 
 def certificate (input : InputContract) (effect : EffectContract)
     (allInput : ∀ g t b, input g t b) (allEffect : ∀ c tuple, effect c tuple) :
@@ -39,6 +39,10 @@ def certificate (input : InputContract) (effect : EffectContract)
   model := model input effect
   causeNonempty := SimpleCone.certified.causeNonempty
   effectCoverage := SimpleCone.certified.effectCoverage
+  inputSources := by
+    intro g
+    exact (model input effect).inputSources_of_catalog SimpleCone.basis_valid g
+      (by cases g; exact of_decide_eq_true rfl)
   inputs := by
     intro g t _; cases g
     refine .verified ⟨?_, ?_⟩ ⟨false, inputReach input effect t false⟩
@@ -48,7 +52,8 @@ def certificate (input : InputContract) (effect : EffectContract)
         fun _ => ⟨SimpleCone.world b, trivial, (evaluation input effect _ t).supplier ()⟩⟩
   cones := by
     intro c; cases c
-    refine ⟨by exact of_decide_eq_true rfl, ⟨(false, ()), effectReach input effect _⟩, ?_, ?_⟩
+    apply DeclaredArchitecture.ConeStatus.observable
+    refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach input effect _⟩, ?_, ?_⟩
     · intro tuple
       exact ⟨fun _ => allEffect () tuple, fun _ => effectReach input effect tuple⟩
     · intro i b; cases i with
@@ -58,7 +63,13 @@ def certificate (input : InputContract) (effect : EffectContract)
           fun _ => ⟨SimpleCone.terminal.supplier (.inl ()), SimpleCone.terminalOrigin _, rfl,
             SimpleCone.world b, trivial, evaluation input effect _ _⟩⟩
       | inr impossible => exact Empty.elim impossible
-  boundariesComplete := SimpleCone.certified.boundariesComplete
+  boundariesComplete := by
+    intro c n _; cases c
+    apply Or.inr
+    refine ⟨.output, List.mem_cons_self, ?_⟩
+    cases n with
+    | input => exact ArchitectureSignature.Depends.step (S := SimpleCone.signature) () .input List.mem_cons_self
+    | output => exact .refl _
 
 @[archiscript_certificate] def independent : CertifiedDeclaredArchitecture :=
   certificate (fun _ _ _ => True) (fun _ _ => True) (fun _ _ _ => trivial) (fun _ _ => trivial)

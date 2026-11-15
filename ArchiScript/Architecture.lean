@@ -74,6 +74,16 @@ theorem node_position {Node object} (s : Inputs Node object) {n : Node}
     · obtain ⟨i, same⟩ := ihr hr
       exact ⟨.inr i, same⟩
 
+theorem nodeAt_mem {Node object} (s : Inputs Node object) (i : s.Position) :
+    s.nodeAt i ∈ s.nodes := by
+  induction s with
+  | unit => exact Empty.elim i
+  | node n => exact List.mem_cons_self
+  | tensor left right ihl ihr =>
+    cases i with
+    | inl i => exact List.mem_append_left _ (ihl i)
+    | inr i => exact List.mem_append_right _ (ihr i)
+
 theorem coordinate_ext {Node object} (s : Inputs Node object)
     (left right : s.vdp.MemberIndex) (same : ∀ i, s.coordinate left i = s.coordinate right i) :
     left = right := by
@@ -146,8 +156,8 @@ abbrev generatorsInventory (S : ArchitectureSignature) : Generators where
   target := fun g => .node (S.output g)
   operation := S.operation
 
-/-- Each root instance denotes one particular external occurrence. Shared
-instances share a member assignment; different instances are not identified. -/
+/-- Raw root assignments retain occurrence identity. Accepted single-event
+derivations use the designated `origin` of each Cause. -/
 abbrev World (S : ArchitectureSignature) :=
   (c : S.Cause) → S.RootInstance → (S.object (S.start c)).MemberIndex
 
@@ -203,6 +213,78 @@ def onlyLocalRoot {S : ArchitectureSignature} {Hole : S.Node → Type}
   | .cause d root => d = c → root = S.origin c
   | .operation _ input => input.onlyLocalRoot c
   | .tensor a b => a.onlyLocalRoot c ∧ b.onlyLocalRoot c
+
+/-- Every Cause contributes its one designated external occurrence. Distinct
+downstream paths and different Causes remain available; repeated invocations
+of one Cause are outside the accepted single-event architecture. -/
+def RootCoherent {S : ArchitectureSignature} {Hole : S.Node → Type}
+    {s : Inputs S.Node S.object} : S.Term Hole s → Prop
+  | .unit | .hole .. => True
+  | .cause c root => root = S.origin c
+  | .operation _ input => input.RootCoherent
+  | .tensor left right => left.RootCoherent ∧ right.RootCoherent
+
+def rootCoherenceDecision {S : ArchitectureSignature} {Hole : S.Node → Type} :
+    {s : Inputs S.Node S.object} → (t : S.Term Hole s) → Decidable t.RootCoherent
+  | _, .unit | _, .hole .. => isTrue trivial
+  | _, .cause c root => inferInstanceAs (Decidable (root = S.origin c))
+  | _, .operation _ input => rootCoherenceDecision input
+  | _, .tensor left right =>
+    letI := rootCoherenceDecision left
+    letI := rootCoherenceDecision right
+    inferInstanceAs (Decidable (left.RootCoherent ∧ right.RootCoherent))
+
+instance {S : ArchitectureSignature} {Hole : S.Node → Type} {s} (t : S.Term Hole s) :
+    Decidable t.RootCoherent := rootCoherenceDecision t
+
+theorem RootCoherent.local {S : ArchitectureSignature} {Hole : S.Node → Type} {s}
+    {t : S.Term Hole s} (coherent : t.RootCoherent) (c : S.Cause) : t.onlyLocalRoot c := by
+  induction t with
+  | unit | hole => trivial
+  | cause d root => intro same; subst d; exact coherent
+  | operation g input ih => exact ih coherent
+  | tensor left right ihl ihr => exact ⟨ihl coherent.1, ihr coherent.2⟩
+
+theorem RootCoherent.supplier {S : ArchitectureSignature} {Hole : S.Node → Type} {s}
+    {t : S.Term Hole s} (coherent : t.RootCoherent) (i : s.Position) :
+    (t.supplier i).RootCoherent := by
+  induction t with
+  | unit => exact Empty.elim i
+  | cause | hole | operation => exact coherent
+  | tensor left right ihl ihr =>
+    cases i with
+    | inl i => exact ihl coherent.1 i
+    | inr i => exact ihr coherent.2 i
+
+/-- Assemble existing suppliers for analysis; this declares no copying or join
+Operation. Each factor is supplied independently before tuple validation. -/
+def fromSuppliers {S : ArchitectureSignature} : (s : Inputs S.Node S.object) →
+    ((i : s.Position) → S.Occurrence (.node (s.nodeAt i))) → S.Occurrence s
+  | .unit, _ => .unit
+  | .node _, suppliers => suppliers ()
+  | .tensor left right, suppliers =>
+    .tensor (fromSuppliers left (fun i => suppliers (.inl i)))
+      (fromSuppliers right (fun i => suppliers (.inr i)))
+
+theorem supplier_fromSuppliers {S : ArchitectureSignature} (s : Inputs S.Node S.object)
+    (suppliers : (i : s.Position) → S.Occurrence (.node (s.nodeAt i))) (i) :
+    (fromSuppliers s suppliers).supplier i = suppliers i := by
+  induction s with
+  | unit => exact Empty.elim i
+  | node n => cases i; exact supplier_node _ ()
+  | tensor left right ihl ihr =>
+    cases i with
+    | inl i => exact ihl _ i
+    | inr i => exact ihr _ i
+
+theorem fromSuppliers_coherent {S : ArchitectureSignature} (s : Inputs S.Node S.object)
+    (suppliers : (i : s.Position) → S.Occurrence (.node (s.nodeAt i)))
+    (coherent : ∀ i, (suppliers i).RootCoherent) : (fromSuppliers s suppliers).RootCoherent := by
+  induction s with
+  | unit => trivial
+  | node n => exact coherent ()
+  | tensor left right ihl ihr =>
+    exact ⟨ihl _ (fun i => coherent (.inl i)), ihr _ (fun i => coherent (.inr i))⟩
 
 theorem rooted {S : ArchitectureSignature} {s} (t : S.Occurrence s) (i : s.Position) :
     ∃ root, t.hasRoot (S.owner (s.nodeAt i)) root := by

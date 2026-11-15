@@ -2,11 +2,21 @@ import ArchiScriptExamples.ProofSupport
 import ArchiScript
 
 /-!
-A compact stress example for ArchiScript's architecture calculus.
+A compact algebra, Presentation and linear-route stress example.
 
-The same logical reservation resource is observed by three independently
-available triggers. The user path also tensors independent request, inventory,
-and state factors and tensors the corresponding local member maps.
+Three declared symbolic entry channels describe observations of the same logical
+reservation resource. The user path tensors request, inventory and state factors
+and their local member maps. The full products do not prove joint availability
+or identify actual producer occurrences.
+
+This fixture declares no controller ArchitectureSignature or DeclaredArchitecture
+and claims no CertifiedDeclaredArchitecture. Such a certificate needs recursive
+RootCoherent suppliers, inputSources for every generator, universal coherent
+input contracts, effectCoverage and a ConeStatus for every Cause. Observable
+ConeValid requires an actual nonempty effect.Position and a reachable tuple;
+NoObservableEffect instead proves empty Effect incoming images and contract.
+BoundariesComplete supplies that proof or a structural boundary path. These
+obligations do not follow from the algebraic equalities below.
 
 The model deliberately separates:
 * semantic next-state selection,
@@ -14,8 +24,8 @@ The model deliberately separates:
 * outbox commands,
 * inventory commands.
 
-All are ordinary member-level Operations. None proves that a runtime side
-effect executed successfully.
+All are ordinary member-level Operations. `none` denotes an undefined member
+mapping. None proves that a runtime side effect executed successfully.
 
 The payment and expiry paths can both observe Held and request incompatible
 updates. That is a concrete concurrency review boundary, not a Lean proof of a
@@ -121,7 +131,7 @@ abbrev reservationMutationPartition : Partition :=
   Partition.closed ReservationMutation "ReservationMutation"
     (⟨[.hold, .markPaid, .cancel, .expire], by intro i; cases i <;> simp⟩) (⟨.hold⟩)
 
-/-- Raw user/inventory/state observation context: 3 × 2 × 5 = 30 members. -/
+/-- Declared user/inventory/state observation product: 3 × 2 × 5 = 30 members. -/
 abbrev userContextPartition : Partition :=
   (userTriggerPartition.tensor inventoryObservationPartition).tensor
     reservationStatePartition
@@ -131,7 +141,7 @@ abbrev userDecisionContextPartition : Partition :=
   (userIntentPartition.tensor inventoryPlanPartition).tensor
     reservationStatePartition
 
-/-- Tensor the independent local maps and carry state unchanged in its own slot. -/
+/-- Tensor the local maps and carry state unchanged in its own slot. -/
 def prepareUserContext :
     Operation userContextPartition userDecisionContextPartition :=
   (parseUser.tensor planInventory).tensor (Operation.id reservationStatePartition)
@@ -187,7 +197,7 @@ abbrev expiryTriggerPartition : Partition :=
 abbrev expiryContextPartition : Partition :=
   expiryTriggerPartition.tensor reservationStatePartition
 
-/-- Expiry is independently available from the payment webhook. -/
+/-- Expiry-channel planning; no joint availability or ordering proof is asserted. -/
 def planExpiryMutation :
     Operation expiryContextPartition reservationMutationPartition where
   run
@@ -195,9 +205,9 @@ def planExpiryMutation :
     | _ => none
 
 /--
-The controller has exactly three design-time entry channels. Their runtime
-carriers remain complete inside each summand; coproduct only aggregates the
-already-established architectural alternatives.
+The fixture declares three entry channels. Each symbolic carrier covers its
+enumerated constructors; this does not establish real-world Cause completeness.
+Coproduct aggregates these tagged alternatives, not simultaneous consequences.
 -/
 abbrev controllerInputPartition : Partition :=
   (userContextPartition.coproduct paymentContextPartition).coproduct
@@ -395,7 +405,7 @@ theorem publishMutation_does_not_factorThrough_inventoryView :
     decide
   exact impossible bad
 
-/-- Independently sourced paths all produce expected updates of the same state VDP. -/
+/-- Per-channel planners compose with the same semantic next-state map. -/
 def userStateUpdate :
     Operation userContextPartition reservationStatePartition :=
   nextReservationState.comp planUserMutation
@@ -408,7 +418,7 @@ def expiryStateUpdate :
     Operation expiryContextPartition reservationStatePartition :=
   nextReservationState.comp planExpiryMutation
 
-/-- Independently sourced paths also converge on writes to the same logical resource. -/
+/-- Per-channel planners compose with write commands for one logical resource. -/
 def userWrite :
     Operation userContextPartition reservationWritePartition :=
   persistMutation.comp planUserMutation
@@ -422,12 +432,12 @@ def expiryWrite :
   persistMutation.comp planExpiryMutation
 
 /-!
-0.5.0 expression-presentation stress coverage.
+Algebraic Presentation stress coverage.
 
 The Operations above remain the semantic category. The declarations below keep
 selected presentation syntax without changing any VDP or Operation identity.
-Every expression has one source and one target; the family groups several
-consequences of one controller source without tensoring the outputs together.
+Each Presentation has typed source and target VDPs; the selected family groups
+consequence views without tensoring their outputs or proving Cone completeness.
 -/
 
 def prepareUserContextPresentation :
@@ -449,7 +459,7 @@ def planExpiryMutationPresentation :
   .atom planExpiryMutation
 
 /--
-The controller expression keeps the actual tensor/composition/coproduct
+The controller Presentation keeps the actual tensor/composition/coproduct
 presentation instead of wrapping the already-composed semantic Operation as one
 opaque atom.
 -/
@@ -485,9 +495,9 @@ def controllerInventoryPresentation :
   .comp (.atom inventoryEffect) controllerPlanPresentation
 
 /--
-One source, several selected consequence presentations. This is architectural
-fan-out in the presentation, not `Operation.tensor`: no order or parallel
-runtime schedule is asserted between the sibling consequences.
+One source, several selected consequence presentations. This depicts possible
+fan-out without `Operation.tensor`, actual Effect positions or a joint contract.
+No order or parallel runtime schedule is asserted between sibling consequences.
 -/
 def controllerPresentationFamily : Presentation.Family where
   source := controllerInputPartition
@@ -510,7 +520,7 @@ example :
 
 /--
 A branch-relative coproduct simplification. The unused payment branch disappears
-from this selected expression by the coproduct law; the payment VDP and planner
+from this selected presentation by the coproduct law; the payment VDP and planner
 remain in the architecture and may be used by other presentations.
 -/
 theorem userSelectedCoproductNormalization :
@@ -538,9 +548,8 @@ theorem paymentSelectedCoproductNormalization :
     planPaymentMutationPresentation
 
 /--
-A local coproduct simplification remains valid inside a larger consequence
-expression. This is the basic 0.5.0 normalization pattern: simplify a proved
-subexpression and lift that equality through the surrounding composition.
+A local coproduct simplification remains valid inside a larger Presentation:
+simplify a proved subpresentation and lift the equality through composition.
 -/
 theorem userSelectedStateNormalization :
     Presentation.Rewrite
@@ -709,9 +718,10 @@ nominal targets stay distinct from algebraically equal representations.
 This algebra/projection fixture does not assert producer identity from VDP or
 Operation equality. In a declared Cone, one shared consumer can accept distinct
 producer derivations; `Expression.supply_preserves_provenance` retains their
-histories through any unmarked suffix. SharedTargets checks that case with one
-graph and complete scoped certificates. No analytical product here declares an
-extra join or a complete Cone certificate for ReservationController. -/
+histories through any unmarked suffix. Coherent canonical roots, fully supplied
+inputs and exact independent contracts remain separate obligations. SharedTargets
+checks that case with one graph and complete scoped certificates. No analytical
+product here declares an extra join or a Cone certificate for this controller. -/
 namespace Linear
 
 inductive Object where | mutation | state | write | publish | inventory

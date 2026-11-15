@@ -16,3 +16,4 @@ import ArchiScriptExamples.SharedTargets
 import ArchiScriptExamples.CorrelatedJoin
 import ArchiScriptExamples.CrossCone
 import ArchiScriptExamples.MutualCones
+import ArchiScriptExamples.PossibilitySpace

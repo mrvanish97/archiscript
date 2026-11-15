@@ -3,6 +3,10 @@
 A Lean calculus for making architectural assumptions and member consequences
 explicit before implementation.
 
+ArchiScript makes architectural ignorance visible as an unmet semantic or proof
+obligation. An omitted outcome should not disappear behind a convenient carrier,
+a hidden member branch, an invented waiting loop or an unexplained tensor join.
+
 **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Certificates
 cover the declared semantic objects and derived contexts described below.
 The checker does not establish that the union of declared Cones covers every
@@ -15,6 +19,30 @@ inventory completeness remains an author assumption.
 Declare a complete meaningful carrier, including failed, invalid and absent
 cases. Declare named semantic Subdomains and their ancestry. Prove every declared
 split. Select a finite nonempty family of those regions as the VDP's members.
+
+### A priori possibility space
+
+Before validating downstream consequences, the architect states the meaningful
+boundary carrier, outcome-relevant predicates, external Causes, primitive
+Operations, context/availability assumptions and independent admissibility
+contracts. The model accounts for the possible cases and their conditions in
+advance. A running implementation can discover which case holds later.
+
+This is knowledge of **possible behavior**, not foreknowledge of one execution.
+Possible PRNG or CSPRNG outputs can be modeled without predicting a sample or
+specifying a distribution; a VDP carries no probability weights. Lean proves
+facts about the declared interpretation, not that it captures the real world.
+
+One Cause denotes one concrete external event and has one whole initial VDP:
+`ArchitectureSignature.start c` selects its node, and `object (start c)` its VDP.
+Several downstream Operations can express non-exclusive possible structural
+consequences of that same source occurrence. They add neither initial VDPs nor
+external invocations, and imply no parallel runtime execution.
+
+Information need not all reside in a Cone's first VDP. Explicit external Causes,
+sourced factors, provenance and justified context can contribute it through
+declared dependencies and joins. A new distinction needs an explained semantic
+source before the affected Operation's member mapping is asserted.
 
 | Concept | Enforced meaning |
 | --- | --- |
@@ -40,6 +68,56 @@ symbolic URI/filesystem interpretation is explicit; it is not a parser or a
 proof that real filesystem observations are truthful. A counterexample rejects
 promoting only the successful leaves into the full URI boundary.
 
+### Click, wait and timeout
+
+For one external lobby-entry click, choose a declared **scenario** carrier with
+an arbitrary natural-number waiting budget `b` and `readyAfter : Option Nat`.
+`some d` means readiness after `d` abstract ticks; `none` means no readiness in
+that scenario. The example adopts success at the deadline and a short-wait
+threshold of two ticks.
+
+| Initial semantic member | Predicate over the scenario | Witness `(b, readyAfter)` | `decide` result |
+| --- | --- | --- | --- |
+| `ShortWait` | Readiness at `d ≤ 2` and `d ≤ b` | `(5, some 1)` | `Success` |
+| `LongWait` | Readiness at `2 < d ≤ b` | `(5, some 4)` | `Success` |
+| `Timeout` | No readiness, or readiness at `b < d` | `(5, none)`; also `(5, some 6)` | `Timeout` |
+
+[PossibilitySpace.lean](ArchiScriptExamples/PossibilitySpace.lean) proves these
+regions nonempty, exhaustive and disjoint over the entire infinite carrier and
+defines `decide : Operation click result`. Zero budgets, immediate readiness,
+deadline equality and arbitrarily late readiness remain present. It proves the
+partition/map layer, not a complete Cause/Cone certificate.
+
+This carrier is a declared mathematical boundary, **not raw-input validation**.
+Its interpretation assumes readiness is meaningfully summarized by a delay;
+cancellation, malformed requests or other relevant conditions need explicit
+semantics if the real boundary includes them. The program need not read or
+predict a future delay at click time. The model states possible scenarios; it
+proves no eventual readiness, timeout delivery, timing bound or implementation
+waiting strategy.
+
+A literal singleton `Click` cannot be split into three inhabited disjoint
+regions merely by naming them after outcomes. For a lobby requiring N people,
+state the relevant environmental distinctions or explicitly sourced dependency.
+Do not invent N parameterized Causes or a polling self-loop merely to depict
+waiting. A genuine declared architectural cycle remains legal.
+
+### An unexplained branch is a modeling failure
+
+One coarse input member `Waiting` cannot map to both unequal members `Success`
+and `Timeout` through **one and the same Operation**. Its
+`Operation.run : X.MemberIndex → Option Y.MemberIndex` is a partial function;
+`Operation.single_output` proves that two defined outputs at one input are equal.
+[HiddenWaitingBranch.lean](Test/Negative/HiddenWaitingBranch.lean) deliberately
+fails when authoring the second conflicting branch.
+
+Refine an appropriately broad carrier, add an explicitly sourced factor, or
+justify the context-specific semantics before declaring that map. Making the
+proof pass by discarding a possible case hides the architectural problem.
+Separate outgoing Operations `f : X → Y` and `g : X → Z` are valid fan-out.
+`none` is mathematical undefinedness, not an undocumented alternate output or a
+claim that a runtime Operation did not execute.
+
 ## Operations, tensor and provenance
 
 `g.comp f` composes defined member mappings. `none` denotes mathematical
@@ -51,20 +129,112 @@ tensor. Coproduct preserves tagged alternatives. Common-source fan-out creates
 no implicit diagonal Operation. At an actual tensor use, the relevant questions are
 
 \[
-\forall i,\quad \pi_i(\operatorname{Adm})=I_i,
-\qquad \operatorname{Reach}=\operatorname{Adm}.
+\begin{aligned}
+\text{(P)}\quad &\forall i,\quad \pi_i(\operatorname{Adm}_t)=I_i,\\
+\text{(E)}\quad &\operatorname{Reach}_t=\operatorname{Adm}_t.
+\end{aligned}
 \]
 
-Here each incoming image is independently obtained from its actual supplier.
-`Reach` and the independently authored `Adm` may be proper subsets of the full
-product. Neither an Operation nor a factor is required to reach all target members.
-Every complete n-ary tuple matters; pairwise checks are insufficient.
+### Level A: correctness of the stated local contract
+
+For `t : X₁ ⊗ ... ⊗ Xₙ`, identify every actual producer occurrence and its
+provenance. Derive each incoming image `Iᵢ` independently from that supplier's
+semantics, before restricting the join. `Adm_t` is an independently authored
+predicate on **full tuples**. `Reach_t` is the reference relation from the actual
+provenance, boundary/world and context assumptions.
+
+**P is necessary coverage, not sufficient joint behavior.** Every actual incoming
+member needs at least one admissible full partner tuple, and the contract must
+not invent unsupplied coordinates. **E compares the complete relation in both
+directions.** Every reachable tuple must be approved and every approved tuple
+must be reachable. Neither projections, pairwise checks nor selected examples
+establish E.
+
+Together P and E are the exact adequacy criteria for a local formal contract
+defined by these obligations, with the API's additional inhabited/unreachable
+status requirements. This is a conditional mathematical result for that stated
+contract, not a theorem that every architectural design is correct. Declare
+`Adm` independently; setting `Adm := Reach` or assuming equality through an
+unchecked axiom supplies no independent contract. Proof audits and named
+assumptions remain part of the evidence.
+
+Neither an Operation nor a supplier must reach every member of its target VDP.
+`Adm` and `Reach` may be proper subsets of the unchanged full product.
+
+### Correlation, partners and complete tuples
+
+Let `f,g : X → Bool` both preserve the input Boolean from **one shared Cause
+occurrence**. The supplier paths remain distinct. A declared downstream
+`j : Bool ⊗ Bool → R` explicitly consumes both:
+
+| Pair in the full mathematical tensor | Common-source `Reach` | Independent diagonal `Adm` |
+| --- | --- | --- |
+| `(false, false)` | Reachable | Admissible |
+| `(false, true)` | Unreachable | Excluded |
+| `(true, false)` | Unreachable | Excluded |
+| `(true, true)` | Reachable | Admissible |
+
+[CorrelatedJoin.lean](ArchiScriptExamples/CorrelatedJoin.lean) proves the exact
+input relation and its projections. Declaring all four pairs admissible would
+fail E unless independent semantics actually supplied the off-diagonal pairs.
+Fan-out and equal VDP names create no join: the consuming generator and both
+supplier histories must exist. The terminal Cone-effect tensor is an analytical
+product; it adds no architectural join Operation.
+
+If an incoming factor can produce `a` but no full admissible tuple contains `a`
+at its position, P fails: `a ∈ Iᵢ` but `a ∉ πᵢ(Adm)`. A contract tuple using an
+unsupplied member fails the reverse inclusion. A constant producer may reach
+only `true` in a Boolean VDP; unreachable `false` needs no partner. If a required
+factor has no supplier while another has an inhabited incoming image, losing
+the complete input term does not discharge these obligations: no full tuple
+can cover that supplied member. Such a use must surface as missing/unverified,
+not disappear from certification.
+
+Three Boolean factors show why P alone cannot suffice. Suppose `Reach` contains
+all eight triples, while independently declared `Adm(a,b,c)` means
+`c = xor a b`:
+
+| Relation check | Result |
+| --- | --- |
+| Each coordinate projection | Both relations contain `false` and `true`; P passes |
+| Every pair extends to a full tuple | Both relations have all four pairs at every pair of positions |
+| Full tuples | `Adm` has four triples; `Reach` has eight; E fails |
+| Concrete counterexample | `(false, false, true)` is reachable but prohibited |
+
+[TensorVerification.lean](ArchiScriptTests/TensorVerification.lean) proves
+`pairwise_is_insufficient` and records the four excluded triples, an orphaned
+incoming member, and the legitimate strict image of a constant supplier.
+[ContractCoverage.lean](ArchiScriptTests/ContractCoverage.lean) applies these
+failures to typed generator inputs with actual producers: an orphan, an invented
+coordinate, and a three-factor relation whose projections pass while E fails.
+Projection coverage exposes missing partners early; passing it never licenses
+skipping the full n-ary relation.
 
 `ArchitectureSignature` closes the declared primitive, Cause, node, domain and
 split inventories. `Inputs` records actual generator suppliers. Finite provenance
 `Term`s retain root instances and producer histories; they are not single linear
 Expressions. Equal VDP denotations do not merge nominal nodes or factor positions.
 `isInputContext` derives local contexts from their real originating roots.
+`Term.RootCoherent` requires every Cause occurrence, including a nested external
+supplier, to use that Cause's designated origin. Distinct producer paths from
+that origin remain distinct and can be joined.
+
+Every declared generator must also satisfy `InputSources`, before a complete
+input term is available. It requires coherent suppliers at every factor or proof
+that all independently incoming factor images are empty. One supplied X and a
+missing Y cannot bypass a declared `X ⊗ Y → E` check.
+`CertifiedDeclaredArchitecture.input_partner` proves that every independently
+incoming member has a full admissible, reachable partner tuple. Choosing one
+grounding witness does not restrict the universal checks on other input contexts.
+
+Two distinct external Causes may have equal initial VDPs while remaining
+provenance-distinct. An explicit cross-Cone join is legitimate;
+[CrossCone.lean](ArchiScriptExamples/CrossCone.lean) supplies one local and one
+external factor with declared boundary and availability semantics. By contrast,
+combining two invocations of the **same** Cause at different simulated times is
+outside the current single-event Cone API. That would require a separate future
+external multiple-event simulation/composition extension. Neither valid fan-out
+nor legitimate cross-Cone joins should be removed to hide this distinction.
 
 The reference relation includes every finite derivation from the inventory,
 including recursive cross-Cone dependencies. Availability is an explicit
@@ -83,22 +253,44 @@ Reachable sets may stabilize while the Operation continues alternating.
 [The swap example](ArchiScriptExamples/CyclicCone.lean) proves both facts and
 connects its boundary image to a finite exact analysis through `ExactAbstraction`.
 A finite VDP alphabet does not imply finitely many occurrence histories.
-The complete Effect certificate currently requires finite roots and a seeded,
+The provenance proof cache requires every Cause's designated origin and a seeded,
 closed, realized finite normalized-history basis (`effectCoverage`).
+It need not enumerate every value of the root-instance type; unsupported
+additional invocations cannot enter accepted derivations.
 The optional `derive_provenance` helper caches candidate data; it does not supply
 this proof or infer closure from a fuel limit.
 `FiniteAnalysis.certify` checks closure of the entire analyzed state before
 returning an `Exact` result; an unchanged terminal projection is insufficient.
 
-`CertifiedDeclaredArchitecture` requires a nonempty Cause inventory and proofs for all derived local input
-contexts, every declared Cone's full Effect, and terminal-boundary completeness.
-A verified use must have an actual reachable tuple. Proved-unreachable contexts
-are separate. A Cone with no reachable full Effect cannot pass as tensor-unit
-success; it remains outside this complete-effect certificate's supported scope.
+`CertifiedDeclaredArchitecture` requires a nonempty Cause inventory, source
+accounting for every generator, proofs for all derived local input contexts,
+and an explicit `ConeStatus` for every Cause. An observable Cone needs a real
+Effect coordinate, a reachable full tuple, P/E proofs and complete terminal
+boundaries. An unobservable Cone needs `NoObservableEffect`: every Effect
+coordinate's incoming image and its admissibility relation are empty. This
+admits an intentionally source-only event without inventing an observation;
+it cannot hide missing input suppliers. The tensor unit never counts as an
+observable Effect. [SourceCoverage.lean](ArchiScriptTests/SourceCoverage.lean),
+[Unobservable.lean](ArchiScriptTests/Unobservable.lean) and
+[UngroundedCycle.lean](ArchiScriptTests/UngroundedCycle.lean) check these cases.
 
 Certificates establish necessary obligations of the declared model. They do not
 establish missing real-world requirements, production-code conformance, fairness,
 termination, races or physical concurrency.
+
+### Level B: correctness of the real-world design
+
+Even a fully proved model of its declared scope is necessary evidence, not
+sufficient proof that the proposed architecture is complete, appropriate,
+implementable, secure, performant or faithful to production. An author can omit
+an external Cause, choose the wrong carrier or predicates, or approve the wrong
+`Adm`. Lean checks implications within the supplied interpretation; external
+validity needs architectural scrutiny and separately modeled evidence.
+
+Report two verdicts: which mathematical obligations were proved for the declared
+scope, and which external assumptions or design risks need human review.
+**Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Local/per-Cone
+success does not establish the deferred universal generated-path guarantee.
 
 ## Algebra
 
@@ -148,6 +340,7 @@ the correctness of a domain requirement.
 ## Examples and authoring
 
 - [Public-only smoke](skills/archiscript/examples/CurrentApi.lean): explicit regions, split, VDP, primitive inventory and scoped certificate.
+- [Click possibility space](ArchiScriptExamples/PossibilitySpace.lean): infinite scenario carrier, short/long/timeout semantic partition and functional decision map.
 - [Correlated join](ArchiScriptExamples/CorrelatedJoin.lean): common-source diagonal and constant non-surjective supplier.
 - [External cyclic supplier](ArchiScriptExamples/CrossCone.lean): one local and one external factor with typed cyclic observation.
 - [Mutually dependent Cones](ArchiScriptExamples/MutualCones.lean): joint reference semantics and certified finite query analysis.

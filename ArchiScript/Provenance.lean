@@ -122,10 +122,10 @@ def histories (S : ArchitectureSignature) (catalog : S.Node → List (History S)
   | .tensor left right => (S.histories catalog left).flatMap fun l =>
     (S.histories catalog right).map fun r => .tensor l r
 
-def rootHistories (S : ArchitectureSignature) (roots : List S.RootInstance) (c : S.Cause)
+def rootHistories (S : ArchitectureSignature) (roots : List S.RootInstance) (_c : S.Cause)
     (n : S.Node) : List (History S) :=
   S.causes.flatMap fun d => if S.start d = n then
-    (if d = c then [S.origin c] else roots).map (ProducerHistory.cause d) else []
+    (roots.filter fun root => root == S.origin d).map (ProducerHistory.cause d) else []
 
 def expandHistories (S : ArchitectureSignature) (marked : S.Markers)
     (before : S.Node → List (History S)) (n : S.Node) : List (History S) :=
@@ -133,7 +133,7 @@ def expandHistories (S : ArchitectureSignature) (marked : S.Markers)
     (S.histories before (S.input g)).map (S.normalizeOperation marked g) else []
 
 /-- Bounded construction of a provenance basis from the single primitive graph.
-Fuel is accepted as exact only with closure and complete root enumeration. -/
+Fuel is accepted as exact only with closure and every Cause's canonical origin. -/
 def provenanceCatalog (S : ArchitectureSignature) (marked : S.Markers)
     (roots : List S.RootInstance) (c : S.Cause) : Nat → S.Node → List (History S)
   | 0, n => (S.rootHistories roots c n).eraseDups
@@ -174,10 +174,10 @@ def extendProvenanceEntries (S : ArchitectureSignature) (marked : S.Markers)
     ((lookup c n ++ S.expandHistories marked (lookup c) n).eraseDups).map fun key => (c, n, key)
 
 def decodedHistoryValid (S : ArchitectureSignature) (marked : S.Markers)
-    (c : S.Cause) (n : S.Node) (key : History S) : Bool :=
+    (_c : S.Cause) (n : S.Node) (key : History S) : Bool :=
   match Term.decodeHistory S key (.node n) with
   | none => false
-  | some t => decide (t.onlyLocalRoot c) && decide (t.provenance marked = key)
+  | some t => decide t.RootCoherent && decide (t.provenance marked = key)
 
 namespace ProvenanceAnalysis
 
@@ -225,7 +225,19 @@ instance {S : ArchitectureSignature} {marked : S.Markers}
   inferInstanceAs (Decidable (analysis.Seeded ∧ analysis.Closed ∧ analysis.Realized))
 
 def Valid {S : ArchitectureSignature} {marked : S.Markers}
-    (analysis : S.ProvenanceAnalysis marked) : Prop := (∀ root, root ∈ analysis.roots) ∧ analysis.Checked
+    (analysis : S.ProvenanceAnalysis marked) : Prop :=
+  (∀ c, S.origin c ∈ analysis.roots) ∧ analysis.Checked
+
+/-- A finite structural check over every declared source factor, independent
+of full input tuples and of their admissibility. -/
+def SourcesPresent {S : ArchitectureSignature} {marked : S.Markers}
+    (analysis : S.ProvenanceAnalysis marked) (g : S.Generator) : Prop :=
+  ∀ n ∈ (S.input g).nodes, (analysis.catalog (S.owner (S.output g)) n).isEmpty = false
+
+instance {S : ArchitectureSignature} {marked : S.Markers}
+    (analysis : S.ProvenanceAnalysis marked) (g : S.Generator) : Decidable (analysis.SourcesPresent g) :=
+  inferInstanceAs (Decidable (∀ n ∈ (S.input g).nodes,
+    (analysis.catalog (S.owner (S.output g)) n).isEmpty = false))
 
 theorem roots_in_catalog (S : ArchitectureSignature) (marked : S.Markers)
     (roots : List S.RootInstance) (c : S.Cause) (fuel : Nat) (n) (key)
@@ -237,19 +249,18 @@ theorem roots_in_catalog (S : ArchitectureSignature) (marked : S.Markers)
 
 theorem complete {S : ArchitectureSignature} {marked : S.Markers}
     (analysis : S.ProvenanceAnalysis marked) (verified : analysis.Valid) (c : S.Cause) {s}
-    (t : S.Occurrence s) (localRoots : t.onlyLocalRoot c) :
+    (t : S.Occurrence s) (localRoots : t.RootCoherent) :
     t.provenance marked ∈ S.histories (analysis.catalog c) s := by
   induction t with
   | unit => exact List.mem_cons_self
   | cause d root =>
+    change root = S.origin d at localRoots
     apply verified.2.1 c (S.causes_complete c) (S.start d) (S.nodes_complete _)
     apply List.mem_flatMap.mpr
     refine ⟨d, S.causes_complete d, ?_⟩
-    by_cases same : d = c
-    · subst d
-      have root_eq := localRoots rfl
-      simp [Term.provenance, root_eq]
-    · simp [same, Term.provenance, verified.1 root]
+    rw [ite_eq_left rfl]
+    exact List.mem_map.mpr ⟨root, List.mem_filter.mpr
+      ⟨localRoots.symm ▸ verified.1 d, by simpa using localRoots⟩, rfl⟩
   | hole n impossible => exact Empty.elim impossible
   | operation g input ih =>
     exact verified.2.2.1 c (S.causes_complete c) g (S.generators_complete g) _ (ih localRoots)
@@ -258,11 +269,11 @@ theorem complete {S : ArchitectureSignature} {marked : S.Markers}
       List.mem_map.mpr ⟨_, ihr localRoots.2, rfl⟩⟩
 
 theorem histories_sound {S : ArchitectureSignature} {marked : S.Markers}
-    (catalog : S.Node → List (History S)) (c : S.Cause)
+    (catalog : S.Node → List (History S)) (_c : S.Cause)
     (sound : ∀ n key, key ∈ catalog n →
-      ∃ t : S.Occurrence (.node n), t.onlyLocalRoot c ∧ t.provenance marked = key)
+      ∃ t : S.Occurrence (.node n), t.RootCoherent ∧ t.provenance marked = key)
     (s : Inputs S.Node S.object) (key : History S) (member : key ∈ S.histories catalog s) :
-    ∃ t : S.Occurrence s, t.onlyLocalRoot c ∧ t.provenance marked = key := by
+    ∃ t : S.Occurrence s, t.RootCoherent ∧ t.provenance marked = key := by
   induction s generalizing key with
   | unit =>
     have same := List.mem_singleton.mp member
@@ -281,7 +292,7 @@ theorem histories_sound {S : ArchitectureSignature} {marked : S.Markers}
 theorem catalog_sound (S : ArchitectureSignature) (marked : S.Markers)
     (roots : List S.RootInstance) (c : S.Cause) (fuel : Nat) :
     ∀ n key, key ∈ S.provenanceCatalog marked roots c fuel n →
-      ∃ t : S.Occurrence (.node n), t.onlyLocalRoot c ∧ t.provenance marked = key := by
+      ∃ t : S.Occurrence (.node n), t.RootCoherent ∧ t.provenance marked = key := by
   induction fuel with
   | zero =>
     intro n key member
@@ -290,10 +301,7 @@ theorem catalog_sound (S : ArchitectureSignature) (marked : S.Markers)
     · rename_i source
       obtain ⟨root, rootMember, same⟩ := List.mem_map.mp supplied
       subst n
-      refine ⟨.cause d root, ?_, same⟩
-      intro localCause
-      subst d
-      simpa using rootMember
+      exact ⟨.cause d root, by simpa [Term.RootCoherent] using (List.mem_filter.mp rootMember).2, same⟩
     · cases supplied
   | succ fuel ih =>
     intro n key member
@@ -314,7 +322,7 @@ theorem catalog_sound (S : ArchitectureSignature) (marked : S.Markers)
 theorem sound {S : ArchitectureSignature} {marked : S.Markers}
     (analysis : S.ProvenanceAnalysis marked) (verified : analysis.Valid) (c : S.Cause) (n key)
     (member : key ∈ analysis.catalog c n) :
-    ∃ t : S.Occurrence (.node n), t.onlyLocalRoot c ∧ t.provenance marked = key := by
+    ∃ t : S.Occurrence (.node n), t.RootCoherent ∧ t.provenance marked = key := by
   have checked := verified.2.2.2 c (S.causes_complete c) n (S.nodes_complete n) key member
   cases decoded : Term.decodeHistory S key (.node n) with
   | none => simp [decodedHistoryValid, decoded] at checked
@@ -343,7 +351,7 @@ def coordinateHistory {S : ArchitectureSignature} (coordinates : List (S.Node ×
 theorem terminal_provenance_complete {S : ArchitectureSignature} {marked : S.Markers}
     (analysis : S.ProvenanceAnalysis marked) (verified : analysis.Valid) (c : S.Cause) (n)
     (terminal : n ∈ S.effectNodes marked c) (t : S.Occurrence (.node n))
-    (localRoots : t.onlyLocalRoot c) : (n, t.provenance marked) ∈ S.effectCoordinates analysis c := by
+    (localRoots : t.RootCoherent) : (n, t.provenance marked) ∈ S.effectCoordinates analysis c := by
   exact List.mem_flatMap.mpr ⟨n, terminal, List.mem_map.mpr ⟨_, analysis.complete verified c t localRoots, rfl⟩⟩
 
 theorem coordinateHistory_complete {S : ArchitectureSignature}

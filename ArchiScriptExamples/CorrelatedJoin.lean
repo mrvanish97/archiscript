@@ -170,7 +170,7 @@ theorem terminal_origin (f : Bool → Bool) (i : ((model f).effect ()).Position)
   cases i with
   | inl i =>
     cases i
-    exact ⟨Or.inl ⟨rfl, rfl⟩, ⟨fun _ => rfl, fun _ => rfl⟩⟩
+    exact ⟨Or.inl ⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
   | inr impossible => exact Empty.elim impossible
 
 theorem terminal_provenance (f : Bool → Bool) : (model f).EffectProvenance () (terminal f) := by
@@ -183,7 +183,7 @@ theorem effect_image (f : Bool → Bool) (tuple : (Bool × Bool) × Unit) :
     (model f).reachEffect () tuple ↔ ∃ root, ((root, f root), ()) = tuple := by
   have image := DeclaredArchitecture.effect_image_of_assignment (model f) ()
     (fun w => values f (w () ())) (fun w _ t => evaluation f w t)
-    (terminal f) (terminal_origin f) (terminal_provenance f) (fun _ _ => trivial) tuple
+    (terminal f) (terminal_origin f) (terminal_provenance f) ⟨.inl ()⟩ (fun _ _ => trivial) tuple
   constructor
   · intro reached
     obtain ⟨w, _, same⟩ := image.mp reached
@@ -209,10 +209,17 @@ theorem effect_projection (f : Bool → Bool) (i : ((model f).effect ()).Positio
     (fun w => values f (w () ())) (fun w _ t => evaluation f w t)
     (fun _ _ => rfl) (effect_exact f) i member
 
+theorem basis_valid (f : Bool → Bool) : (model f).effectAnalysis.Valid :=
+  ⟨by intro c; cases c; simp, by exact of_decide_eq_true rfl⟩
+
 def certificate (f : Bool → Bool) : CertifiedDeclaredArchitecture where
   model := model f
   causeNonempty := ⟨()⟩
-  effectCoverage := ⟨by intro root; cases root; simp, by exact of_decide_eq_true rfl⟩
+  effectCoverage := basis_valid f
+  inputSources := by
+    intro g
+    exact (model f).inputSources_of_catalog (basis_valid f) g
+      (by cases g <;> exact of_decide_eq_true rfl)
   inputs := by
     intro g t _
     exact .verified (input_valid f g t)
@@ -220,12 +227,13 @@ def certificate (f : Bool → Bool) : CertifiedDeclaredArchitecture where
         (input_image f g t _).mpr ⟨false, rfl⟩⟩
   cones := by
     intro c; cases c
+    apply DeclaredArchitecture.ConeStatus.observable
     refine ⟨?_, ⟨((false, f false), ()), (effect_exact f _).mpr rfl⟩, effect_exact f, ?_⟩
-    · change [Port.joined] ≠ []
-      decide
+    · exact ⟨.inl ()⟩
     exact effect_projection f
   boundariesComplete := by
     intro c n _; cases c
+    apply Or.inr
     refine ⟨Port.joined, ?_, ?_⟩
     · change Port.joined ∈ [Port.joined]
       exact List.mem_cons_self

@@ -192,23 +192,25 @@ theorem effect_evaluation (length : Nat) (policy : Bool → Bool) (basis)
   exact value.symm.trans (meaning.trans (expected_coordinate length policy _ _ i).symm)
 
 theorem effectReach (length : Nat) (policy : Bool → Bool) (basis)
-    (verified : basis.Valid) (root : Bool) :
+    (verified : basis.Valid) (observed : Nonempty ((model length policy basis).effect ()).Position)
+    (root : Bool) :
     (model length policy basis).reachEffect ()
       (expected length policy root ((signature length policy).effectCoordinates basis ())) := by
   obtain ⟨t, origins, histories⟩ := (model length policy basis).effect_realized verified ()
   have supplied : (model length policy basis).Evaluates (world length policy root) t
       (specification length policy t root) := evaluation length policy basis _ t
   have same := effect_evaluation length policy basis t histories (world length policy root) _ supplied
-  exact ⟨t, origins, histories, world length policy root, trivial, same ▸ supplied, trivial⟩
+  exact ⟨t, origins, histories, world length policy root, trivial, same ▸ supplied, trivial, observed⟩
 
 theorem effect_exact (length : Nat) (policy : Bool → Bool) (basis)
-    (verified : basis.Valid) (tuple) :
+    (verified : basis.Valid) (observed : Nonempty ((model length policy basis).effect ()).Position)
+    (tuple) :
     (model length policy basis).reachEffect () tuple ↔ effectAdmissible length policy basis () tuple := by
   constructor
   · rintro ⟨t, _, histories, w, _, supplied, _⟩
     exact ⟨w () (), effect_evaluation length policy basis t histories w tuple supplied⟩
   · rintro ⟨root, same⟩
-    exact same ▸ effectReach length policy basis verified root
+    exact same ▸ effectReach length policy basis verified observed root
 
 def terminalIndex (length : Nat) : Fin (length + 4) := ⟨length + 3, by omega⟩
 
@@ -269,22 +271,23 @@ theorem to_terminal (length : Nat) (policy : Bool → Bool) (node : Fin (length 
 abbrev certificate (length : Nat) (policy : Bool → Bool)
     (basis : (signature length policy).ProvenanceAnalysis (fun _ => none))
     (verified : basis.Valid)
+    (sources : ∀ g, basis.SourcesPresent g)
+    (observed : Nonempty ((model length policy basis).effect ()).Position)
     (terminal : terminalIndex length ∈ (signature length policy).effectNodes (fun _ => none) ()) :
     CertifiedDeclaredArchitecture where
   model := model length policy basis
   causeNonempty := ⟨()⟩
   effectCoverage := verified
+  inputSources := fun g => (model length policy basis).inputSources_of_catalog verified g (sources g)
   inputs := by
     intro g t _
     exact .verified (input_valid length policy basis g t)
       ⟨specification length policy t false, (input_exact length policy basis g t _).mpr ⟨false, rfl⟩⟩
   cones := by
     intro c; cases c
-    refine ⟨?_, ⟨_, effectReach length policy basis verified false⟩,
-      effect_exact length policy basis verified, ?_⟩
-    · intro empty
-      rw [empty] at terminal
-      cases terminal
+    apply DeclaredArchitecture.ConeStatus.observable
+    refine ⟨observed, ⟨_, effectReach length policy basis verified observed false⟩,
+      effect_exact length policy basis verified observed, ?_⟩
     · intro i member
       constructor
       · rintro ⟨t, _, history, w, _, supplied⟩
@@ -296,10 +299,11 @@ abbrev certificate (length : Nat) (policy : Bool → Bool)
           (expected_coordinate length policy _ (w () ()) i).trans (meaning.symm.trans value)⟩
       · rintro ⟨tuple, admissible, same⟩
         obtain ⟨t, origins, histories, w, allowed, supplied, _⟩ :=
-          (effect_exact length policy basis verified tuple).mpr admissible
+          (effect_exact length policy basis verified observed tuple).mpr admissible
         exact ⟨t.supplier i, origins i, histories i, w, allowed, same ▸ supplied.supplier i⟩
   boundariesComplete := by
     intro c n _; cases c
+    apply Or.inr
     exact ⟨terminalIndex length, terminal, to_terminal length policy n⟩
 
 abbrev baseBasis (policy : Bool → Bool) :
@@ -310,11 +314,21 @@ abbrev suffixBasis (policy : Bool → Bool) :
 abbrev baseCertificate (policy : Bool → Bool) : CertifiedDeclaredArchitecture :=
   certificate 0 policy (baseBasis policy)
     ⟨by intro root; cases root; simp, by exact of_decide_eq_true rfl⟩
+    (by
+      have all : ∀ g ∈ (signature 0 policy).generators, (baseBasis policy).SourcesPresent g :=
+        by exact of_decide_eq_true rfl
+      exact fun g => all g ((signature 0 policy).generators_complete g))
+    ⟨.inl ()⟩
     (by exact of_decide_eq_true rfl)
 
 abbrev suffixCertificate (policy : Bool → Bool) : CertifiedDeclaredArchitecture :=
   certificate 2 policy (suffixBasis policy)
     ⟨by intro root; cases root; simp, by exact of_decide_eq_true rfl⟩
+    (by
+      have all : ∀ g ∈ (signature 2 policy).generators, (suffixBasis policy).SourcesPresent g :=
+        by exact of_decide_eq_true rfl
+      exact fun g => all g ((signature 2 policy).generators_complete g))
+    ⟨.inl ()⟩
     (by exact of_decide_eq_true rfl)
 
 @[archiscript_certificate] abbrev equalImages : CertifiedDeclaredArchitecture := baseCertificate id
@@ -357,7 +371,7 @@ theorem shared_chain_distinguishes_producers :
 
 theorem base_joint_relation (policy : Bool → Bool) (left right : Bool) :
     (baseCertificate policy).model.reachEffect () (left, (right, ())) ↔ right = policy left := by
-  apply Iff.trans (effect_exact 0 policy (baseBasis policy) (baseCertificate policy).effectCoverage _)
+  apply Iff.trans (effect_exact 0 policy (baseBasis policy) (baseCertificate policy).effectCoverage ⟨.inl ()⟩ _)
   change (∃ root : Bool, (left, (right, ())) = (root, (policy root, ()))) ↔ _
   constructor
   · rintro ⟨root, same⟩; cases same; rfl
@@ -365,7 +379,7 @@ theorem base_joint_relation (policy : Bool → Bool) (left right : Bool) :
 
 theorem suffix_joint_relation (policy : Bool → Bool) (left right : Bool) :
     (suffixCertificate policy).model.reachEffect () (left, (right, ())) ↔ right = policy left := by
-  apply Iff.trans (effect_exact 2 policy (suffixBasis policy) (suffixCertificate policy).effectCoverage _)
+  apply Iff.trans (effect_exact 2 policy (suffixBasis policy) (suffixCertificate policy).effectCoverage ⟨.inl ()⟩ _)
   change (∃ root : Bool, (left, (right, ())) = (root, (policy root, ()))) ↔ _
   constructor
   · rintro ⟨root, same⟩; cases same; rfl
@@ -373,13 +387,17 @@ theorem suffix_joint_relation (policy : Bool → Bool) (left right : Bool) :
 
 theorem incoming_left_image (policy : Bool → Bool) (value : Bool) :
     (baseCertificate policy).model.effectIncoming () (.inl ()) value := by
-  apply (((baseCertificate policy).cones ()).2.2.2 (.inl ()) value).mpr
+  have valid := ((baseCertificate policy).cones ()).valid_of_reachable
+    (effectReach 0 policy (baseBasis policy) (baseCertificate policy).effectCoverage ⟨.inl ()⟩ false)
+  apply (valid.2.2.2 (.inl ()) value).mpr
   exact ⟨(value, (policy value, ())), ⟨value, rfl⟩, rfl⟩
 
 theorem incoming_right_image (policy : Bool → Bool) (value : Bool) :
     (baseCertificate policy).model.effectIncoming () (.inr (.inl ())) value ↔
       ∃ root, value = policy root := by
-  apply Iff.trans (((baseCertificate policy).cones ()).2.2.2 (.inr (.inl ())) value)
+  have valid := ((baseCertificate policy).cones ()).valid_of_reachable
+    (effectReach 0 policy (baseBasis policy) (baseCertificate policy).effectCoverage ⟨.inl ()⟩ false)
+  apply Iff.trans (valid.2.2.2 (.inr (.inl ())) value)
   change (∃ tuple : Bool × (Bool × Unit),
     (∃ root, tuple = (root, (policy root, ()))) ∧ tuple.2.1 = value) ↔ _
   constructor

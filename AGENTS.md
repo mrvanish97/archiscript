@@ -47,6 +47,11 @@ or proposed departures explicitly.
 - `ArchitectureSignature` is the claimed-complete declaration inventory.
   Keep generator identities, actual supplier structure, Cause ownership, root
   instances and producer histories. Equal nominal VDPs do not identify occurrences.
+- One Cause denotes one concrete external event with one whole initial VDP.
+  `Term.RootCoherent` requires the designated origin for every Cause, including
+  nested external suppliers. Canonical fan-out and cross-Cone joins are valid;
+  combining distinct invocations of one Cause is outside this API. Do not add
+  simulated timing, event replay or repeated-event composition to repair it.
 - Contexts come from existing generator inputs and actual provenance through
   `isInputContext`; do not introduce an author-declared tensor-site entity or
   certify a selected list of favorable contexts. At least one factor in an
@@ -56,6 +61,11 @@ or proposed departures explicitly.
   full-tuple `Reach = Adm`. Do not impose surjectivity onto all factor members.
   Pairwise checks do not establish an n-ary relation. Independent contract
   meaning and external boundary truth remain architect responsibilities.
+- Before quantifying over complete input terms, require `inputSources` for
+  every declared generator: coherent producers at every factor, or proof that
+  all independent factor images are empty. A supplied X with an unsourced Y
+  cannot evade the declared `X tensor Y` obligation. `input_partner` derives a
+  full admissible and reachable partner for every independently incoming member.
 - Cyclic entry and Effect observation points must be typed on actual declared
   routes. `Term.CycleBoundary` supplies one typed entry hole and a nontrivial
   return, with explicit auxiliary factors. All finite traversals contribute to
@@ -67,8 +77,11 @@ or proposed departures explicitly.
   Closure is checked on the complete analyzed state, not only terminal images.
 - `CertifiedDeclaredArchitecture` requires `causeNonempty`, universal declared-context, Cone and
   terminal-boundary proofs. Proved-unreachable contexts are separate from
-  inhabited verified uses. Empty effects cannot pass as a meaningful tensor-unit
-  success. A raw declaration cannot be sent to the certified consumer.
+  inhabited verified uses. `ConeStatus.observable` requires a real derived
+  Effect position and reachable full tuple. `unobservable` requires both all
+  Effect incoming images and the independent contract to be empty. Preserve
+  intentionally no-observable-effect Causes without inventing an observation;
+  tensor-unit success and omitted input-source proofs remain invalid.
 - Follow handoff §7.3.1: f/g may target the same nominal C and reuse one h;k
   declaration. Preserve automatically derived histories; never require unique
   named uses, cloned VDPs/graphs or injective generator outputs. The mandatory
@@ -78,6 +91,8 @@ or proposed departures explicitly.
   fully sourced tensor-input Operation. The analytical Effect tensor adds none.
   Typed cyclic return markers separately aggregate repeat visits; finite member
   sets alone do not prove that a finite normalized-history basis exists.
+  Cache roots must include each Cause's designated origin, not every value of
+  the root-instance type. The latter may be infinite.
 - **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.** Do not claim
   universal generated-path coverage from these scoped certificates. Automation
   is explicitly deferred to the next version. Real-world inventory completeness

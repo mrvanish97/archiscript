@@ -1,3 +1,8 @@
+import ArchiScriptTests.UngroundedCycle
+import ArchiScriptTests.ContractCoverage
+import ArchiScriptTests.SourceCoverage
+import ArchiScriptTests.Unobservable
+import ArchiScriptTests.RootCoherence
 import ArchiScriptTests.LinearExpression
 import ArchiScriptTests.Reachability
 import ArchiScriptTests.TensorVerification

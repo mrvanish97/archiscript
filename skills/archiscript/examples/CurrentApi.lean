@@ -93,7 +93,7 @@ theorem terminalOrigin (i : (model.effect ()).Position) :
   cases i with
   | inl i =>
     cases i
-    exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
+    exact ⟨⟨rfl, rfl⟩, rfl⟩
   | inr impossible => exact Empty.elim impossible
 
 theorem terminalProvenance : model.EffectProvenance () terminal := by
@@ -105,7 +105,7 @@ theorem terminalProvenance : model.EffectProvenance () terminal := by
 theorem effectReach (tuple : (model.effect ()).vdp.MemberIndex) : model.reachEffect () tuple := by
   rcases tuple with ⟨value, u⟩
   cases u
-  exact ⟨terminal, terminalOrigin, terminalProvenance, world value, trivial, evaluation _ terminal, trivial⟩
+  exact ⟨terminal, terminalOrigin, terminalProvenance, world value, trivial, evaluation _ terminal, trivial, ⟨.inl ()⟩⟩
 
 theorem effectIncoming (i : (model.effect ()).Position)
     (value : (signature.object ((model.effect ()).nodeAt i)).MemberIndex) :
@@ -117,10 +117,16 @@ theorem effectIncoming (i : (model.effect ()).Position)
       world value, trivial, evaluation _ _⟩
   | inr impossible => exact Empty.elim impossible
 
+theorem basis_valid : model.effectAnalysis.Valid :=
+  ⟨by intro c; cases c; simp, by decide⟩
+
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨()⟩
-  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
+  effectCoverage := basis_valid
+  inputSources := by
+    intro g
+    exact model.inputSources_of_catalog basis_valid g (by cases g; exact of_decide_eq_true rfl)
   inputs := by
     intro g t _
     cases g
@@ -133,7 +139,8 @@ theorem effectIncoming (i : (model.effect ()).Position)
   cones := by
     intro c
     cases c
-    refine ⟨by decide, ⟨(false, ()), effectReach _⟩, ?_, ?_⟩
+    apply DeclaredArchitecture.ConeStatus.observable
+    refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach _⟩, ?_, ?_⟩
     · intro tuple
       exact ⟨fun _ => trivial, fun _ => effectReach tuple⟩
     · intro i value
@@ -144,6 +151,7 @@ theorem effectIncoming (i : (model.effect ()).Position)
       | inr impossible => exact Empty.elim impossible
   boundariesComplete := by
     intro c n _
+    apply Or.inr
     cases c
     refine ⟨Port.output, ?_, ?_⟩
     · change Port.output ∈ [Port.output]

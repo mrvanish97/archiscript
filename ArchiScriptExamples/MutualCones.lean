@@ -137,10 +137,10 @@ theorem nodeValue_evaluation (n value : Bool) : model.Evaluates initial (nodeVal
   cases n <;> cases value <;> exact evaluation _
 theorem nodeValue_origin (n value : Bool) : model.InCone n (nodeValue n value) := by
   cases n <;> cases value
-  · exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
-  · exact ⟨Or.inl ⟨rfl, rfl⟩, ⟨fun _ => rfl, fun h => Bool.noConfusion h⟩⟩
-  · exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
-  · exact ⟨Or.inr ⟨rfl, rfl⟩, ⟨⟨fun h => Bool.noConfusion h, fun _ => rfl⟩, fun _ => rfl⟩⟩
+  · exact ⟨⟨rfl, rfl⟩, rfl⟩
+  · exact ⟨Or.inl ⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
+  · exact ⟨⟨rfl, rfl⟩, rfl⟩
+  · exact ⟨Or.inr ⟨rfl, rfl⟩, ⟨⟨rfl, rfl⟩, rfl⟩⟩
 
 theorem nodeValue_provenance (n value : Bool) : (nodeValue n value).provenance marked =
     ProducerHistory.cause n () := by
@@ -168,7 +168,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
   cases c <;> rcases tuple with ⟨value, u⟩ <;> cases u
   all_goals
     refine ⟨.tensor (nodeValue _ value) .unit, ?_, terminal_provenance _ value,
-      initial, (fun _ => rfl), ?_, trivial⟩
+      initial, (fun _ => rfl), ?_, trivial, ⟨.inl ()⟩⟩
     · intro i
       cases i with
       | inl i =>
@@ -183,16 +183,23 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
       rw [DeclaredArchitecture.evaluate, nodeValue_evaluation]
       rfl
 
+theorem basis_valid : model.effectAnalysis.Valid :=
+  ⟨by intro c; cases c <;> simp, by decide⟩
+
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨false⟩
-  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
+  effectCoverage := basis_valid
+  inputSources := by
+    intro g
+    exact model.inputSources_of_catalog basis_valid g (by cases g <;> exact of_decide_eq_true rfl)
   inputs := by
     intro g t _
     exact .verified (input_valid g t) ⟨specification t, (input_exact g t _).mpr rfl⟩
   cones := by
     intro c
-    cases c <;> refine ⟨by decide, ⟨(false, ()), effectReach _ _⟩, ?_, ?_⟩
+    apply DeclaredArchitecture.ConeStatus.observable
+    cases c <;> refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach _ _⟩, ?_, ?_⟩
     all_goals first
       | (intro tuple; exact ⟨fun _ => trivial, fun _ => effectReach _ tuple⟩)
       | (intro i value
@@ -205,6 +212,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
          | inr impossible => exact Empty.elim impossible)
   boundariesComplete := by
     intro c n same
+    apply Or.inr
     change n = c at same
     subst c
     refine ⟨n, ?_, .refl _⟩
@@ -215,10 +223,9 @@ def pairTrace (pair : Bool × Bool) : signature.Occurrence (signature.input fals
 def JointReach (pair : Bool × Bool) : Prop :=
   ∃ t, model.isInputContext false t ∧ model.reachInput false t pair
 theorem joint_reachable (pair : Bool × Bool) : JointReach pair := by
-  refine ⟨pairTrace pair, ⟨.inl (), ?_⟩, initial, (fun _ => rfl), ?_, trivial⟩
-  · change model.InCone false ((nodeValue false pair.1).supplier ())
-    rw [ArchitectureSignature.Term.supplier_node]
-    exact nodeValue_origin false pair.1
+  refine ⟨pairTrace pair, (model.isInputContext_iff_coherent false _).mpr
+    ⟨(nodeValue_origin false pair.1).2, (nodeValue_origin true pair.2).2⟩,
+    initial, (fun _ => rfl), ?_, trivial⟩
   · change model.evaluate initial (.tensor (nodeValue false pair.1) (nodeValue true pair.2)) = some pair
     rw [DeclaredArchitecture.evaluate, nodeValue_evaluation, nodeValue_evaluation]
 

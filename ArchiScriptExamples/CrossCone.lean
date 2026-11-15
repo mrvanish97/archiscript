@@ -190,10 +190,10 @@ def terminal : (c : Bool) → signature.Occurrence (model.effect c)
   | true => .tensor (cValue false) .unit
 
 theorem aValue_origin (a : Bool) : model.InCone false (aValue a) := by
-  cases a <;> exact ⟨⟨rfl, rfl⟩, fun _ => rfl⟩
+  cases a <;> exact ⟨⟨rfl, rfl⟩, rfl⟩
 
 theorem cValue_origin (a : Bool) : model.InCone true (cValue a) := by
-  cases a <;> exact ⟨Or.inr ⟨rfl, rfl⟩, ⟨fun impossible => Bool.noConfusion impossible, fun _ => rfl⟩⟩
+  cases a <;> exact ⟨Or.inr ⟨rfl, rfl⟩, ⟨rfl, rfl⟩⟩
 
 theorem aValue_provenance (a : Bool) : (aValue a).provenance marked = ProducerHistory.cause false () := by
   cases a <;> rfl
@@ -221,7 +221,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
   cases c with
   | false =>
     rcases tuple with ⟨a, u⟩; cases u
-    refine ⟨.tensor (aValue a) .unit, ?_, terminal_provenance false a, world false, rfl, ?_, trivial⟩
+    refine ⟨.tensor (aValue a) .unit, ?_, terminal_provenance false a, world false, rfl, ?_, trivial, ⟨.inl ()⟩⟩
     · intro i
       cases i with
       | inl i =>
@@ -235,7 +235,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
       rfl
   | true =>
     rcases tuple with ⟨⟨a, b⟩, u⟩; cases u
-    refine ⟨.tensor (cValue a) .unit, ?_, terminal_provenance true a, world b, rfl, ?_, trivial⟩
+    refine ⟨.tensor (cValue a) .unit, ?_, terminal_provenance true a, world b, rfl, ?_, trivial, ⟨.inl ()⟩⟩
     · intro i
       cases i with
       | inl i =>
@@ -248,18 +248,25 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
       rw [DeclaredArchitecture.evaluate, cValue_evaluation a b]
       rfl
 
+theorem basis_valid : model.effectAnalysis.Valid :=
+  ⟨by intro c; cases c <;> simp, by decide⟩
+
 @[archiscript_certificate] def certified : CertifiedDeclaredArchitecture where
   model := model
   causeNonempty := ⟨false⟩
-  effectCoverage := ⟨by intro root; cases root; simp, by decide⟩
+  effectCoverage := basis_valid
+  inputSources := by
+    intro g
+    exact model.inputSources_of_catalog basis_valid g (by cases g <;> exact of_decide_eq_true rfl)
   inputs := by
     intro g t _
     exact .verified (input_valid g t) ⟨expected g t false, (input_image g t _).mpr ⟨false, rfl⟩⟩
   cones := by
     intro c
+    apply DeclaredArchitecture.ConeStatus.observable
     cases c with
     | false =>
-      refine ⟨by decide, ⟨(false, ()), effectReach false _⟩, ?_, ?_⟩
+      refine ⟨⟨.inl ()⟩, ⟨(false, ()), effectReach false _⟩, ?_, ?_⟩
       · intro tuple; exact ⟨fun _ => trivial, fun _ => effectReach false tuple⟩
       · intro i a
         cases i with
@@ -270,7 +277,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
               world false, rfl, aValue_evaluation a false⟩⟩
         | inr impossible => exact Empty.elim impossible
     | true =>
-      refine ⟨by decide, ⟨((false, false), ()), effectReach true _⟩, ?_, ?_⟩
+      refine ⟨⟨.inl ()⟩, ⟨((false, false), ()), effectReach true _⟩, ?_, ?_⟩
       · intro tuple; exact ⟨fun _ => trivial, fun _ => effectReach true tuple⟩
       · intro i pair
         cases i with
@@ -282,6 +289,7 @@ theorem effectReach (c : Bool) (tuple : (model.effect c).vdp.MemberIndex) : mode
         | inr impossible => exact Empty.elim impossible
   boundariesComplete := by
     intro c n owns
+    apply Or.inr
     cases n with
     | a =>
       cases owns

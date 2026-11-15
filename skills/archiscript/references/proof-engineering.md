@@ -30,6 +30,61 @@ inductive hypothesis and avoids inventing a finite history bound. A typed
 `Term.CycleBoundary` records one entry hole and a nontrivial return; it is not
 a claim that the cycle halts.
 
+## Coherence, suppliers and explicit statuses
+
+Prove `Term.RootCoherent` for the whole supplier tree. Every Cause leaf must
+use its own `origin`, including leaves inside another Cone's producer. Several
+paths from one canonical root and joins from distinct Causes remain valid.
+Use `isInputContext_iff_coherent` to obtain the local ownership witness and
+`input_consequence_inCone` for its output; an owner-only `onlyLocalRoot` guard
+does not check external Causes. Raw evaluation of a mixed-root term is still
+possible and supplies no context proof. The
+[root regressions](../../../ArchiScriptTests/RootCoherence.lean) demonstrate
+both supported cases and the nested failure.
+
+Discharge the certificate's two input fields separately:
+
+1. For **every declared generator**, prove `inputSources` using
+   `InputSources.grounded` with coherent suppliers at every position, or
+   `InputSources.unreachable` with empty independent `supplierImage`s at every
+   position. These images range over coherent upstream producers before any
+   complete join input exists. `inputSources_of_catalog` can reuse a valid
+   cache and `SourcesPresent g`; a missing catalog factor is not itself proof
+   that all incoming images are empty.
+2. For **every full coherent input context**, prove `inputs` with
+   `InputStatus.verified` (P, E and a reachable tuple) or `.unreachable`.
+   The latter needs all three proofs: `noSupplier` for every actual `incoming t`
+   image, `noTuple`, and `noContract`. Grounding witnesses never limit this
+   universal quantification to favorable producer choices.
+
+The [missing-source regression](../../../ArchiScriptTests/SourceCoverage.lean)
+proves that X present / Y absent cannot supply either `InputSources` alternative,
+even though no complete input can be built. On a completed certificate,
+`input_partner` constructs a supported full context and an Adm-and-Reach partner
+for each independently incoming member; do not weaken this to a single
+compatible tuple or define images from the join's accepted tuples.
+
+For each Cause, supply `ConeStatus.observable` with `ConeValid`, or
+`.unobservable` with `NoObservableEffect`. Observable validity needs a witness
+of `Nonempty (model.effect c).Position`, a reachable tuple, exactness and all
+projections. Nominal `effectNodes ≠ []` or the unit's inhabitant does not prove
+there is an actual observation position. Unobservable status needs every
+`effectIncoming` image empty and the entire Effect contract empty, even if
+there are structural positions. `BoundariesComplete` then takes the
+`NoObservableEffect` branch or supplies the required boundary path for each
+owned node. `hasCone` yields a checked status, not necessarily observability.
+
+The [unobservable fixture](../../../ArchiScriptTests/Unobservable.lean) has
+structural suppliers with no incoming values. The
+[ungrounded cycle](../../../ArchiScriptTests/UngroundedCycle.lean) proves that
+circular arrows alone produce no finite coherent supplier. Keep both distinct
+from a missing-partner fault with an inhabited incoming image.
+
+For a provenance cache, prove `∀ c, S.origin c ∈ analysis.roots` and its
+`Seeded`, `Closed`, `Realized` checks. Do not enumerate every raw `RootInstance`
+value: `rootHistories` filters to canonical origins. Finite VDP members still
+do not prove a finite closed normalized-history basis.
+
 ## Release checks
 
 ```bash
