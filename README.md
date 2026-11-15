@@ -242,6 +242,65 @@ member map from its existing tag; it does not merge two simultaneous
 independent arrivals or invent a scheduling decision. Coproducts
 can model alternative *request* types too, not only responses.
 
+#### What uses of coproduct are allowed today, and is that enforced by Lean?
+
+**Architectural review rule for 0.7.0: restrict coproduct to
+a priori, justified tagged alternatives of one semantic value or VDP,
+and algebraic handling of alternatives that are already tagged.**
+Every time a coproduct is introduced or used, ask:
+
+> Does this describe alternatives that belong to the declared
+> architecture's possible *values or carrier types*, or am I
+> secretly writing a logical OR between independent Operations,
+> producers, or runtime paths?
+
+Examples of legitimate carrier-level alternatives:
+
+```text
+One request value:
+  Carrier = Sum Nat String
+  --> either a number OR a string, as declared at the input boundary
+
+One response value:
+  Carrier = Sum SuccessPayload ErrorPayload
+  --> either a successful payload OR an error payload
+
+NOT a coproduct of independently supplied execution paths:
+  operationA -> Success ---+
+                           +---> implicit "OR"/branch selector  (INVALID)
+  operationB -> Error -----+
+```
+
+In the first two cases the **sum tag is part of the declared semantic
+possibility**. At a typed input boundary it is supplied as part of the
+input; at an Operation's output it must be determined by the
+Operation's explicitly declared member map and its justified input
+distinctions. In neither case does the sum invent a nondeterministic
+branch. `Operation.copair` and injections remain legitimate tools
+for manipulating **existing** tagged alternatives, not for
+manufacturing exclusivity out of concurrent or independent suppliers.
+
+Before accepting any use, explain **what the tags mean**, **why
+those alternatives belong to the actual declared boundary**,
+**what justifies the tag/provenance or the defined mapping**, and
+**whether the claimed sum covers the relevant real-world cases**.
+The coproduct constructor proves coverage **relative to its chosen
+`Sum` carrier**; it does not prove that a deliberately narrow
+carrier captures all external possibilities.
+
+**Enforcement status: NOT AUTOMATICALLY VERIFIED.** Lean already checks
+the algebraic `Partition.coproduct` construction, tag-preserving
+member semantics and relevant coproduct Operation laws. Also,
+`Architecture.Inputs` provides no coproduct combinator for
+joining independent supplier factors. But the **0.7.0 certificate
+does not include a global theorem or guard** validating that
+*every use* of `coproduct` was intended as an a priori semantic
+alternative, rather than a disguised code-level branch or an
+unjustified assumption about the boundary. This restriction
+therefore requires **explicit author/reviewer judgment**, not a
+claim that the Lean checks already enforce it.
+
+
 The [authorization-service example](#why-can-an-authorization-service-be-a-tensor-factor-if-the-requests-outcome-is-already-semantically-distinguished)
 shows why a request/status **tensor input** can lead to a
 success/error **coproduct carrier** without any hidden runtime

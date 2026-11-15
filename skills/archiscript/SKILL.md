@@ -32,6 +32,27 @@ path may not exist. In that case, use the
 if network access is available. If neither source is accessible, apply the
 self-contained rules below and do **not** claim to have read the FAQ.
 Do not duplicate the complete FAQ inside this skill.
+
+**Coproduct review restriction (manual; NOT AUTOMATICALLY VERIFIED):**
+Use `Partition.coproduct` only for **a priori justified, tagged
+alternatives** of a semantic carrier/VDP (e.g. a request carrying
+`Sum Nat String`, or a response carrying
+`Sum SuccessPayload ErrorPayload`), or to manipulate such **already
+tagged** alternatives through legitimate injections, `copair`
+or algebraic rewrites. At **every** coproduct occurrence, ask whether
+the sum expresses predeclared possible *values*, or instead hides
+a code-level logical OR between independently supplied Operations
+or producer paths. **Never** turn two independent success/error
+suppliers into one exclusive selected result merely by summing them;
+coproduct does not construct a supplier join, mutual exclusion or
+runtime choice. Identify the meaningful tags, the true boundary,
+the source of the tag or the justified partial mapping, and any
+external completeness assumption. The Lean 0.7.0 core proves
+coproduct algebra and contains no supplier-sum constructor in
+`Architecture.Inputs`, but **does not certify the architectural
+intent of every coproduct use**. Check this manually; see the
+[full FAQ with supported and invalid diagrams](../../README.md#can-a-coproduct-combine-two-independent-supplier-branches-into-one-alternative-response).
+
 **Do not conflate** (1) two target members for one source member of **one**
 Operation, which is forbidden by `Operation.single_output`, (2) multiple
 declared outgoing Operations, which are legal and non-exclusive, and
