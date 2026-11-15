@@ -45,12 +45,22 @@ capitalization of the package name does not spell `ArchiScript` correctly.
 `sorryAx` transitively, custom axioms, extra trusted-computation axioms, tagged
 certificates with unsupplied parameters and standalone tagged contracts
 referencing Reach. It also exposes the actual installed admissibility fields of
-every closed model/certificate, including untagged, indirect, inline and opaque
-forms. It rejects uninspectable closed records. Negative audit fixtures construct
+closed model/certificate declarations in the checked imports, including untagged,
+indirect, inline and opaque forms. It rejects uninspectable closed records.
+The certificate constructor does not run this check. Import the concrete model
+and certificate in the audited entry point; a conditional factory alone does not
+audit every possible instantiation, and declarations outside the import closure
+are not inspected. Negative audit fixtures construct
 complete certificates and permit only `CONTRACT_AUDIT` errors, so an unrelated
 missing proof cannot masquerade as enforcement. Source hashes reject a verification result if sources
 change during the check. A textual search for missing-proof tokens is not a
 substitute for the dependency audit.
+
+The runner writes command logs, `verification.json` and `axioms.json` under
+`.lake/reports/`. The [PR Gate workflow](../../../.github/workflows/pr-gate.yml)
+runs the same script and uploads that directory as `lean-proof-reports`, including
+on failure. Use the report's checked commit, source digest and actual command
+results when reporting verification; a successful build alone omits these checks.
 
 Named external semantic predicates can remain conditional. A theorem with a
 hypothesis is a valid conditional theorem; it is not a closed concrete

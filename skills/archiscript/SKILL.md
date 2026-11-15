@@ -15,6 +15,12 @@ contexts of its stated scope. It is not a globally exhaustive architecture
 certificate. The architect claims a complete primitive and one-Cause Cone
 inventory; automatic universal path coverage is next-version work.
 
+Do not infer that the union of declared Cones covers every generated finite
+typed Expression from successful per-Cone proofs, local `effectCoverage`, a
+selected path family or a passing verification gate. State this missing global
+guarantee in model handoffs alongside the actual certificate scope. Omitted
+real-world Operations and requirements remain an author responsibility.
+
 ## Establish the semantics
 
 1. Start from the complete meaningful carrier, retaining invalid, absent,
@@ -48,8 +54,9 @@ certificate. It runs the transitive proof audit.
 
 Use `ArchitectureSignature` for the closed primitive, Cause, node, domain and
 split inventories. Generator identities and automatically derived histories
-preserve occurrences even when nominal nodes, VDPs and member images coincide. Each generator contains its actual typed
-`Inputs`; all factor suppliers must exist. Its local-factor proof is required.
+preserve occurrences even when nominal nodes, VDPs and member images coincide.
+Each generator contains its actual typed `Inputs`; all factor suppliers must
+exist. Its local-factor proof is required.
 
 `Expression` is exclusively a finite linear chain over registered names and
 nominal objects. Repetition through a cycle is permitted. Nonlinear algebraic
@@ -94,9 +101,12 @@ inventory cannot pass as a complete architecture.
 A finite computation needs a complete enumeration of semantic configurations,
 not merely finite VDP members. `Reachability.FiniteAnalysis.certify` returns an
 exact result only after checking closure. `ExactAbstraction` must connect it to
-the architectural relation. An unchanged terminal image is not a stopping test. The provenance basis also
-needs finite roots and closure of normalized histories; finite VDP members do
-not imply that condition. The optional `derive_provenance([roots], fuel)` helper
+the architectural relation. An unchanged terminal image is not a stopping test.
+The provenance basis also needs finite roots and closure of normalized histories;
+finite VDP members do not imply that condition. If a model cannot supply this
+basis, report the unsupported analysis scope and the outstanding obligation;
+do not restrict the carrier, drop producer histories or claim certification.
+The optional `derive_provenance([roots], fuel)` helper
 (import `ArchiScript.Provenance.Derive`) caches candidate data only. Too little
 fuel fails the required coverage proof; no domain claim or proof is generated.
 
@@ -108,10 +118,18 @@ uv run --no-project python scripts/verify-lean.py
 
 This runs the pinned build, public smoke, transitive axiom audit, negative
 fixtures and kernel replay. Reports under `.lake/reports` identify checked
-sources and commands. Builds treat warnings as errors. Audit rejects direct or
-transitive `sorryAx`, unauthorized axioms and tagged conditional certificates.
-Actual installed input/effect contracts of all closed models and certificates
-are checked regardless of tags, including inline, indirect and opaque aliases.
+sources and commands. The PR Gate CI job runs the same script and saves those
+reports as `lean-proof-reports`, including on failure. Cite the checked revision
+and report when communicating verification results.
+
+Constructing `CertifiedDeclaredArchitecture` does not itself run the audit or
+prove that a contract was independently authored. Run the gate before describing
+a concrete model as audited. Builds treat warnings as errors. Audit rejects
+direct or transitive `sorryAx`, unauthorized axioms and tagged conditional certificates.
+Actual installed input/effect contracts of closed model and certificate
+declarations in the checked imports are inspected regardless of tags, including
+inline, indirect and opaque aliases. Include the concrete declarations in those
+imports; an unimported model is outside that audit run.
 Uninspectable closed records are rejected. Tags additionally check standalone
 predicates and conditional results. The check conservatively follows transitive
 implementation dependencies; it cannot establish independent business meaning.

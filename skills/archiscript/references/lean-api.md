@@ -121,8 +121,9 @@ complete tuple enumeration and decidability of both relations.
 
 Development tools import `ArchiScript.ProofAudit` explicitly. Tag concrete
 closed results with `@[archiscript_certificate]` and independent predicates with
-`@[archiscript_contract]`. `#audit_archiscript` inspects all project declarations,
-including private declarations, and rejects unauthorized transitive axioms.
+`@[archiscript_contract]`. `#audit_archiscript` inspects project declarations in
+the checked imports, including private declarations, and rejects unauthorized
+transitive axioms.
 Conventional `propext`, `Classical.choice`, `Quot.sound` are the only allowlist.
 
 Shared targets preserve distinct producer derivations automatically. One C
@@ -140,7 +141,8 @@ The optional `ArchiScript.Provenance.Derive` import provides
 at a time; `Valid` is still proved by ordinary kernel reduction. A finite closed
 normalized-history basis is a supported-fragment obligation, separate from
 finite member values and from the deferred global Cone/Expression coverage.
-The audit exposes actual admissibility fields of every closed declared model
-and certificate, follows opaque/indirect aliases, and rejects uninspectable
-records. Attributes do not opt a closed record out of this check. Conditional
-factories are inspected at their concrete closed instantiations.
+The audit exposes actual admissibility fields of closed model and certificate
+declarations in the checked imports, follows opaque/indirect aliases, and rejects
+uninspectable records. Attributes do not opt a closed record out of this check.
+Import concrete declarations instantiating factories to audit their installed
+contracts; constructing a certificate alone does not execute the audit.
