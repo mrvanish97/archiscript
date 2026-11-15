@@ -166,6 +166,41 @@ inadmissible tuple reachable. See
 [`SharedTargetJoin`](ArchiScriptExamples/SharedTargetJoin.lean) and
 [`ContractCoverage`](ArchiScriptTests/ContractCoverage.lean).
 
+### What is the difference between a carrier, a Subdomain, and a selected VDP member?
+
+These are **different roles**, not three levels of one hierarchy:
+
+- **Carrier** (`Partition.Carrier`) is the underlying *type* of possible
+  values, such as `String`. It is not itself a `Subdomain` or a parent
+  node in a semantic derivation tree. It must retain invalid and unsuccessful
+  cases when those values belong to the declared boundary.
+- **Subdomain** (`Subdomain α`) is a named, inhabited *semantic region over*
+  a carrier type `α`: its `meaning : α → Prop` specifies the subset, and
+  it retains parent/definition evidence. Subdomains may be intermediate or
+  supporting regions; merely declaring one does not select it for a VDP.
+  For instance, `AllStrings : Subdomain String` can have meaning `True`,
+  so its extension covers every string, but it is **still a Subdomain**, not
+  the `String` carrier type.
+- **Selected VDP member** is not an additional kind of semantic region:
+  it is a `Subdomain` chosen by a particular
+  `Partition.members : MemberIndex → Subdomain Carrier`. The selected
+  family must be finite, nonempty, pairwise disjoint and cover the **entire
+  carrier**; each selected region is inhabited. Other declared Subdomains
+  can overlap, remain unselected, or refine a selected region.
+
+For the **same** carrier `String`, a coarse VDP might select
+`Invalid | Valid`, whereas a more detailed VDP selects
+`Invalid | ValidAndPermitted | ValidAndDenied`. The `Valid` Subdomain is
+selected in the first VDP but only intermediate/supporting in the second.
+Neither VDP selects `Valid` *together with* either of its overlapping
+children. Semantic refinement relates **Subdomains to Subdomains**, while
+VDP membership is a **separate choice**; different VDPs may also use
+different carriers.
+
+See [the separate carrier/derivation/selection diagram](#from-subdomains-to-selected-vdp-members-a-string-carrier),
+[`Subdomain`](ArchiScript/Subdomain.lean) and
+[`Partition`](ArchiScript/Partition.lean).
+
 ### Is a VDP an enum of observed outcomes or a runtime validation pipeline?
 
 **Neither.** First declare the complete meaningful carrier and justified,
