@@ -3,6 +3,16 @@
 A diagram is a projection of checked declarations. State the question, scope,
 hidden detail and proof status in its caption.
 
+For an architecture-wide view, apply the
+[manual inventory audit](../SKILL.md#manual-audit-of-the-complete-declared-inventory).
+Include disconnected declared nodes and rootless SCCs, not only Cause-rooted
+paths. Show `Cause → X` and isolated `Y ↔ E` as separate components; do not omit
+Y/E because `UngroundedCycle.certified` passes. Caption the architect's explicit
+disposition (remove, intentional unreachable/excluded, or missing dependency)
+and unverified coverage assumption. A marker or owner label proves no source.
+An independent component need not change rooted tuples, but can obstruct an
+observable Cone's `BoundariesComplete`. Layout is not inventory-grounding proof.
+
 | View | Nodes | Edges / annotations |
 | --- | --- | --- |
 | Semantic decomposition | Declared Subdomains | Proved containment and each particular exhaustive split |

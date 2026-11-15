@@ -97,6 +97,13 @@ or proposed departures explicitly.
   universal generated-path coverage from these scoped certificates. Automation
   is explicitly deferred to the next version. Real-world inventory completeness
   is an external modeling assumption even if a future global checker is proved.
+- Manually audit the complete declared Cause/Node/Generator inventory, including
+  disconnected nodes, unused declarations and rootless SCCs. Scoped certificates
+  and unobservable status do not prove inventory-wide grounding. Flag unexplained
+  components to the architect and record removal, intentional exclusion or model
+  repair as author judgment. Unrelated components need not change rooted tuples,
+  but can obstruct an observable Cone's boundary proof. Keep this limitation
+  separate from mandatory local source and P/E obligations.
 - Keep concurrency, persistence, transactions and implementation conformance
   conditional on separately modeled semantics. Unsupported conclusions remain
   review questions or `UNKNOWN`.

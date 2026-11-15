@@ -41,6 +41,23 @@ tuples admitted by mistake remain failures in Adm minus Reach. No case predicts 
 assigns probability weights or proves timeout delivery, overall design quality
 or **global Cone/Expression coverage (NOT AUTOMATICALLY VERIFIED)**.
 
+## Manual inventory-review cases
+
+Apply the [skill's inventory audit](../SKILL.md#manual-audit-of-the-complete-declared-inventory)
+to the complete declared inventories before making architecture-wide claims:
+
+| Case | Required author/reviewer response |
+| --- | --- |
+| `Cause → X`, isolated `Y ↔ E` | [UngroundedCycle.certified](../../../ArchiScriptTests/UngroundedCycle.lean) is accepted despite no canonical producer for Y/E. Flag the component; a green build, its typed marker and empty images do not prove inventory grounding. |
+| Unattached nodes without arrows | [SourceCoverage.sourceOnly](../../../ArchiScriptTests/SourceCoverage.lean) retains unrelated Y/E declarations in an accepted unobservable certificate. Enumerate these too; Cause-starting traversal alone misses them. |
+| Isolated component with no connecting dependency/context | Do not claim it necessarily changes unrelated rooted Expressions' reachable tuples. Report the coverage gap explicitly. |
+| Unrelated SCC owned by an observable Cone | Explain that `BoundariesComplete` may refuse the overall certificate for lack of a boundary path even when the rooted route's tuples are unchanged. A cyclic marker can change that structural result without establishing production. This is a documented limitation, not an additional compiled fixture. |
+| Unexplained disconnected declaration | Ask the architect to remove an accidental leftover, document an intentional unreachable/excluded component, or repair an omitted Cause/dependency. Record the disposition as author judgment and an unverified coverage assumption. |
+| Later connection to a join | Recheck mandatory source accounting and complete contextual P/E; live X with unsourced Y fails now and is not a deferred orphan/SCC diagnostic. |
+
+Inventory-wide diagnostics and all-generated-Expression/Cone coverage are separate
+[0.8.0 tasks](../../../plans/0.8.0.md). Neither is supplied by this manual audit.
+
 ## Other semantic and proof regressions
 
 | Scenario | Expected evidence |

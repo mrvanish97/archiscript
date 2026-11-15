@@ -230,6 +230,51 @@ fuel fails the required coverage proof; no domain claim or proof is generated.
 
 ## Verify and communicate
 
+### Manual audit of the complete declared inventory
+
+Perform this step during architecture construction and again before claiming
+architecture-wide completeness. **Global Cone/Expression coverage: NOT AUTOMATICALLY VERIFIED.**
+The limitation includes disconnected declared nodes, rootless SCCs and unused
+subgraphs, not only generated paths.
+
+1. Enumerate the complete declared `Cause`, `Node`/VDP and `Generator`/Operation
+   inventories, including declarations absent from successfully constructed
+   `Occurrence`s or walks starting at Causes. Identify nodes without a finite
+   canonical Cause-rooted producer, unused/unconnected components and SCCs with
+   no grounded incoming dependency. A cycle's arrows, nominal `owner`, typed
+   cyclic marker or empty `supplierImage` do not prove rootedness.
+2. Flag each unexplained declaration to the human architect. Ask whether it is
+   an accidental leftover to remove, an intentional currently unreachable
+   component whose purpose/exclusion must be documented, or an omitted
+   Cause/dependency to repair. Record the architect's disposition and unresolved
+   questions; do not silently approve it because Lean passes. After connecting
+   a component, rerun source and contextual tensor proofs.
+3. Report the audit as an **author judgment / manual review assumption**.
+   Only the architect/diagram author can attest to the intended global inventory
+   and coverage until a future checker exists. `CertifiedDeclaredArchitecture`,
+   `InputSources.unreachable`, `NoObservableEffect`, `ConeStatus.unobservable`
+   and `BoundariesComplete` do not jointly prove all declared nodes/SCCs grounded
+   or every generated Expression covered.
+
+The concrete example is `Cause → X` alongside isolated `Y ↔ E`:
+[UngroundedCycle.certified](../../ArchiScriptTests/UngroundedCycle.lean) is an
+accepted scoped certificate despite the rootless cycle and its typed marker;
+[SourceCoverage.sourceOnly](../../ArchiScriptTests/SourceCoverage.lean) also
+retains unrelated orphaned Y/E declarations. With no connecting dependencies or
+context predicates, the component does not change unrelated rooted Expressions'
+reachable tuples. Risks include overstated global assurance and possible
+certificate refusal: for an observable Cone, `BoundariesComplete` checks every
+owned node and an unrelated component may have no path to an Effect boundary.
+A cyclic marker can satisfy that structural condition without proving production.
+
+Keep this audit separate from strict local obligations: canonical root coherence,
+mandatory `inputSources`, both P/E equations and honest Effect status still apply.
+Incoming X with missing Y at a declared join must fail now. The
+[0.8.0 plan](../../plans/0.8.0.md) separately tracks whole-inventory orphan/SCC
+diagnostics and stronger all-generated-Expression/Cone coverage.
+
+### Executable verification
+
 ```bash
 uv run --no-project python scripts/verify-lean.py
 ```
